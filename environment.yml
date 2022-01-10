@@ -1,0 +1,11 @@
+name: mskt
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pyacvd
+  - vtk
+  - python=3.9
+  - pyvista
+  - simpleitk
+prefix: /anaconda3/envs/mskt
