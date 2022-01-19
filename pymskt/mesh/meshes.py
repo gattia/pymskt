@@ -637,8 +637,20 @@ class BoneMesh(Mesh):
         Helper function to create the list of cartilage meshes from the list of cartilage
         labels. 
 
-        ?? Should this function just be everything inside the for loop and then that function gets called somewhere else? 
-        """
+        Parameters
+        ----------
+        image_smooth_var_cart : float
+            Variance to smooth cartilage segmentations before finding surface using continuous
+            marching cubes.             
+        marching_cubes_threshold : float
+            Threshold value to create cartilage surface at from segmentation images. 
+
+        Notes
+        -----
+        ?? Should this function just be everything inside the for loop and then that 
+        function gets called somewhere else? 
+        """        
+
         self.list_cartilage_meshes = []
         for cart_label_idx in self.list_cartilage_labels:
             seg_array_view = sitk.GetArrayViewFromImage(self._seg_image)
@@ -662,6 +674,34 @@ class BoneMesh(Mesh):
                                  ray_cast_length=10.0,
                                  percent_ray_length_opposite_direction=0.25
                                  ):
+        """
+        Using bone mesh (`_mesh`) and the list of cartilage meshes (`list_cartilage_meshes`)
+        calcualte the cartilage thickness for each node on the bone surface. 
+
+        Parameters
+        ----------
+        list_cartilage_labels : list, optional
+            Cartilag labels to be used to create cartilage meshes (if they dont
+            exist), by default None
+        list_cartilage_meshes : list, optional
+            Cartilage meshes to be used for calculating cart thickness, by default None
+        image_smooth_var_cart : float, optional
+            Variance of gaussian filter to be applied to binary cartilage masks, 
+            by default 0.3125/2
+        marching_cubes_threshold : float, optional
+            Threshold to create bone surface at, by default 0.5
+        ray_cast_length : float, optional
+            Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+            outter shell), by default 10.0
+        percent_ray_length_opposite_direction : float, optional
+            How far to project ray inside of the bone. This is done just in case the cartilage
+            surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+
+        Raises
+        ------
+        Exception
+            No cartilage available (either `list_cartilage_meshes` or `list_cartilage_labels`)
+        """        
         # If new cartilage infor/labels are provided, then replace existing with these ones. 
         if list_cartilage_meshes is not None: self.list_cartilage_meshes = list_cartilage_meshes
         if list_cartilage_labels is not None: self.list_cartilage_labels = list_cartilage_labels
@@ -700,6 +740,24 @@ class BoneMesh(Mesh):
                                  marching_cubes_threshold=0.5,
                                  ray_cast_length=10.0,
                                  percent_ray_length_opposite_direction=0.25):
+        """
+        Assign cartilage regions to the bone surface (e.g. medial/lateral tibial cartilage)
+        - Can also be used for femur sub-regions (anterior, medial weight-bearing, etc.)
+
+        Parameters
+        ----------
+        image_smooth_var_cart : float, optional
+            Variance of gaussian filter to be applied to binary cartilage masks, 
+            by default 0.3125/2
+        marching_cubes_threshold : float, optional
+            Threshold to create bone surface at, by default 0.5
+        ray_cast_length : float, optional
+            Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+            outter shell), by default 10.0
+        percent_ray_length_opposite_direction : float, optional
+            How far to project ray inside of the bone. This is done just in case the cartilage
+            surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+        """        
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
         path_save_tmp_file = os.path.join('/tmp', tmp_filename)
         # if self.bone == 'femur':
@@ -727,7 +785,7 @@ class BoneMesh(Mesh):
             self.create_cartilage_meshes(image_smooth_var_cart=image_smooth_var_cart,
                                          marching_cubes_threshold=marching_cubes_threshold)
         
-        # iterate over meshes and add their thicknesses to the thicknesses list. 
+        # iterate over meshes and add their label (region) 
         for cart_mesh in self.list_cartilage_meshes:
             cart_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
             node_data = get_cartilage_properties_at_points(self._mesh,
@@ -740,7 +798,7 @@ class BoneMesh(Mesh):
             labels += node_data[1]
             cart_mesh.reverse_all_transforms()
 
-        # Assign the thickness scalars to the bone mesh surface. 
+        # Assign the label (region) scalars to the bone mesh surface. 
         label_scalars = numpy_to_vtk(labels)
         label_scalars.SetName('labels')
         self._mesh.GetPointData().AddArray(label_scalars)
@@ -752,61 +810,78 @@ class BoneMesh(Mesh):
                           path_seg_to_t2_transform=None,
                           ray_cast_length=10.0,
                           percent_ray_length_opposite_direction=0.25):
+        """
+        Apply cartilage T2 values to bone surface. 
+
+        Parameters
+        ----------
+        path_t2_nrrd : str
+            Path to nrrd image of T2 map to load / use. 
+        path_seg_to_t2_transform : str, optional
+            Path to a transform file to be used for aligning T2 map with segmentations, 
+            by default None
+        ray_cast_length : float, optional
+            Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+            outter shell), by default 10.0
+        percent_ray_length_opposite_direction : float, optional
+            How far to project ray inside of the bone. This is done just in case the cartilage
+            surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+        """        
         print('Not yet implemented')
-        if self.list_cartilage_meshes is None:
-            raise('Should calculate cartialge thickness before getting T2')
-            # ALTERNATIVELY - COULD ALLOW PASSING OF CARTILAGE REGIONS IN HERE
-            # THOUGH, DOES THAT JUST COMPLICATE THINGS? 
+        # if self.list_cartilage_meshes is None:
+        #     raise('Should calculate cartialge thickness before getting T2')
+        #     # ALTERNATIVELY - COULD ALLOW PASSING OF CARTILAGE REGIONS IN HERE
+        #     # THOUGH, DOES THAT JUST COMPLICATE THINGS? 
 
-        if path_seg_transform is not None:
-            # this is in case there is a transformation needed to align the segmentation with the
-            # underlying T2 image
-            seg_transform = sitk.ReadTransform(path_seg_transform)
-            seg_image = apply_transform_retain_array(self._seg_image,
-                                                     seg_transform,
-                                                     interpolator=sitk.sitkNearestNeighbor)
+        # if path_seg_transform is not None:
+        #     # this is in case there is a transformation needed to align the segmentation with the
+        #     # underlying T2 image
+        #     seg_transform = sitk.ReadTransform(path_seg_transform)
+        #     seg_image = apply_transform_retain_array(self._seg_image,
+        #                                              seg_transform,
+        #                                              interpolator=sitk.sitkNearestNeighbor)
             
             
-            versor = get_versor_from_transform(seg_transform)
-            center_transform, rotate_transform, translate_transform = break_versor_into_center_rotate_translate_transforms(versor)
-            # first apply negative of center of rotation to mesh
-            self._mesh.apply_transform_to_mesh(transform=center_transform.GetInverse())
-            # now apply the transform (rotation then translation)
-            self._mesh.apply_transform_to_mesh(transform=rotate_transform.GetInverse())
-            self._mesh.apply_transform_to_mesh(transform=translate_transform.GetInverse())
-            #then undo the center of rotation
-            self._mesh.apply_transform_to_mesh(transform=center_transform)
+        #     versor = get_versor_from_transform(seg_transform)
+        #     center_transform, rotate_transform, translate_transform = break_versor_into_center_rotate_translate_transforms(versor)
+        #     # first apply negative of center of rotation to mesh
+        #     self._mesh.apply_transform_to_mesh(transform=center_transform.GetInverse())
+        #     # now apply the transform (rotation then translation)
+        #     self._mesh.apply_transform_to_mesh(transform=rotate_transform.GetInverse())
+        #     self._mesh.apply_transform_to_mesh(transform=translate_transform.GetInverse())
+        #     #then undo the center of rotation
+        #     self._mesh.apply_transform_to_mesh(transform=center_transform)
 
-        # Read t2 map (vtk format)
-        vtk_t2map_reader = read_nrrd(path_t2_nrrd,
-                                     set_origin_zero=True)
-        vtk_t2map = vtk_t2map_reader.GetOutput()
-        sitk_t2map = sitk.ReadImage(path_t2_nrrd)
-        t2_transformer = SitkVtkTransformer(sitk_t2map)
+        # # Read t2 map (vtk format)
+        # vtk_t2map_reader = read_nrrd(path_t2_nrrd,
+        #                              set_origin_zero=True)
+        # vtk_t2map = vtk_t2map_reader.GetOutput()
+        # sitk_t2map = sitk.ReadImage(path_t2_nrrd)
+        # t2_transformer = SitkVtkTransformer(sitk_t2map)
 
-        self._mesh.apply_transform_to_mesh(transform=t2_transformer.get_inverse_transform())
+        # self._mesh.apply_transform_to_mesh(transform=t2_transformer.get_inverse_transform())
 
-        t2 = np.zeros(self._mesh.GetNumberOfPoints())
-        # iterate over meshes and add their t2 to the t2 list. 
-        for cart_mesh in self.list_cartilage_meshes:
-            if path_seg_to_t2_transform is not None:
-                # first apply negative of center of rotation to mesh
-                cart_mesh.apply_transform_to_mesh(transform=center_transform.GetInverse())
-                # now apply the transform (rotation then translation)
-                cart_mesh.apply_transform_to_mesh(transform=rotate_transform.GetInverse())
-                cart_mesh.apply_transform_to_mesh(transform=translate_transform.GetInverse())
-                #then undo the center of rotation
-                cart_mesh.apply_transform_to_mesh(transform=center_transform)
+        # t2 = np.zeros(self._mesh.GetNumberOfPoints())
+        # # iterate over meshes and add their t2 to the t2 list. 
+        # for cart_mesh in self.list_cartilage_meshes:
+        #     if path_seg_to_t2_transform is not None:
+        #         # first apply negative of center of rotation to mesh
+        #         cart_mesh.apply_transform_to_mesh(transform=center_transform.GetInverse())
+        #         # now apply the transform (rotation then translation)
+        #         cart_mesh.apply_transform_to_mesh(transform=rotate_transform.GetInverse())
+        #         cart_mesh.apply_transform_to_mesh(transform=translate_transform.GetInverse())
+        #         #then undo the center of rotation
+        #         cart_mesh.apply_transform_to_mesh(transform=center_transform)
 
-            cart_mesh.apply_transform_to_mesh(transform=t2_transformer.get_inverse_transform())
-            _, t2_data = get_cartilage_properties_at_points(self._mesh,
-                                                            cart_mesh._mesh,
-                                                            t2_vtk_image=vtk_t2map,
-                                                            ray_cast_length=ray_cast_length,
-                                                            percent_ray_length_opposite_direction=percent_ray_length_opposite_direction
-                                                            )
-            t2 += t2_data
-            cart_mesh.reverse_all_transforms()
+        #     cart_mesh.apply_transform_to_mesh(transform=t2_transformer.get_inverse_transform())
+        #     _, t2_data = get_cartilage_properties_at_points(self._mesh,
+        #                                                     cart_mesh._mesh,
+        #                                                     t2_vtk_image=vtk_t2map,
+        #                                                     ray_cast_length=ray_cast_length,
+        #                                                     percent_ray_length_opposite_direction=percent_ray_length_opposite_direction
+        #                                                     )
+        #     t2 += t2_data
+        #     cart_mesh.reverse_all_transforms()
         print('NOT DONE!!!')
         
 
@@ -817,12 +892,28 @@ class BoneMesh(Mesh):
                                scalar_array_name='thickness (mm)',
                                scalar_array_idx=None,
                                ):
+                               
+        """
+        Function to smooth the scalars with name `scalar_array_name` on the bone surface. 
+
+        Parameters
+        ----------
+        smooth_only_cartilage : bool, optional
+            Should we only smooth where there is cartialge & ignore everywhere else, by default True
+        scalar_sigma : float, optional
+            Smoothing sigma (standard deviation or sqrt(variance)) for gaussian filter, by default 1.6986436005760381
+            default is based on a Full Width Half Maximum (FWHM) of 4mm. 
+        scalar_array_name : str
+            Name of scalar array to smooth, default 'thickness (mm)'.
+        scalar_array_idx : int, optional
+            Index of the scalar array to smooth (alternative to using `scalar_array_name`) , by default None
+        """        
         loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray('thickness (mm)')) > 0.01)[0]
-        gaussian_smooth_surface_scalars(self._mesh,
-                                        sigma=scalar_sigma,
-                                        idx_coords_to_smooth=loc_cartilage if smooth_only_cartilage is True else None,
-                                        array_name=scalar_array_name,
-                                        array_idx=scalar_array_idx)
+        self._mesh = gaussian_smooth_surface_scalars(self._mesh,
+                                                     sigma=scalar_sigma,
+                                                     idx_coords_to_smooth=loc_cartilage if smooth_only_cartilage is True else None,
+                                                     array_name=scalar_array_name,
+                                                     array_idx=scalar_array_idx)
         
         
 

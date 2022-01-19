@@ -359,8 +359,10 @@ def gaussian_smooth_surface_scalars(mesh, sigma=1, idx_coords_to_smooth=None, ar
 
     smoothed_scalars = numpy_to_vtk(smoothed_scalars)
     smoothed_scalars.SetName(original_array.GetName())
-    original_array.DeepCopy(smoothed_scalars)
+    original_array.DeepCopy(smoothed_scalars) # Assign the scalars back to the original mesh
 
+    # return the mesh object - however, if the original is not deleted, it should be smoothed
+    # appropriately. 
     return mesh
 
 
