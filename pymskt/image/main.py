@@ -120,11 +120,35 @@ def crop_bone_based_on_width(seg_image,
                              bone_idx,
                              np_med_lat_axis=0,
                              np_inf_sup_axis=1,
-                             np_ant_post_axis=2,
                              bone_crop_distal=True,
-                             new_seg_array=None,
                              value_to_reassign=0,
                              percent_width_to_crop_height=1.0):
+    """
+    Crop the bone labelmap of a SimpleITK.Image so that it is proportional to the
+    bones medial/lateral width. 
+
+    Parameters
+    ----------
+    seg_image : SimpleITK.Image
+        Image to be cropped. 
+    bone_idx : int
+        Label_index of the bone to be cropped. 
+    np_med_lat_axis : int, optional
+        Medial/lateral axis, by default 0
+    np_inf_sup_axis : int, optional
+        Inferior/superir axis, by default 1
+    bone_crop_distal : bool, optional
+        Boolean of cropping should occur distal or proximally, by default True
+    value_to_reassign : int, optional
+        Value to replace bone label with, by default 0
+    percent_width_to_crop_height : float, optional
+        Bone length as a proportion of width, by default 1.0
+
+    Returns
+    -------
+    [type]
+        [description]
+    """    
     seg_array = sitk.GetArrayFromImage(seg_image)
     loc_bone = np.where(seg_array == bone_idx)
     med_lat_width_bone_mm = (np.max(loc_bone[np_med_lat_axis]) - np.min(loc_bone[np_med_lat_axis])) * \
