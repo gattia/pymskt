@@ -6,7 +6,7 @@
         "depends": [],
         "name": "pymskt.cython_functions",
         "sources": [
-            "/Users/gattia/Programming/vtkbonetools/pymskt/cython/cython_functions.pyx"
+            "/Users/gattia/Programming/pymskt/pymskt/cython/cython_functions.pyx"
         ]
     },
     "module_name": "pymskt.cython_functions"

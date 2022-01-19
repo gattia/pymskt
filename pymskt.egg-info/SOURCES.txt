@@ -1,7 +1,7 @@
 README.md
 setup.cfg
 setup.py
-/Users/gattia/Programming/vtkbonetools/pymskt/cython/cython_functions.c
+/Users/gattia/Programming/pymskt/pymskt/cython/cython_functions.c
 pymskt/__init__.py
 pymskt.egg-info/PKG-INFO
 pymskt.egg-info/SOURCES.txt

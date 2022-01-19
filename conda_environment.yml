@@ -110,7 +110,4 @@ dependencies:
   - zipp=3.6.0=pyhd8ed1ab_0
   - zlib=1.2.11=h9173be1_1013
   - zstd=1.5.0=h582d3a0_0
-  - pip:
-    - pymskt==0.0.1
-    - vtk-bone-tools==0.0.1
 prefix: /anaconda3/envs/mskt

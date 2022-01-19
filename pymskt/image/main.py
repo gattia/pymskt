@@ -4,6 +4,7 @@ import SimpleITK as sitk
 import numpy as np
 
 def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
+    
     """
     Reset the origin of a `vtk_image`
 
@@ -51,10 +52,22 @@ def set_seg_border_to_zeros(seg_image,
                             border_size=1):
     """
     Utility function to ensure that all segmentations are "closed" after marching cubes. 
-    If the segmentation extends to the edges of the image then the surface wont be closed at the places it touches the edges. 
+    If the segmentation extends to the edges of the image then the surface wont be closed 
+    at the places it touches the edges. 
 
+    Parameters
+    ----------
+    seg_image : SimpleITK.Image
+        Image of a segmentation. 
+    border_size : int, optional
+        The size of the border to set around the edges of the 3D image, by default 1
 
-    """
+    Returns
+    -------
+    SimpleITK.Image
+        The image with border set to 0 (background). 
+    """    
+
     seg_array = sitk.GetArrayFromImage(seg_image)
     new_seg_array = np.zeros_like(seg_array)
     new_seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size] = seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size]
@@ -63,21 +76,39 @@ def set_seg_border_to_zeros(seg_image,
     return new_seg_image
 
 
-def smooth_image(image, bone_idx, variance=1.0):
+def smooth_image(image, label_idx, variance=1.0):
+    """
+    Smooth a single label in a SimpleITK image. Used as pre-processing for 
+    bones/cartilage before applying marching cubes. Helps obtain smooth surfaces. 
+
+    Parameters
+    ----------
+    image : SimpleITK.Image
+        Image to be smoothed. 
+    label_idx : int
+        Integer of the tissue of interest to be smoothed in the image. 
+    variance : float, optional
+        The size of the smoothing, by default 1.0
+
+    Returns
+    -------
+    SimpleITK.Image
+        Image of only the label (tissue) of interest after being smoothed. 
+    """    
     array = sitk.GetArrayFromImage(image)
-    bone_array = np.zeros_like(array)
-    bone_array[array == bone_idx] = 1.
-    bone_image = sitk.GetImageFromArray(bone_array)
-    bone_image.CopyInformation(image)
-    bone_image = sitk.Cast(bone_image, sitk.sitkFloat32)
+    new_array = np.zeros_like(array)
+    new_array[array == label_idx] = 1.
+    new_image = sitk.GetImageFromArray(new_array)
+    new_image.CopyInformation(image)
+    new_image = sitk.Cast(new_image, sitk.sitkFloat32)
 
     gauss_filter = sitk.DiscreteGaussianImageFilter()
     gauss_filter.SetVariance(variance)
     #     gauss_filter.SetUseImageSpacingOn
     gauss_filter.SetUseImageSpacing(True)
-    filtered_bone_image = gauss_filter.Execute(bone_image)
+    filtered_new_image = gauss_filter.Execute(new_image)
 
-    return filtered_bone_image
+    return filtered_new_image
 
 def crop_bone_based_on_width(seg_image,
                              bone_idx,
