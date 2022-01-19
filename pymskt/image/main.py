@@ -4,19 +4,22 @@ import SimpleITK as sitk
 import numpy as np
 
 def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
-    
     """
     Reset the origin of a `vtk_image`
 
     Parameters
     ----------
-    vtk_image
-    new_origin
+    vtk_image : vtk.image
+        VTK image that we want to change the origin of. 
+    new_origin : tuple, optional
+        New origin to asign to `vtk_image`, by default (0, 0, 0)
 
     Returns
     -------
+    vtk.Filter
+        End of VTK filter pipeline after applying origin change. 
+    """    
 
-    """
     change_origin = vtk.vtkImageChangeInformation()
     change_origin.SetInputConnection(vtk_image.GetOutputPort())
     change_origin.SetOutputOrigin(new_origin)
