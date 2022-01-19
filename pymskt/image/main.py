@@ -187,8 +187,25 @@ def apply_transform_retain_array(image, transform, interpolator=sitk.sitkNearest
     So, in x/y/z land the pixels are in a new location, but the actual underlying data array 
     is the same. 
 
-    I have a feeling that this is overkill. 
-    """
+    Parameters
+    ----------
+    image : SimpleITK.Image
+        Image to be transformed.
+    transform : SimpleITK.Transform
+        Transform to apply
+    interpolator : SimpleITK.Interpolator, optional
+        Interpolator type to use, by default sitk.sitkNearestNeighbor
+
+    Returns
+    -------
+    SimpleITK.Image
+        New image after applying the appropriate transform.
+    
+    Notes
+    -----
+    I have a feeling that this is overkill.
+    """    
+
     inverse_transform = transform.GetInverse()
     new_origin = inverse_transform.TransformPoint(image.GetOrigin())
 
