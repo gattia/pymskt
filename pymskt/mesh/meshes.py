@@ -22,6 +22,49 @@ from pymskt.mesh.meshTransform import (SitkVtkTransformer,
 import pymskt.mesh.io as io
 
 class Mesh:
+    """
+    [summary]
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData, optional
+        vtkPolyData object that is basis of surface mesh, by default None
+    seg_image : SimpleITK.Image, optional
+        Segmentation image that can be used to create surface mesh - used 
+        instead of mesh, by default None
+    path_seg_image : str, optional
+        Path to a medical image (.nrrd) to load and create mesh from, 
+        by default None
+    label_idx : int, optional
+        Label of anatomy of interest, by default None
+    min_n_pixels : int, optional
+        All islands smaller than this size are dropped, by default 5000
+
+
+    Attributes
+    ----------
+    _mesh : vtk.vtkPolyData
+        Item passed from __init__, or created during life of class. 
+        This is the main surface mesh of this class. 
+    _seg_image : SimpleITK.Image
+        Segmentation image that can be used to create mesh. This is optional.
+    path_seg_image : str
+        Path to medical image (.nrrd) that can be loaded to create `_seg_image`
+        and then creat surface mesh `_mesh` 
+    label_idx : int
+        Integer of anatomy to create surface mesh from `_seg_image`
+    min_n_pixels : int
+        Minimum number of pixels for an isolated island of a segmentation to be
+        retained
+    list_applied_transforms : list
+        A list of transformations applied to a surface mesh. 
+        This list allows for undoing of most recent transform, or undoing
+        all of them by iterating over the list in reverse. 
+
+    Methods
+    ----------
+
+    """    
     def __init__(self,
                  mesh=None,
                  seg_image=None,
@@ -29,6 +72,24 @@ class Mesh:
                  label_idx=None,
                  min_n_pixels=5000
                  ):
+        """
+        Initialize Mesh class
+
+        Parameters
+        ----------
+        mesh : vtk.vtkPolyData, optional
+            vtkPolyData object that is basis of surface mesh, by default None
+        seg_image : SimpleITK.Image, optional
+            Segmentation image that can be used to create surface mesh - used 
+            instead of mesh, by default None
+        path_seg_image : str, optional
+            Path to a medical image (.nrrd) to load and create mesh from, 
+            by default None
+        label_idx : int, optional
+            Label of anatomy of interest, by default None
+        min_n_pixels : int, optional
+            All islands smaller than this size are dropped, by default 5000
+        """        
         self._mesh = mesh
         self._seg_image = seg_image
         self.path_seg_image = path_seg_image
@@ -39,6 +100,19 @@ class Mesh:
 
     def read_seg_image(self,
                        path_seg_image=None):
+        """
+        Read segmentation image from disk. Must be a single file (e.g., nrrd, 3D dicom)
+
+        Parameters
+        ----------
+        path_seg_image : str, optional
+            Path to the medical image file to be loaded in, by default None
+
+        Raises
+        ------
+        Exception
+            If path_seg_image does not exist, exception is raised. 
+        """        
         # If passing new location/seg image name, then update variables. 
         if path_seg_image is not None:
             self.path_seg_image = path_seg_image
@@ -55,6 +129,35 @@ class Mesh:
                     marching_cubes_threshold=0.5,
                     label_idx=None,
                     min_n_pixels=None):
+        """
+        Create a surface mesh from the classes `_seg_image`. If `_seg_image`
+        does not exist, then read it in using `read_seg_image`. 
+
+        Parameters
+        ----------
+        smooth_image : bool, optional
+            Should the `_seg_image` be gaussian filtered, by default True
+        smooth_image_var : float, optional
+            Variance of gaussian filter to apply to `_seg_image`, by default 0.3125/2
+        marching_cubes_threshold : float, optional
+            Threshold contour level to create surface mesh on, by default 0.5
+        label_idx : int, optional
+            Label value / index to create mesh from, by default None
+        min_n_pixels : int, optional
+            Minimum number of continuous pixels to include segmentation island
+            in the surface mesh creation, by default None
+
+        Raises
+        ------
+        Exception
+            If the total number of pixels segmentated (`n_pixels_labelled`) is
+            < `min_n_pixels` then there is no object in the image.  
+        Exception
+            If no `_seg_image` and no `label_idx` then we don't know what tissue to create the 
+            surface mesh from. 
+        Exception
+            If no `_seg_image` or `path_seg_image` then we have no image to create mesh from. 
+        """        
         # allow assigning label idx during mesh creation step. 
         if label_idx is not None:
             self.label_idx = label_idx
@@ -116,15 +219,39 @@ class Mesh:
     
     def save_mesh(self,
                   filepath):
+        """
+        Save the surface mesh from this class to disk. 
+
+        Parameters
+        ----------
+        filepath : str
+            Location & filename to save the surface mesh (vtk.vtkPolyData) to. 
+        """        
         io.write_vtk(self._mesh, filepath)
 
     def resample_surface(self,
                          subdivisions=2,
                          clusters=10000
                          ):
+        """
+        Resample a surface mesh using the ACVD algorithm: 
+        Version used: 
+        - https://github.com/pyvista/pyacvd
+        Original version w/ more references: 
+        - https://github.com/valette/ACVD
+
+        Parameters
+        ----------
+        subdivisions : int, optional
+            Subdivide the mesh to have more points before clustering, by default 2
+            Probably not necessary for very dense meshes.
+        clusters : int, optional
+            The number of clusters (points/vertices) to create during resampling 
+            surafce, by default 10000
+            - This is not exact, might have slight differences. 
+        """        
         pv_smooth_mesh = pv.wrap(self._mesh)
         clus = pyacvd.Clustering(pv_smooth_mesh)
-        # mesh is not dense enough for uniform remeshing
         clus.subdivide(subdivisions)
         clus.cluster(clusters)
         self._mesh = clus.create_mesh()
@@ -133,6 +260,24 @@ class Mesh:
                                 transform=None,
                                 transformer=None,
                                 save_transform=True):
+        """
+        Apply a transformation to the surface mesh. 
+
+        Parameters
+        ----------
+        transform : vtk.vtkTransform, optional
+            Transformation to apply to mesh, by default None
+        transformer : vtk.vtkTransformFilter, optional
+            Can supply transformFilter directly, by default None
+        save_transform : bool, optional
+            Should transform be saved to list of applied transforms, by default True
+
+        Raises
+        ------
+        Exception
+            No `transform` or `transformer` supplied - have not transformation
+            to apply. 
+        """        
         if (transform is not None) & (transformer is None):
             transformer = vtk.vtkTransformPolyDataFilter()
             transformer.SetTransform(transform)
@@ -155,7 +300,6 @@ class Mesh:
     def reverse_most_recent_transform(self):
         """
         Function to undo the most recent transformation stored in self.list_applied_transforms
-        :return:
         """
         transform = self.list_applied_transforms.pop()
         transform.Inverse()
@@ -164,29 +308,70 @@ class Mesh:
     def reverse_all_transforms(self):
         """
         Function to iterate over all of the self.list_applied_transforms (in reverse order) and undo them.
-        :return:
         """
         while len(self.list_applied_transforms) > 0:
             self.reverse_most_recent_transform()
 
     @property
     def seg_image(self):
+        """
+        Return the `_seg_image` object
+
+        Returns
+        -------
+        SimpleITK.Image
+            Segmentation image used to build the surface mesh
+        """        
         return self._seg_image
 
     @seg_image.setter
     def seg_image(self, new_seg_image):
+        """
+        Set the `_seg_image` of the class to be the inputted `new_seg_image`. 
+
+        Parameters
+        ----------
+        new_seg_image : SimpleITK.Image
+            New image to use for creating surface mesh. This can be used to provide image to
+            class if it was not provided during `__init__`
+        """        
         self._seg_image = new_seg_image
 
     @property
     def mesh(self):
+        """
+        Return the `_mesh` object
+
+        Returns
+        -------
+        vtk.vtkPolyData
+            The main mesh of this class. 
+        """        
         return self._mesh
 
     @mesh.setter
     def mesh(self, new_mesh):
+        """
+        Set the `_mesh` of the class to be the inputted `new_mesh`
+
+        Parameters
+        ----------
+        new_mesh : vtk.vtkPolyData
+            New mesh for this class - or a method to provide a mesh to the class
+            after `__init__` has already been run. 
+        """        
         self._mesh = new_mesh
     
     @property
     def point_coords(self):
+        """
+        Convenience function to return the vertices (point coordinates) for the surface mesh. 
+
+        Returns
+        -------
+        numpy.ndarray
+            Mx3 numpy array containing the x/y/z position of each vertex of the mesh. 
+        """        
         return get_mesh_physical_point_coords(self._mesh)
 
 

@@ -22,7 +22,8 @@ def read_vtk(filepath):
 
 
 def write_vtk(mesh, filepath, scalar_name=None):
-    """[summary]
+    """
+    Save vtk polydata to disk. 
 
     Parameters
     ----------
