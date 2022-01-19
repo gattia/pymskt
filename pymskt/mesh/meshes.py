@@ -378,7 +378,48 @@ class Mesh:
 class CartilageMesh(Mesh):
     """
     Class to create, store, and process cartilage meshes
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData, optional
+        vtkPolyData object that is basis of surface mesh, by default None
+    seg_image : SimpleITK.Image, optional
+        Segmentation image that can be used to create surface mesh - used 
+        instead of mesh, by default None
+    path_seg_image : str, optional
+        Path to a medical image (.nrrd) to load and create mesh from, 
+        by default None
+    label_idx : int, optional
+        Label of anatomy of interest, by default None
+    min_n_pixels : int, optional
+        All islands smaller than this size are dropped, by default 5000
+
+
+    Attributes
+    ----------
+    _mesh : vtk.vtkPolyData
+        Item passed from __init__, or created during life of class. 
+        This is the main surface mesh of this class. 
+    _seg_image : SimpleITK.Image
+        Segmentation image that can be used to create mesh. This is optional.
+    path_seg_image : str
+        Path to medical image (.nrrd) that can be loaded to create `_seg_image`
+        and then creat surface mesh `_mesh` 
+    label_idx : int
+        Integer of anatomy to create surface mesh from `_seg_image`
+    min_n_pixels : int
+        Minimum number of pixels for an isolated island of a segmentation to be
+        retained
+    list_applied_transforms : list
+        A list of transformations applied to a surface mesh. 
+        This list allows for undoing of most recent transform, or undoing
+        all of them by iterating over the list in reverse. 
+
+    Methods
+    ----------
+
     """
+
     def __init__(self,
                  mesh=None,
                  seg_image=None,
@@ -400,7 +441,70 @@ class BoneMesh(Mesh):
     Intention is that this class includes functions to process other data & assign it to the bone surface.
     It might be possible that instead this class & a cartilage class or, this class and image data etc. are
     provided to another function or class that does those analyses.
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData, optional
+        vtkPolyData object that is basis of surface mesh, by default None
+    seg_image : SimpleITK.Image, optional
+        Segmentation image that can be used to create surface mesh - used 
+        instead of mesh, by default None
+    path_seg_image : str, optional
+        Path to a medical image (.nrrd) to load and create mesh from, 
+        by default None
+    label_idx : int, optional
+        Label of anatomy of interest, by default None
+    min_n_pixels : int, optional
+        All islands smaller than this size are dropped, by default 5000
+    list_cartilage_meshes : list, optional
+        List object which contains 1+ `CartilageMesh` objects that wrap
+        a vtk.vtkPolyData surface mesh of cartilage, by default None
+    list_cartilage_labels : list, optional
+        List of `int` values that represent the different cartilage
+        regions of interest appropriate for a single bone, by default None
+    crop_percent : float, optional
+        Proportion value to crop long-axis of bone so it is proportional
+        to the width of the bone for standardization purposes, by default 1.0
+    bone : str, optional
+        String indicating what bone is being analyzed so that cropping
+        can be applied appropriatey. {'femur', 'tibia'}, by default 'femur'.
+        Patella is not an option because we do not need to crop for the patella. 
+
+
+    Attributes
+    ----------
+    _mesh : vtk.vtkPolyData
+        Item passed from __init__, or created during life of class. 
+        This is the main surface mesh of this class. 
+    _seg_image : SimpleITK.Image
+        Segmentation image that can be used to create mesh. This is optional.
+    path_seg_image : str
+        Path to medical image (.nrrd) that can be loaded to create `_seg_image`
+        and then creat surface mesh `_mesh` 
+    label_idx : int
+        Integer of anatomy to create surface mesh from `_seg_image`
+    min_n_pixels : int
+        Minimum number of pixels for an isolated island of a segmentation to be
+        retained
+    list_applied_transforms : list
+        A list of transformations applied to a surface mesh. 
+        This list allows for undoing of most recent transform, or undoing
+        all of them by iterating over the list in reverse.
+    crop_percent : float
+        Percent of width to crop along long-axis of bone
+    bone : str
+        A string indicating what bone is being represented by this class. 
+    list_cartilage_meshes : list
+        List of cartialge meshes assigned to this bone. 
+    list_cartilage_labels : list
+        List of cartilage labels for the `_seg_image` that are associated
+        with this bone. 
+
+    Methods
+    ----------
+
     """
+
     def __init__(self,
                  mesh=None,
                  seg_image=None,
@@ -412,6 +516,37 @@ class BoneMesh(Mesh):
                  crop_percent=1.0,
                  bone='femur',
                  ):
+        """
+        Class initialization
+
+        Parameters
+        ----------
+        mesh : vtk.vtkPolyData, optional
+            vtkPolyData object that is basis of surface mesh, by default None
+        seg_image : SimpleITK.Image, optional
+            Segmentation image that can be used to create surface mesh - used 
+            instead of mesh, by default None
+        path_seg_image : str, optional
+            Path to a medical image (.nrrd) to load and create mesh from, 
+            by default None
+        label_idx : int, optional
+            Label of anatomy of interest, by default None
+        min_n_pixels : int, optional
+            All islands smaller than this size are dropped, by default 5000
+        list_cartilage_meshes : list, optional
+            List object which contains 1+ `CartilageMesh` objects that wrap
+            a vtk.vtkPolyData surface mesh of cartilage, by default None
+        list_cartilage_labels : list, optional
+            List of `int` values that represent the different cartilage
+            regions of interest appropriate for a single bone, by default None
+        crop_percent : float, optional
+            Proportion value to crop long-axis of bone so it is proportional
+            to the width of the bone for standardization purposes, by default 1.0
+        bone : str, optional
+            String indicating what bone is being analyzed so that cropping
+            can be applied appropriatey. {'femur', 'tibia'}, by default 'femur'.
+            Patella is not an option because we do not need to crop for the patella. 
+        """        
         self.crop_percent = crop_percent
         self.bone = bone
         self.list_cartilage_meshes = list_cartilage_meshes
@@ -432,6 +567,46 @@ class BoneMesh(Mesh):
                     min_n_pixels=None,
                     crop_percent=None
                     ):
+        """
+        This is an extension of `Mesh.create_mesh` that enables cropping of bones. 
+        Bones might need to be cropped (this isnt necessary for cartilage)
+        So, adding this functionality to the processing steps before the bone mesh is created.
+
+        All functionality, except for that relevant to `crop_percent` is the same as:
+        `Mesh.create_mesh`. 
+        
+        Create a surface mesh from the classes `_seg_image`. If `_seg_image`
+        does not exist, then read it in using `read_seg_image`. 
+
+        Parameters
+        ----------
+        smooth_image : bool, optional
+            Should the `_seg_image` be gaussian filtered, by default True
+        smooth_image_var : float, optional
+            Variance of gaussian filter to apply to `_seg_image`, by default 0.3125/2
+        marching_cubes_threshold : float, optional
+            Threshold contour level to create surface mesh on, by default 0.5
+        label_idx : int, optional
+            Label value / index to create mesh from, by default None
+        min_n_pixels : int, optional
+            Minimum number of continuous pixels to include segmentation island
+            in the surface mesh creation, by default None
+        crop_percent : [type], optional
+            [description], by default None
+
+        Raises
+        ------
+        Exception
+            If cropping & bone is not femur or tibia, then raise an error. 
+        Exception
+            If the total number of pixels segmentated (`n_pixels_labelled`) is
+            < `min_n_pixels` then there is no object in the image.  
+        Exception
+            If no `_seg_image` and no `label_idx` then we don't know what tissue to create the 
+            surface mesh from. 
+        Exception
+            If no `_seg_image` or `path_seg_image` then we have no image to create mesh from. 
+        """     
         
         if self._seg_image is None:
             self.read_seg_image()
@@ -453,16 +628,7 @@ class BoneMesh(Mesh):
                                                        percent_width_to_crop_height=self.crop_percent,
                                                        bone_crop_distal=bone_crop_distal)
            
-        return super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
-
-    def smooth_surface_scalars(self,
-                               scalar_label='thickness (mm)', # alternates = 't2 (ms)'
-                               smooth_only_cartilage=True,
-                               ):
-        if smooth_only_cartilage is True:
-            loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray(scalar_label)) > 0.01)[0]
-        
-
+        super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
 
     def create_cartilage_meshes(self,
                                 image_smooth_var_cart,
