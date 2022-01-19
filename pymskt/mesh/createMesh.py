@@ -20,7 +20,7 @@ def discrete_marching_cubes(vtk_image_reader,
     Parameters
     ----------
     vtk_image_reader : vtk.Filter
-        VTK pipeline to apply discrete marching cubes to. 
+        VTK Filter pipeline to apply discrete marching cubes to. 
     n_labels : int, optional
         Number of labes to create mesh for, by default 1
     start_label : int, optional
@@ -30,7 +30,7 @@ def discrete_marching_cubes(vtk_image_reader,
     compute_normals_on : bool, optional
         Calculate normals to surface, by default True
     return_polydata : bool, optional
-        Whether to return a vtk.polydata or not (VTK filter pipeline instead e.g., `dmc`), by default True
+        Whether to return a vtk.polydata or not (`vtk.Filter` pipeline instead), by default True
 
     Returns
     -------
@@ -70,7 +70,7 @@ def continuous_marching_cubes(vtk_image_reader,
     Parameters
     ----------
     vtk_image_reader : vtk.Filter
-        This is the output of a previous vtk filter from a previous step. E.g., output of pymskt.image.read_nrrd().
+        This is the output of a `vtk.Filter` from a previous step. E.g., output of pymskt.image.read_nrrd().
         
     threshold : float, optional
         Floating point value to create surface mesh, by default 0.5
