@@ -146,8 +146,8 @@ def crop_bone_based_on_width(seg_image,
 
     Returns
     -------
-    [type]
-        [description]
+    SimpleITK.Image
+        Image after bone is cropped as a proportion of the bone's width. 
     """    
     seg_array = sitk.GetArrayFromImage(seg_image)
     loc_bone = np.where(seg_array == bone_idx)
