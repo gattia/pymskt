@@ -33,14 +33,17 @@ def read_nrrd(path, set_origin_zero=False):
 
     Parameters
     ----------
-    location_image
-    image_name
-    set_origin_zero
+    path : str
+        Path to `.nrrd` medical image to read in. 
+    set_origin_zero : bool, optional
+        Bool to determine if origin should be set to zeros, by default False
 
     Returns
     -------
+    vtk.Filter
+        End of VTK filter pipeline. 
+    """    
 
-    """
     image_reader = vtk.vtkNrrdReader()
     image_reader.SetFileName(path)
     image_reader.Update()
