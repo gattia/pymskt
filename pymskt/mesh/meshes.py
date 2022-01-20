@@ -23,7 +23,8 @@ import pymskt.mesh.io as io
 
 class Mesh:
     """
-    [summary]
+    An object to contain surface meshes for musculoskeletal anatomy. Includes helper
+    functions to build surface meshes, to process them, and to save them. 
 
     Parameters
     ----------

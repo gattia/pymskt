@@ -18,6 +18,71 @@ from pymskt.cython_functions import gaussian_kernel
 
 
 class ProbeVtkImageDataAlongLine:
+    """
+    Class to find values along a line. This is used to get things like the mean T2 value normal
+    to a bones surface & within the cartialge region. This is done by defining a line in a
+    particualar location. 
+
+    Parameters
+    ----------
+    line_resolution : float
+        How many points to create along the line. 
+    vtk_image : vtk.vtkImageData
+        Image read into vtk so that we can apply the probe to it. 
+    save_data_in_class : bool, optional
+        Whether or not to save data along the line(s) to the class, by default True
+    save_mean : bool, optional
+        Whether the mean value should be saved along the line, by default False
+    save_std : bool, optional
+        Whether the standard deviation of the data along the line should be
+        saved, by default False
+    save_most_common : bool, optional
+        Whether the mode (most common) value should be saved used for identifying cartilage
+        regions on the bone surface, by default False
+    filler : int, optional
+        What value should be placed at locations where we don't have a value
+        (e.g., where we don't have T2 values), by default 0
+    non_zero_only : bool, optional
+        Only save non-zero values along the line, by default True
+        This is done becuase zeros are normally regions of error (e.g.
+        poor T2 relaxation fit) and thus would artifically reduce the outcome
+        along the line. 
+    
+    
+    Attributes
+    ----------
+    save_mean : bool
+        Whether the mean value should be saved along the line, by default False
+    save_std : bool
+        Whether the standard deviation of the data along the line should be
+        saved, by default False
+    save_most_common : bool 
+        Whether the mode (most common) value should be saved used for identifying cartilage
+        regions on the bone surface, by default False
+    filler : float
+        What value should be placed at locations where we don't have a value
+        (e.g., where we don't have T2 values), by default 0
+    non_zero_only : bool 
+        Only save non-zero values along the line, by default True
+        This is done becuase zeros are normally regions of error (e.g.
+        poor T2 relaxation fit) and thus would artifically reduce the outcome
+        along the line. 
+    line : vtk.vtkLineSource
+        Line to put into `probe_filter` and to determine mean/std/common values for. 
+    probe_filter : vtk.vtkProbeFilter
+        Filter to use to get the image data along the line. 
+    _mean_data : list
+        List of the mean values for each vertex / line projected
+    _std_data : list
+        List of standard deviation of each vertex / line projected
+    _most_common_data : list
+        List of most common data of each vertex / line projected
+    
+    Methods
+    -------
+
+
+    """    
     def __init__(self,
                  line_resolution,
                  vtk_image,
@@ -28,6 +93,33 @@ class ProbeVtkImageDataAlongLine:
                  filler=0,
                  non_zero_only=True
                  ):
+        """[summary]
+
+        Parameters
+        ----------
+        line_resolution : float
+            How many points to create along the line. 
+        vtk_image : vtk.vtkImageData
+            Image read into vtk so that we can apply the probe to it. 
+        save_data_in_class : bool, optional
+            Whether or not to save data along the line(s) to the class, by default True
+        save_mean : bool, optional
+            Whether the mean value should be saved along the line, by default False
+        save_std : bool, optional
+            Whether the standard deviation of the data along the line should be
+            saved, by default False
+        save_most_common : bool, optional
+            Whether the mode (most common) value should be saved used for identifying cartilage
+            regions on the bone surface, by default False
+        filler : int, optional
+            What value should be placed at locations where we don't have a value
+            (e.g., where we don't have T2 values), by default 0
+        non_zero_only : bool, optional
+            Only save non-zero values along the line, by default True
+            This is done becuase zeros are normally regions of error (e.g.
+            poor T2 relaxation fit) and thus would artifically reduce the outcome
+            along the line. 
+        """        
         self.save_mean = save_mean
         self.save_std = save_std
         self.save_most_common = save_most_common
@@ -51,6 +143,21 @@ class ProbeVtkImageDataAlongLine:
     def get_data_along_line(self,
                             start_pt,
                             end_pt):
+        """
+        Function to get scalar values along a line between `start_pt` and `end_pt`. 
+
+        Parameters
+        ----------
+        start_pt : list
+            List of the x,y,z position of the starting point in the line. 
+        end_pt : list
+            List of the x,y,z position of the ending point in the line. 
+
+        Returns
+        -------
+        numpy.ndarray
+            numpy array of scalar values obtained along the line.
+        """        
         self.line.SetPoint1(start_pt)
         self.line.SetPoint2(end_pt)
 
@@ -66,6 +173,16 @@ class ProbeVtkImageDataAlongLine:
     def save_data_along_line(self,
                              start_pt,
                              end_pt):
+        """
+        Save the appropriate outcomes to a growing list. 
+
+        Parameters
+        ----------
+        start_pt : list
+            List of the x,y,z position of the starting point in the line. 
+        end_pt : list
+            List of the x,y,z position of the ending point in the line. 
+        """        
         scalars = self.get_data_along_line(start_pt, end_pt)
         if len(scalars) > 0:
             if self.save_mean is True:
@@ -81,6 +198,10 @@ class ProbeVtkImageDataAlongLine:
             self.append_filler()
 
     def append_filler(self):
+        """
+        Add filler value to the requisite lists (_mean_data, _std_data, etc.) as 
+        appropriate. 
+        """        
         if self.save_mean is True:
             self._mean_data.append(self.filler)
         if self.save_std is True:
@@ -90,6 +211,14 @@ class ProbeVtkImageDataAlongLine:
 
     @property
     def mean_data(self):
+        """
+        Return the `_mean_data`
+
+        Returns
+        -------
+        list
+            List of mean values along each line tested. 
+        """        
         if self.save_mean is True:
             return self._mean_data
         else:
@@ -97,6 +226,14 @@ class ProbeVtkImageDataAlongLine:
 
     @property
     def std_data(self):
+        """
+        Return the `_std_data`
+
+        Returns
+        -------
+        list
+            List of the std values along each line tested. 
+        """        
         if self.save_std is True:
             return self._std_data
         else:
@@ -104,6 +241,14 @@ class ProbeVtkImageDataAlongLine:
 
     @property
     def most_common_data(self):
+        """
+        Return the `_most_common_data`
+
+        Returns
+        -------
+        list
+            List of the most common value for each line tested. 
+        """        
         if self.save_most_common is True:
             return self._most_common_data
         else:
@@ -121,25 +266,43 @@ def get_cartilage_properties_at_points(surface_bone,
                                        no_seg_filler=0,
                                        line_resolution=100):  # Could be nan??
     """
-    :param points:
-    :param point_normals:
-    :param obb:
-    :param t2_vtk_image:
-    :param seg_vtk_image:
-    :param ray_length:
-    :param percent_ray_length_opposite_direction:
-    :param no_thickness_filler:
-    :param no_t2_filler:
-    :param no_seg_filler:
-    :param line_resolution:
-    :return:
+    Extract cartilage outcomes (T2 & thickness) at all points on bone surface. 
 
+    Parameters
+    ----------
+    surface_bone : BoneMesh
+        Bone mesh containing vtk.vtkPolyData - get outcomes for nodes (vertices) on
+        this mesh
+    surface_cartilage : CartilageMesh
+        Cartilage mesh containing vtk.vtkPolyData - for obtaining cartilage outcomes.
+    t2_vtk_image : vtk.vtkImageData, optional
+        vtk object that contains our Cartilage T2 data, by default None
+    seg_vtk_image : vtk.vtkImageData, optional
+        vtk object that contains the segmentation mask(s) to help assign
+        labels to bone surface (e.g., most common), by default None
+    ray_cast_length : float, optional
+        Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+        outter shell), by default 20.0
+    percent_ray_length_opposite_direction : float, optional
+        How far to project ray inside of the bone. This is done just in case the cartilage
+        surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+    no_thickness_filler : float, optional
+        Value to use instead of thickness (if no cartilage), by default 0.
+    no_t2_filler : float, optional
+        Value to use instead of T2 (if no cartilage), by default 0.
+    no_seg_filler : int, optional
+        Value to use if no segmentation label available (because no cartilage?), by default 0
+    line_resolution : int, optional
+        Number of points to have along line, by default 100
 
-    Will return list of data for:
-        Cartilage thickness
-        Mean T2 at each point on bone
-        Most common cartilage label at each point on bone (normal to surface).
-    """
+    Returns
+    -------
+    list
+        Will return list of data for:
+            Cartilage thickness
+            Mean T2 at each point on bone
+            Most common cartilage label at each point on bone (normal to surface).
+    """    
 
     normals = get_surface_normals(surface_bone)
     points = surface_bone.GetPoints()
@@ -216,6 +379,19 @@ def get_cartilage_properties_at_points(surface_bone,
 
 
 def get_mesh_physical_point_coords(mesh):
+    """
+    Get a numpy array of the x/y/z location of each point (vertex) on the `mesh`.
+
+    Parameters
+    ----------
+    mesh : 
+        [description]
+
+    Returns
+    -------
+    [type]
+        [description]
+    """    
     point_coordinates = np.zeros((mesh.GetNumberOfPoints(), 3))
     for pt_idx in range(mesh.GetNumberOfPoints()):
         point_coordinates[pt_idx, :] = mesh.GetPoint(pt_idx)
@@ -223,11 +399,38 @@ def get_mesh_physical_point_coords(mesh):
 
 def smooth_scalars_from_second_mesh_onto_base(base_mesh,
                                               second_mesh,
-                                              sigma=1,
+                                              sigma=1.,
                                               idx_coords_to_smooth_base=None,
                                               idx_coords_to_smooth_second=None,
                                               set_non_smoothed_scalars_to_zero=True
                                               ):  # sigma is equal to fwhm=2 (1mm in each direction)
+    """
+    Function to copy surface scalars from one mesh to another. This is done in a "smoothing" fashioon
+    to get a weighted-average of the closest point - this is because the points on the 2 meshes won't
+    be coincident with one another. The weighted average is done using a gaussian smoothing.
+
+    Parameters
+    ----------
+    base_mesh : vtk.vtkPolyData
+        The base mesh to smooth the scalars from `second_mesh` onto. 
+    second_mesh : vtk.vtkPolyData
+        The mesh with the scalar values that we want to pass onto the `base_mesh`.
+    sigma : float, optional
+        Sigma (standard deviation) of gaussian filter to apply to scalars, by default 1.
+    idx_coords_to_smooth_base : list, optional
+        List of the indices of nodes that are of interest for transferring (typically cartilage), 
+        by default None
+    idx_coords_to_smooth_second : list, optional
+        List of the indices of the nodes that are of interest on the second mesh, by default None
+    set_non_smoothed_scalars_to_zero : bool, optional
+        Whether or not to set all notes that are not smoothed to zero, by default True
+
+    Returns
+    -------
+    numpy.ndarray
+        An array of the scalar values for each node on the base mesh that includes the scalar values
+        transfered (smoothed) from the secondary mesh. 
+    """    
     base_mesh_pts = get_mesh_physical_point_coords(base_mesh)
     if idx_coords_to_smooth_base is not None:
         base_mesh_pts = base_mesh_pts[idx_coords_to_smooth_base, :]
@@ -260,12 +463,30 @@ def smooth_scalars_from_second_mesh_onto_base(base_mesh,
 def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
-    nodes/points/vertices. 
+    nodes/points/vertices. Similar but not exactly the same as `smooth_scalars_from_second_mesh_onto_base`
     
-    This function is ideall used for things like transferring cartilage thickness values from one mesh to another 
+    This function is ideally used for things like transferring cartilage thickness values from one mesh to another 
     after they have been registered together. This is necessary for things like performing statistical analyses or
     getting aggregate statistics. 
-    """
+
+    Parameters
+    ----------
+    new_mesh : vtk.vtkPolyData
+        The new mesh that we want to transfer scalar values onto. Also `base_mesh` from
+        `smooth_scalars_from_second_mesh_onto_base` 
+    old_mesh : vtk.vtkPolyData
+        The mesh that we want to transfer scalars from. Also called `second_mesh` from 
+        `smooth_scalars_from_second_mesh_onto_base`
+    n : int, optional
+        The number of closest nodes that we want to get weighed average of, by default 3
+
+    Returns
+    -------
+    numpy.ndarray
+        An array of the scalar values for each node on the `new_mesh` that includes the scalar values
+        transfered (smoothed) from the `old_mesh`. 
+    """    
+
     kDTree = vtk.vtkKdTreePointLocator()
     kDTree.SetDataSet(old_mesh)
     kDTree.BuildLocator()
@@ -301,7 +522,24 @@ def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
     (e.g. to replace originals or something else)
     Smoothing is done for all data within `max_dist` and uses a simple weighted average based on
     the distance to the power of `order`. Default is squared distance (`order=2`)
-    """
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Surface mesh that we want to smooth scalars of. 
+    max_dist : float, optional
+        Maximum distance of nodes that we want to smooth (mm), by default 2.0
+    order : int, optional
+        Order of the polynomial used for weighting other nodes within `max_dist`, by default 2
+    gaussian : bool, optional
+        Should this use a gaussian smoothing, or weighted average, by default False
+
+    Returns
+    -------
+    numpy.ndarray
+        An array of the scalar values for each node on the `mesh` after they have been smoothed. 
+    """    
+
     kDTree = vtk.vtkKdTreePointLocator()
     kDTree.SetDataSet(mesh)
     kDTree.BuildLocator()
@@ -328,7 +566,7 @@ def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
             thickness_smoothed[idx] = normalized_value
     return thickness_smoothed
 
-def gaussian_smooth_surface_scalars(mesh, sigma=1, idx_coords_to_smooth=None, array_name='thickness (mm)', array_idx=None):
+def gaussian_smooth_surface_scalars(mesh, sigma=1., idx_coords_to_smooth=None, array_name='thickness (mm)', array_idx=None):
     """
     The following is another function to smooth the scalar values on the surface of a mesh. 
     This one performs a gaussian smoothing using the supplied sigma and only smooths based on 
@@ -340,7 +578,30 @@ def gaussian_smooth_surface_scalars(mesh, sigma=1, idx_coords_to_smooth=None, ar
     useful for cartilage where we might only want to smooth in locations that we have cartilage and
     ignore the other areas. 
 
-    """
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        This is a surface mesh of that we want to smooth the scalars of. 
+    sigma : float, optional
+        The standard deviation of the gaussian filter to apply, by default 1.
+    idx_coords_to_smooth : list, optional
+        List of the indices of the vertices (points) that we want to include in the
+        smoothing. For example, we can only smooth values that are cartialge and ignore
+        all non-cartilage points, by default None
+    array_name : str, optional
+        Name of the scalar array that we want to smooth/filter, by default 'thickness (mm)'
+    array_idx : int, optional
+        The index of the scalar array that we want to smooth/filter - this is an alternative
+        option to `array_name`, by default None
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        Return the original mesh for which the scalars have been smoothed. However, this is not
+        necessary becuase if the original mesh still exists then it should have been updated
+        during the course of the pipeline. 
+    """    
+
     point_coordinates = get_mesh_physical_point_coords(mesh)
     if idx_coords_to_smooth is not None:
         point_coordinates = point_coordinates[idx_coords_to_smooth, :]
