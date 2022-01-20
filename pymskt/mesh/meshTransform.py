@@ -97,12 +97,57 @@ def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mod
     return icp
 
 class SitkVtkTransformer:
+    """
+    An class to helping apply SimpleITK image transformation to vtk.vtkPolyData
+
+    Parameters
+    ----------
+    sitk_image : SimpleITK.Image, optional
+        Image whos transformation matrix should be used, by default None
+    three_by_three : numpy.ndarray, optional
+        3x3 transformation matrix to build the transformer based on, by default None
+    translation : numpy.ndarray, optional
+        1x3 translation to apply, by default None
+    center : numpy.ndarray, optional
+        center of the image volume to enable centering before applying transform, by default None
+
+
+    Attributes
+    ----------
+    transform_array : numpy.ndarray
+        4x4 transformation matrix
+    inverse_transform_array : np.ndarray
+        Inverse of transform array to allow "undoing" of transformation. 
+
+    Methods
+    ----------
+
+    Notes
+    -----
+    There are remmnants of `three_by_three`, `translation` etc. to allow manual prescription of
+    this information. 
+
+    """    
     def __init__(self,
                  sitk_image=None,
                  three_by_three=None,
                  translation=None,
                  center=None
                  ):
+        """
+        Class to enable transformation of vtk.vtkPolyData based on SimpleITK.Image.
+
+        Parameters
+        ----------
+        sitk_image : SimpleITK.Image, optional
+            Image whos transformation matrix should be used, by default None
+        three_by_three : numpy.ndarray, optional
+            3x3 transformation matrix to build the transformer based on, by default None
+        translation : numpy.ndarray, optional
+            1x3 translation to apply, by default None
+        center : numpy.ndarray, optional
+            center of the image volume to enable centering before applying transform, by default None
+        """        
         if sitk_image is not None:
             self.transform_array = create_4x4_from_3x3(sitk_image.GetDirection(), translation=sitk_image.GetOrigin())
         # Need to setup below code to receive 3x3, translation, and center to apply a transform. 
@@ -121,6 +166,14 @@ class SitkVtkTransformer:
         self.inverse_transform_array = np.linalg.inv(self.transform_array)
 
     def get_transform(self):
+        """
+        Get vtkTransform of the `transform_array` created in `__init__`
+
+        Returns
+        -------
+        vtk.vtkTransform
+            VTK transform object that can be used for transforming a vtk object (e.g., vtk.vtkPolyData)
+        """        
         # create vtk transform.
         transform = vtk.vtkTransform()
         # if self.center is not None:
@@ -134,6 +187,14 @@ class SitkVtkTransformer:
         return transform
 
     def get_inverse_transform(self):
+        """
+        Get vtkTransform of the `inverse_transform_array` created in `__init__`
+
+        Returns
+        -------
+        vtk.vtkTransform
+            VTK transform object that can be used for transforming a vtk object (e.g., vtk.vtkPolyData)
+        """        
         transform = vtk.vtkTransform()
         transform.SetMatrix(self.inverse_transform_array.flatten())
         # if self.translation is not None:
@@ -141,6 +202,14 @@ class SitkVtkTransformer:
         return transform
 
     def get_transformer(self):
+        """
+        Get `vtkTransformPolyDataFilter` using the `vtkTransform` of `transform_array`
+
+        Returns
+        -------
+        vtk.vtkTransformPolyDataFilter
+            Filter that can be applied to a vtk.vtkPolyData to transform it. 
+        """        
         # Get transform filter and apply transform to bone mesh.
         transformer = vtk.vtkTransformPolyDataFilter()
         transformer.SetTransform(self.get_transform())
@@ -148,12 +217,33 @@ class SitkVtkTransformer:
         return transformer
 
     def get_inverse_transformer(self):
+        """
+        Get `vtkTransformPolyDataFilter` using the `vtkTransform` of `inverse_transform_array`
+
+        Returns
+        -------
+        vtk.vtkTransformPolyDataFilter
+            Filter that can be applied to a vtk.vtkPolyData to transform it. 
+        """        
         inverse_transformer = vtk.vtkTransformPolyDataFilter()
         inverse_transformer.SetTransform(self.get_inverse_transform())
         return inverse_transformer
 
     def apply_transform_to_mesh(self,
                                 mesh):
+        """
+        Transform surface mesh using transformation matrix from the image data. 
+
+        Parameters
+        ----------
+        mesh : vtk.vtkPolyData
+            surface mesh to apply transform to. 
+
+        Returns
+        -------
+        vtk.vtkPolyData
+            copy of the `mesh` object after being transformed using image data transformation matrix. 
+        """        
         transformer = self.get_transformer()
         transformer.SetInputData(mesh)
         transformer.Update()
@@ -161,12 +251,45 @@ class SitkVtkTransformer:
 
     def apply_inverse_transform_to_mesh(self,
                                         mesh):
+        """
+        Transform surface mesh using the inverse of the transformation matrix from the image data. 
+
+        Parameters
+        ----------
+        mesh : vtk.vtkPolyData
+            surface mesh to apply transform to. 
+
+        Returns
+        -------
+        vtk.vtkPolyData
+            copy of the `mesh` object after being transformed using the inverse of the image data transformation matrix. 
+        """                                        
         inverse_transformer = self.get_inverse_transformer()
         inverse_transformer.SetInputData(mesh)
         inverse_transformer.Update()
         return vtk_deep_copy(inverse_transformer.GetOutput())
 
 def get_versor_from_transform(transform):
+    """
+    Get a `sitk.VersorRigid3DTransform` from a regular transform. 
+
+    Parameters
+    ----------
+    transform : sitk.sitkTransform
+        Transformation to turn into a versor transform. 
+
+    Returns
+    -------
+    sitk.VersorRigid3DTransform
+        The transform converted into a versor transform.
+
+    Raises
+    ------
+    Exception
+        If the transform is a composite of > 1 transformation.
+    Exception
+        If other error... ?? 
+    """    
     try:
         versor = sitk.VersorRigid3DTransform(transform)
     except RuntimeError:
@@ -182,6 +305,20 @@ def get_versor_from_transform(transform):
     return versor
 
 def break_versor_into_center_rotate_translate_transforms(versor):
+    """
+    Convert a sitk.VersorRigid3DTransform into a 3 vtk.vtkTransform objects: 
+    1. center transformation, 2. rotation transform, 3. translation transform. 
+
+    Parameters
+    ----------
+    versor : sitk.VersorRigid3DTransform
+        The sitk transformation matrix that we want to break into its constituent parts. 
+
+    Returns
+    -------
+    tuple of 3x vtk.vtkTransform
+        Tuple of transformations to be applied to surface mesh to align it with the original image(s). 
+    """    
     center_of_rotation = versor.GetCenter()
     center_transform = vtk.vtkTransform()
     center_transform.Translate(center_of_rotation[0], center_of_rotation[1], center_of_rotation[2])
