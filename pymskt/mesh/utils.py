@@ -14,15 +14,19 @@ def is_hit(obb_tree, source, target):
 
     Parameters
     ----------
-    obb_tree
-    source
-    target
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    source : list
+        x/y/z position of starting point of ray (to find intersection)
+    target : list
+        x/y/z position of ending point of ray (to find intersection)
 
     Returns
     -------
+    bool
+        Telling if the line (source to target) intersects the obb_tree. 
+    """    
 
-    """
-    "Returns True if the line intersects with the mesh in 'obbTree'"
     code = obb_tree.IntersectWithLine(source, target, None, None)
     if code == 0:
         return False
@@ -31,6 +35,24 @@ def is_hit(obb_tree, source, target):
 
 
 def get_intersect(obbTree, pSource, pTarget):
+    """
+    Get intersecting points on the obbTree between a line from pSource to pTarget. 
+
+    Parameters
+    ----------
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    pSource : list
+        x/y/z position of starting point of ray (to find intersection)
+    pTarget : list
+        x/y/z position of ending point of ray (to find intersection)
+
+    Returns
+    -------
+    tuple (list1, list2)
+        list1 is of the intersection points
+        list2 is the idx of the cells that were intersected. 
+    """    
     # Create an empty 'vtkPoints' object to store the intersection point coordinates
     points = vtk.vtkPoints()
     # Create an empty 'vtkIdList' object to store the ids of the cells that intersect
@@ -64,18 +86,23 @@ def get_surface_normals(surface,
                         point_normals_on=True,
                         cell_normals_on=True):
     """
-    Get the surface normals of a mesh (`surface`)
+    Get the surface normals of a mesh (`surface`
 
     Parameters
     ----------
-    surface
-    point_normals_on
-    cell_normals_on
+    surface : vtk.vtkPolyData
+        surface mesh to get normals from 
+    point_normals_on : bool, optional
+        Whether or not to get normals of points (vertices), by default True
+    cell_normals_on : bool, optional
+        Whether or not to get normals from cells (faces?), by default True
 
     Returns
     -------
+    vtk.vtkPolyDataNormals
+        Normval vectors for points/cells. 
+    """    
 
-    """
     normals = vtk.vtkPolyDataNormals()
     normals.SetInputData(surface)
 
@@ -103,16 +130,20 @@ def get_surface_normals(surface,
 
 def get_obb_surface(surface):
     """
+    Get vtk.vtkOBBTree for a surface mesh
     Get obb of a surface mesh. This can be queried to see if a line etc. intersects a surface.
 
     Parameters
     ----------
-    surface
+    surface : vtk.vtkPolyData
+        The surface mesh to get an OBBTree for. 
 
     Returns
     -------
+    vtk.vtkOBBTree
+        The OBBTree to be used to find intersections for calculating cartilage thickness etc. 
+    """    
 
-    """
     obb = vtk.vtkOBBTree()
     obb.SetDataSet(surface)
     obb.BuildLocator()
@@ -120,11 +151,39 @@ def get_obb_surface(surface):
 
 
 def vtk_deep_copy(mesh):
+    """
+    "Deep" copy a vtk.vtkPolyData so that they are not connected in any way. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Mesh to copy. 
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        Copy of the input mesh. 
+    """    
     new_mesh = vtk.vtkPolyData()
     new_mesh.DeepCopy(mesh)
     return new_mesh
 
 def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
+    """
+    Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Surface mesh to estimate FWHM of the scalars from. 
+    scalar_name : str, optional
+        Name of the scalars to calcualte FWHM for, by default 'thickness_mm'
+
+    Returns
+    -------
+    list
+        List of the FWHM values. Assuming they are for X/Y/Z
+    """    
     gradient_filter = vtk.vtkGradientFilter()
     gradient_filter.SetInputData(mesh)
     gradient_filter.Update()
