@@ -14,11 +14,28 @@ ctypedef fused my_type:
 @cython.cdivision(True) # Do division using C?
 def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):
     """
+    Get gaussian kernal for every point in array X to every point in array Y.
+    If X/Y are the same, then this will just smooth array X. 
+    If X/Y are different, can be used to smooth one onto the other. 
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+        First array to compute gaussian kernel for
+    Y : numpy.ndarray
+        Second array to compute gaussian kernel for
+    sigma : float, optional
+        Standard deviation (sigma) for gaussian kernel, by default 1.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array that can be multiple by scalar values to smooth them. 
+        Smoothing can be done inherently, or from one surface onto another. 
+    
+    Notes
+    -----
     https://math.stackexchange.com/questions/434629/3-d-generalization-of-the-gaussian-point-spread-function
-    :param X:
-    :param Y:
-    :param sigma:
-    :return:
     """
     cdef Py_ssize_t x_i_shape, x_j_shape, y_i_shape, y_j_shape
     cdef my_type tmp_total, gaussian_multiplier, two_sigma2
