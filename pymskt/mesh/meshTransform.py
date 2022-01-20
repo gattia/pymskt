@@ -5,6 +5,21 @@ from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import create_4x4_from_3x3
 
 def apply_transform(source, transform):
+    """
+    Apply transform to surface mesh
+
+    Parameters
+    ----------
+    source : vtk.vtkPolyData
+        The source surface mesh to apply transformation (`transform`) to. 
+    transform : vtk.vtkTransform
+        The transofrm to apply to the surface mesh (`source`)
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        The transformed surface mesh. 
+    """    
     transform_filter = vtk.vtkTransformPolyDataFilter()
     transform_filter.SetInputData(source)
     transform_filter.SetTransform(transform)
@@ -12,6 +27,24 @@ def apply_transform(source, transform):
     return transform_filter.GetOutput()
 
 def copy_image_transform_to_mesh(mesh, image, verbose=False):
+    """
+    Copy the transformation matrix from a SimpleITK image onto a
+    vtk.vtkPolyData
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Mesh to transform
+    image : SimpleITK.Image
+        Image that contains the transformation matrix of interest. 
+    verbose : bool, optional
+        Should we print the transform to the console?, by default False
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        The surface `mesh` after apply the transformation matrix from the `image` to it. 
+    """    
     transform_array = create_4x4_from_3x3(image.GetDirection(), translation=image.GetOrigin())
     transform = vtk.vtkTransform()
     transform.SetMatrix(transform_array.flatten())
@@ -23,8 +56,32 @@ def copy_image_transform_to_mesh(mesh, image, verbose=False):
 
 def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mode='similarity'):
     """
-    transform = ('rigid': true rigid, translation only; similarity': rigid + equal scale)
-    """
+    Get the Interative Closest Point (ICP) transformation from the `source` mesh to the
+    `target` mesh. 
+
+    Parameters
+    ----------
+    source : vtk.vtkPolyData
+        Source mesh that we want to transform onto the target mesh. 
+    target : vtk.vtkPolyData
+        Target mesh that we want to transform the source mesh onto. 
+    max_n_iter : int, optional
+        Max number of iterations for the registration algorithm to perform, by default 1000
+    n_landmarks : int, optional
+        How many landmarks to sample when determining distance between meshes & 
+        solving for the optimal transformation, by default 1000
+    reg_mode : str, optional
+        The type of registration to perform. The options are: 
+            - 'rigid': true rigid, translation only 
+            - 'similarity': rigid + equal scale 
+        by default 'similarity'
+
+    Returns
+    -------
+    vtk.vtkIterativeClosestPointTransform
+        The actual transform object after running the registration. 
+    """    
+
     icp = vtk.vtkIterativeClosestPointTransform()
     icp.SetSource(source)
     icp.SetTarget(target)
