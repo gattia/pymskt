@@ -2,11 +2,11 @@ import vtk
 import numpy as np
 from vtk.util.numpy_support import vtk_to_numpy
 from pymskt.utils import sigma2fwhm
+
 # Some functions were originally based on the tutorial on ray casting in python + vtk 
 # by Adamos Kyriakou @:
 # https://pyscience.wordpress.com/2014/09/21/ray-casting-with-python-and-vtk-intersecting-linesrays-with-surface-meshes/
-#
-#
+
 
 def is_hit(obb_tree, source, target):
     """

@@ -3,6 +3,23 @@ from scipy.linalg import svd
 
 def pca_svd(data):
     """
+    Calculate eigenvalues & eigenvectors of `data` using Singular Value Decomposition (SVD)
+
+    Parameters
+    ----------
+    data : numpy.ndarray
+        MxN matrix 
+        M = # of features / dimensions of data
+        N = # of trials / participants in dataset
+
+    Returns
+    -------
+    tuple (PC = numpy.ndarray, V = numpy.ndarray)
+        PC - each volumn is a principal component (eigenvector)
+        V - Mx1 matrix of variances (coinciding with each PC)
+
+    Notes
+    -----
     Adapted from:
     "A Tutorial on Principal Component Analysis by Jonathon Shlens"
     https://arxiv.org/abs/1404.1100
