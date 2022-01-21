@@ -111,15 +111,17 @@ def continuous_marching_cubes(vtk_image_reader,
     elif return_polydata is False:
         return mc
 
-def create_surface_mesh_smoothed(seg_image,
-                                 label_idx,
-                                 image_smooth_var,
-                                 loc_tmp_save='/tmp',
-                                 tmp_filename='temp_smoothed_bone.nrrd',
-                                 copy_image_transform=True,
-                                 mc_threshold=0.5):
+def create_surface_mesh(seg_image,
+                        label_idx,
+                        image_smooth_var,
+                        loc_tmp_save='/tmp',
+                        tmp_filename='temp_smoothed_bone.nrrd',
+                        copy_image_transform=True,
+                        mc_threshold=0.5,
+                        filter_binary_image=True):
     """
-    Create surface mesh based on a filtered binary image to try and get smoother surface representation
+    Create surface mesh. 
+    Option to filter binary image to get smoother surface representation.
 
     Parameters
     ----------
@@ -137,6 +139,8 @@ def create_surface_mesh_smoothed(seg_image,
         Whether or not to apply image transform to final mesh or to leave it at origin, by default True
     mc_threshold : float, optional
         What floating point value to create surface mesh at, by default 0.5
+    filter_binary_image : bool, optional
+        Should the binary image be filtered (smoothed) or not. 
 
     Returns
     -------
@@ -148,10 +152,13 @@ def create_surface_mesh_smoothed(seg_image,
     # Set border of segmentation to 0 so that segs are all closed.
     seg_image = msktimage.set_seg_border_to_zeros(seg_image, border_size=1)
 
-    # smooth/filter the image to get a better surface. 
-    filtered_image = msktimage.smooth_image(seg_image, label_idx, image_smooth_var)
+    if filter_binary_image is True:
+        # smooth/filter the image to get a better surface. 
+        seg_image = msktimage.smooth_image(seg_image, label_idx, image_smooth_var)
+    else:
+        seg_image = msktimage.binarize_segmentation_image(seg_image, label_idx)
     # save filtered image to disk so can read it in using vtk nrrd reader
-    sitk.WriteImage(filtered_image, os.path.join(loc_tmp_save, tmp_filename))
+    sitk.WriteImage(seg_image, os.path.join(loc_tmp_save, tmp_filename))
     smoothed_nrrd_reader = msktimage.read_nrrd(os.path.join(loc_tmp_save, tmp_filename),
                                                set_origin_zero=True)
     # create the mesh using continuous marching cubes applied to the smoothed binary image. 

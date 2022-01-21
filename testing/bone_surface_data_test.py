@@ -17,6 +17,18 @@ except OSError:
     smoothed_femur_mesh = mskt.mesh.io.read_vtk('../data/femur_cropped_cartilage_thick_smoothed_1.25_sigma_10k_pts.vtk')
 
 def test_cropped_femur_cartilage_smoothed():
+    """
+    - Create a femur mesh from a segmentation (right_knee_example.nrrd) and calculate
+        cartilage thickness for each node on surface. 
+    - Compare cartilage thicknesses on surface to those on the surface of saved mesh
+        `smoothed_femur_mesh`
+    - Tests: 
+        - Creating bone mesh (`BoneMesh.create_mesh`)
+        - Resampling bone surface (`BoneMesh.resample_surface`)
+        - Creating cartilage mesh & calculating thickness (`BoneMesh.calc_cartilage_thickness`)
+        - Smoothing cartilage thickness values on surface (`BoneMesh.smooth_surface_scalars`)
+
+    """    
     femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', 
                                label_idx=5, 
                                list_cartilage_labels=[1], 
@@ -33,6 +45,16 @@ def test_cropped_femur_cartilage_smoothed():
 
 
 def test_cropped_femur_cartilage_region_assignment():
+    """
+     - Create a femur mesh from a segmentation (right_knee_example.nrrd) and determine the
+        cartilage region of interst for each node on the bone surface
+    - Comapre these regions to those on the previously analyzed/saved `cropped_femur_mesh`
+    - Tests:
+        - Creating bone mesh (`BoneMesh.create_mesh`)
+        - Resampling bone surface (`BoneMesh.resample_surface`)
+        - Assigning cartilage regions to bone (`BoneMesh.assign_cartilage_regions`)
+        
+    """     
     femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', 
                                label_idx=5, 
                                list_cartilage_labels=[1], 
@@ -54,6 +76,10 @@ def test_cropped_femur_cartilage_region_assignment():
 
 
 def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
+    """
+    - Testing how functions work without smoothing
+        - test_cropped_femur_cartilage_smoothed is effectively the same but with smoothing added
+    """    
     # Create new mesh & calculate cartilge thickness
     femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', 
                                label_idx=5, 
@@ -75,6 +101,11 @@ def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
 
 
 def test_femur_cart_thick_roi_calc(timing=False):
+    """
+    Testing whole pipeline with individual functions (like creating cartialge mesh) performed
+    explicitly, instead of implicitly by passing cartilage labels to `BoneMesh` such as
+    `list_cartilage_labels`. 
+    """    
     femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', label_idx=5)
     femur.create_mesh()
     femur.resample_surface(subdivisions=2, clusters=10000)

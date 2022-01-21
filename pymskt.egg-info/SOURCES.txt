@@ -19,3 +19,4 @@ pymskt/mesh/meshes.py
 pymskt/mesh/utils.py
 pymskt/utils/__init__.py
 pymskt/utils/main.py
+pymskt/utils/testing.py

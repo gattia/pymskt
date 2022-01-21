@@ -101,11 +101,8 @@ def smooth_image(image, label_idx, variance=1.0):
     SimpleITK.Image
         Image of only the label (tissue) of interest after being smoothed. 
     """    
-    array = sitk.GetArrayFromImage(image)
-    new_array = np.zeros_like(array)
-    new_array[array == label_idx] = 1.
-    new_image = sitk.GetImageFromArray(new_array)
-    new_image.CopyInformation(image)
+    new_image = binarize_segmentation_image(image, label_idx)
+
     new_image = sitk.Cast(new_image, sitk.sitkFloat32)
 
     gauss_filter = sitk.DiscreteGaussianImageFilter()
@@ -115,6 +112,31 @@ def smooth_image(image, label_idx, variance=1.0):
     filtered_new_image = gauss_filter.Execute(new_image)
 
     return filtered_new_image
+
+def binarize_segmentation_image(seg_image, label_idx):
+    """
+    Return segmentation that is only 0s/1s, with 1s where label_idx is
+    located in the image. 
+
+    Parameters
+    ----------
+    seg_image : SimpleITK.Image
+        Segmentation image that contains data we want to binarize
+    label_idx : int
+        Integer/label that we want to extract (binarize) from the
+        `seg_image`.
+
+    Returns
+    -------
+    SimpleITK.Image
+        New segmentation image that is binarized. 
+    """    
+    array = sitk.GetArrayFromImage(seg_image)
+    array_ = np.zeros_like(array)
+    array_[array == label_idx] = 1
+    new_seg_image = sitk.GetImageFromArray(array_)
+    new_seg_image.CopyInformation(seg_image)
+    return new_seg_image
 
 def crop_bone_based_on_width(seg_image,
                              bone_idx,

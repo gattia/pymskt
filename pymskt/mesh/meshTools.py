@@ -389,12 +389,19 @@ def get_mesh_physical_point_coords(mesh):
 
     Returns
     -------
-    [type]
-        [description]
-    """    
+    numpy.ndarray
+        n_points x 3 array describing the x/y/z position of each point. 
+    
+    Notes
+    -----
+    Below is the original method used to retrieve the point coordinates. 
+    
     point_coordinates = np.zeros((mesh.GetNumberOfPoints(), 3))
     for pt_idx in range(mesh.GetNumberOfPoints()):
         point_coordinates[pt_idx, :] = mesh.GetPoint(pt_idx)
+    """    
+    
+    point_coordinates = vtk_to_numpy(mesh.GetPoints().GetData())
     return point_coordinates
 
 def smooth_scalars_from_second_mesh_onto_base(base_mesh,

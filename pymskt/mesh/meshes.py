@@ -15,7 +15,7 @@ from pymskt.utils import safely_delete_tmp_file, copy_image_transform_to_mesh
 from pymskt.image import read_nrrd, crop_bone_based_on_width
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.mesh.meshTools import gaussian_smooth_surface_scalars, get_mesh_physical_point_coords, get_cartilage_properties_at_points
-from pymskt.mesh.createMesh import create_surface_mesh_smoothed
+from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
                                       get_versor_from_transform, 
                                       break_versor_into_center_rotate_translate_transforms)
@@ -174,49 +174,59 @@ class Mesh:
         if n_pixels_labelled < min_n_pixels:
             raise Exception('The mesh does not exist in this segmentation!, only {} pixels detected, threshold # is {}'.format(n_pixels_labelled, 
                                                                                                                                self.bone_label_threshold))
+        tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
+        self._mesh = create_surface_mesh(self._seg_image,
+                                         self.label_idx,
+                                         smooth_image_var,
+                                         loc_tmp_save='/tmp',
+                                         tmp_filename=tmp_filename,
+                                         mc_threshold=marching_cubes_threshold,
+                                         filter_binary_image=smooth_image
+                                         )
+        safely_delete_tmp_file('/tmp',
+                               tmp_filename)
+        # if smooth_image is True:
+        #     tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
+        #     self._mesh = create_surface_mesh(self._seg_image,
+        #                                      self.label_idx,
+        #                                      smooth_image_var,
+        #                                      loc_tmp_save='/tmp',
+        #                                      tmp_filename=tmp_filename,
+        #                                      mc_threshold=marching_cubes_threshold
+        #                                      )
 
-        if smooth_image is True:
-            tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
-            self._mesh = create_surface_mesh_smoothed(self._seg_image,
-                                                      self.label_idx,
-                                                      smooth_image_var,
-                                                      loc_tmp_save='/tmp',
-                                                      tmp_filename=tmp_filename,
-                                                      mc_threshold=marching_cubes_threshold
-                                                      )
+        #     # Delete tmp files
+        #     safely_delete_tmp_file('/tmp',
+        #                            tmp_filename)
+        # else:
+        #     # If location & name of seg provided, read into nrrd_reader
+        #     if (self.path_seg_image is not None):
+        #         nrrd_reader = read_nrrd(self.path_seg_image, set_origin_zero=True)
+        #         if self._seg_image is None:
+        #             self.read_seg_image()
+        #     # If no file data provided, but sitk image provided, save to disk and read to nrrd_reader.
+        #     elif self._seg_image is not None:
+        #         if self.label_idx is None:
+        #             raise Exception('self.label_idx not specified and is necessary to extract isosurface')
+        #         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
+        #         tmp_filepath = os.path.join('/tmp', tmp_filename)
+        #         sitk.WriteImage(self._seg_image, tmp_filepath)
+        #         nrrd_reader = read_nrrd(tmp_filepath, set_origin_zero=True)
 
-            # Delete tmp files
-            safely_delete_tmp_file('/tmp',
-                                   tmp_filename)
-        else:
-            # If location & name of seg provided, read into nrrd_reader
-            if (self.path_seg_image is not None):
-                nrrd_reader = read_nrrd(self.path_seg_image, set_origin_zero=True)
-                if self._seg_image is None:
-                    self.read_seg_image()
-            # If no file data provided, but sitk image provided, save to disk and read to nrrd_reader.
-            elif self._seg_image is not None:
-                if self.label_idx is None:
-                    raise Exception('self.label_idx not specified and is necessary to extract isosurface')
-                tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
-                tmp_filepath = os.path.join('/tmp', tmp_filename)
-                sitk.WriteImage(self._seg_image, tmp_filepath)
-                nrrd_reader = read_nrrd(tmp_filepath, set_origin_zero=True)
-
-                # Delete tmp files
-                safely_delete_tmp_file('/tmp',
-                                       tmp_filename)
-            # If neither of above provided, dont have enough data and raise error.
-            else:
-                raise Exception('Neither location/name (self.path_seg_image) of segmentation file '
-                                'or a sitk image (self._seg_image) of the segmentation are provided! ')
-            # Get surface mesh using discrete marching cubes
-            self._mesh = createMesh.discrete_marching_cubes(nrrd_reader,
-                                                            n_labels=1,
-                                                            start_label=self.label_idx,
-                                                            end_label=self.label_idx)
-            # & then apply image transform for it to be in right loc.
-            self._mesh = copy_image_transform_to_mesh(self._mesh, self._seg_image)
+        #         # Delete tmp files
+        #         safely_delete_tmp_file('/tmp',
+        #                                tmp_filename)
+        #     # If neither of above provided, dont have enough data and raise error.
+        #     else:
+        #         raise Exception('Neither location/name (self.path_seg_image) of segmentation file '
+        #                         'or a sitk image (self._seg_image) of the segmentation are provided! ')
+        #     # Get surface mesh using discrete marching cubes
+        #     self._mesh = createMesh.discrete_marching_cubes(nrrd_reader,
+        #                                                     n_labels=1,
+        #                                                     start_label=self.label_idx,
+        #                                                     end_label=self.label_idx)
+        #     # & then apply image transform for it to be in right loc.
+        #     self._mesh = copy_image_transform_to_mesh(self._mesh, self._seg_image)
     
     def save_mesh(self,
                   filepath):
