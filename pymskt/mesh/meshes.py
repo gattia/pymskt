@@ -342,6 +342,90 @@ class Mesh:
             Mx3 numpy array containing the x/y/z position of each vertex of the mesh. 
         """        
         return get_mesh_physical_point_coords(self._mesh)
+    
+    @property
+    def path_seg_image(self):
+        """
+        Convenience function to get the `path_seg_image`
+
+        Returns
+        -------
+        str
+            Path to the segmentation image
+        """        
+        return self.path_seg_image
+    
+    @path_seg_image.setter
+    def path_seg_image(self, new_path_seg_image):
+        """
+        Convenience function to set the `path_seg_image`
+
+        Parameters
+        ----------
+        new_path_seg_image : str
+            String to where segmentation image that should be loaded is. 
+        """        
+        self.path_seg_image = new_path_seg_image
+    
+    @property
+    def label_idx(self):
+        """
+        Convenience function to get `label_idx`
+
+        Returns
+        -------
+        int
+            Integer indeicating the index/value of the tissues in `seg_image` associated with this mesh. 
+        """        
+        return self.label_idx
+    
+    @label_idx.setter
+    def label_idx(self, new_label_idx):
+        """
+        Convenience function to set `label_idx`
+
+        Parameters
+        ----------
+        new_label_idx : int
+            Integer indeicating the index/value of the tissues in `seg_image` associated with this mesh. 
+        """        
+        self.label_idx = new_label_idx
+
+    @property
+    def min_n_pixels(self):
+        """
+        Convenience function to get the minimum number of pixels for a segmentation region to be created as a mesh. 
+
+        Returns
+        -------
+        int
+            Minimum number of pixels needed to create a mesh. Less than this and it will be skipped / error raised. 
+        """        
+        return self.min_n_pixels
+    
+    @min_n_pixels.setter
+    def min_n_pixels(self, new_min_n_pixels):
+        """
+        Convenience function to set the minimum number of pixels for a segmentation region to be created as a mesh. 
+
+        Parameters
+        ----------
+        new_min_n_pixels : int
+            Minimum number of pixels needed to create a mesh. Less than this and it will be skipped / error raised. 
+        """        
+        self.min_n_pixels = new_min_n_pixels
+
+    @property
+    def list_applied_transforms(self):
+        """
+        Convenience function to get the list of transformations that have been applied to this mesh. 
+
+        Returns
+        -------
+        list
+            List of vtk.vtkTransform objects that have been applied to the current mesh. 
+        """        
+        return self.list_applied_transforms
 
 
 class CartilageMesh(Mesh):
@@ -883,7 +967,14 @@ class BoneMesh(Mesh):
                                                      idx_coords_to_smooth=loc_cartilage if smooth_only_cartilage is True else None,
                                                      array_name=scalar_array_name,
                                                      array_idx=scalar_array_idx)
-        
+
+    list_cartilage_meshes
+
+    list_cartilage_labels
+
+    crop_percent
+
+    bone   
         
 
 
