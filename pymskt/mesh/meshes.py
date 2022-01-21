@@ -985,13 +985,105 @@ class BoneMesh(Mesh):
                                                      array_name=scalar_array_name,
                                                      array_idx=scalar_array_idx)
 
-    list_cartilage_meshes
+    @property
+    def list_cartilage_meshes(self):
+        """
+        Convenience function to get the list of cartilage meshes
 
-    list_cartilage_labels
+        Returns
+        -------
+        list
+            A list of `CartilageMesh` objects associated with this bone
+        """        
+        return self.list_cartilage_meshes
+    
+    @list_cartilage_meshes.setter
+    def list_cartilage_meshes(self, new_list_cartilage_meshes):
+        """
+        Convenience function to set the list of cartilage meshes
 
-    crop_percent
+        Parameters
+        ----------
+        new_list_cartilage_meshes : list
+            A list of `CartilageMesh` objects associated with this bone
+        """        
+        self.list_cartilage_meshes = new_list_cartilage_meshes
+    
+    @property
+    def list_cartilage_labels(self):
+        """
+        Convenience function to get the list of labels for cartilage tissues associated
+        with this bone. 
 
-    bone   
+        Returns
+        -------
+        list
+            list of `int`s for the cartilage tissues associated with this bone. 
+        """        
+        return self.list_cartilage_labels
+    
+    @list_cartilage_labels.setter
+    def list_cartilage_labels(self, new_list_cartilage_labels):
+        """
+        Convenience function to set the list of labels for cartilage tissues associated
+        with this bone
+
+        Parameters
+        ----------
+        new_list_cartilage_labels : list
+            list of `int`s for the cartilage tissues associated with this bone. 
+        """        
+        self.list_cartilage_labels = new_list_cartilage_labels
+    
+    @property
+    def crop_percent(self):
+        """
+        Convenience function to get the value that `crop_percent` is set to. 
+
+        Returns
+        -------
+        float
+            Floating point > 0.0 indicating how much of the length of the bone should be included
+            when cropping - expressed as a proportion of the width. 
+        """        
+        return self.crop_percent
+    
+    @crop_percent.setter
+    def crop_percent(self, new_crop_percent):
+        """
+        Convenience function to set the value that `crop_percent` is set to. 
+
+        Parameters
+        ----------
+        new_crop_percent : float
+            Floating point > 0.0 indicating how much of the length of the bone should be included
+            when cropping - expressed as a proportion of the width. 
+        """        
+        self.crop_percent = new_crop_percent
+    
+    @property
+    def bone(self):
+        """
+        Convenience function to get the name of the bone in this object. 
+
+        Returns
+        -------
+        str
+            Name of the bone in this object - used to help identify how to crop the bone. 
+        """        
+        return self.bone
+
+    @bone.setter
+    def bone(self, new_bone):
+        """
+        Convenience function to set the name of the bone in this object.         
+
+        Parameters
+        ----------
+        new_bone : str
+            Name of the bone in this object - used to help identify how to crop the bone. 
+        """        
+        self.bone = new_bone   
         
 
 
