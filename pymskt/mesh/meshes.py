@@ -343,6 +343,23 @@ class Mesh:
         """        
         return get_mesh_physical_point_coords(self._mesh)
     
+    @point_coords.setter
+    def point_coords(self, new_point_coords):
+        """
+        Convenience function to change/update the vertices/points locations
+
+        Parameters
+        ----------
+        new_point_coords : numpy.ndarray
+            n_points X 3 numpy array to replace exisiting point coordinate locations
+            This can be used to easily/quickly update the x/y/z position of a set of points on a surface mesh. 
+            The `new_point_coords` must include the same number of points as the mesh contains. 
+        """        
+        orig_point_coords = get_mesh_physical_point_coords(self._mesh)
+        if new_point_coords.shape == orig_point_coords.shape:
+            self._mesh.GetPoints().SetData(numpy_to_vtk(new_point_coords))
+
+    
     @property
     def path_seg_image(self):
         """
