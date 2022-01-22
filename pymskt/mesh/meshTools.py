@@ -203,10 +203,6 @@ class ProbeVtkImageDataAlongLine:
                 # to be a cartilage ROI. This is becuase there might be a normal vector that
                 # cross > 1 cartilage region (e.g., weight-bearing vs anterior fem cartilage)
                 self._most_common_data.append(np.bincount(scalars).argmax())
-                if self._most_common_data[-1] > 1:
-                    print(scalars)
-                    print(start_pt)
-                    print(end_pt)
         else:
             self.append_filler()
 
