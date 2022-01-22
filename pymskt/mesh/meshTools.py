@@ -91,7 +91,8 @@ class ProbeVtkImageDataAlongLine:
                  save_std=False,
                  save_most_common=False,
                  filler=0,
-                 non_zero_only=True
+                 non_zero_only=True,
+                 data_categorical=False
                  ):
         """[summary]
 
@@ -118,7 +119,10 @@ class ProbeVtkImageDataAlongLine:
             Only save non-zero values along the line, by default True
             This is done becuase zeros are normally regions of error (e.g.
             poor T2 relaxation fit) and thus would artifically reduce the outcome
-            along the line. 
+            along the line.
+        data_categorical : bool, optional
+            Specify whether or not the data is categorical to determine the interpolation
+            method that should be used. 
         """        
         self.save_mean = save_mean
         self.save_std = save_std
@@ -131,6 +135,8 @@ class ProbeVtkImageDataAlongLine:
 
         self.probe_filter = vtk.vtkProbeFilter()
         self.probe_filter.SetSourceData(vtk_image)
+        if data_categorical is True:
+            self.probe_filter.CategoricalDataOn()
 
         if save_data_in_class is True:
             if self.save_mean is True:
@@ -167,6 +173,9 @@ class ProbeVtkImageDataAlongLine:
 
         if self.non_zero_only is True:
             scalars = scalars[scalars != 0]
+        
+        if len(scalars) == 0:
+            scalars = np.array([0])
 
         return scalars
 
@@ -194,6 +203,10 @@ class ProbeVtkImageDataAlongLine:
                 # to be a cartilage ROI. This is becuase there might be a normal vector that
                 # cross > 1 cartilage region (e.g., weight-bearing vs anterior fem cartilage)
                 self._most_common_data.append(np.bincount(scalars).argmax())
+                if self._most_common_data[-1] > 1:
+                    print(scalars)
+                    print(start_pt)
+                    print(end_pt)
         else:
             self.append_filler()
 
@@ -325,7 +338,8 @@ def get_cartilage_properties_at_points(surface_bone,
             seg_data_probe = ProbeVtkImageDataAlongLine(line_resolution,
                                                    seg_vtk_image,
                                                    save_most_common=True,
-                                                   filler=no_seg_filler)
+                                                   filler=no_seg_filler,
+                                                   data_categorical=True)
     # Loop through all points
     for idx in range(points.GetNumberOfPoints()):
         point = points.GetPoint(idx)
