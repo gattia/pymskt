@@ -1,4 +1,5 @@
 from logging import error
+import warnings
 import numpy as np
 import vtk
 from pymskt.image.main import apply_transform_retain_array
@@ -10,6 +11,7 @@ import os
 import random
 import string
 
+import pymskt
 from pymskt.mesh import createMesh
 from pymskt.utils import safely_delete_tmp_file, copy_image_transform_to_mesh
 from pymskt.image import read_nrrd, crop_bone_based_on_width
@@ -93,11 +95,11 @@ class Mesh:
         """        
         self._mesh = mesh
         self._seg_image = seg_image
-        self.path_seg_image = path_seg_image
-        self.label_idx = label_idx
-        self.min_n_pixels=min_n_pixels
+        self._path_seg_image = path_seg_image
+        self._label_idx = label_idx
+        self._min_n_pixels = min_n_pixels
 
-        self.list_applied_transforms = []
+        self._list_applied_transforms = []
 
     def read_seg_image(self,
                        path_seg_image=None):
@@ -116,13 +118,13 @@ class Mesh:
         """        
         # If passing new location/seg image name, then update variables. 
         if path_seg_image is not None:
-            self.path_seg_image = path_seg_image
+            self._path_seg_image = path_seg_image
         
         # If seg image location / name exist, then load image else raise exception
-        if (self.path_seg_image is not None):
-            self._seg_image = sitk.ReadImage(self.path_seg_image)
+        if (self._path_seg_image is not None):
+            self._seg_image = sitk.ReadImage(self._path_seg_image)
         else:
-            raise Exception('No file path (self.path_seg_image) provided.')
+            raise Exception('No file path (self._path_seg_image) provided.')
     
     def create_mesh(self,
                     smooth_image=True,
@@ -161,22 +163,22 @@ class Mesh:
         """        
         # allow assigning label idx during mesh creation step. 
         if label_idx is not None:
-            self.label_idx = label_idx
+            self._label_idx = label_idx
         
         if self._seg_image is None:
             self.read_seg_image()
         
         # Ensure the image has a certain number of pixels with the label of interest, otherwise there might be an issue.
-        if min_n_pixels is None: min_n_pixels = self.min_n_pixels
+        if min_n_pixels is None: min_n_pixels = self._min_n_pixels
         seg_view = sitk.GetArrayViewFromImage(self._seg_image)
-        n_pixels_labelled = sum(seg_view[seg_view == self.label_idx])
+        n_pixels_labelled = sum(seg_view[seg_view == self._label_idx])
 
         if n_pixels_labelled < min_n_pixels:
             raise Exception('The mesh does not exist in this segmentation!, only {} pixels detected, threshold # is {}'.format(n_pixels_labelled, 
-                                                                                                                               self.bone_label_threshold))
+                                                                                                                               marching_cubes_threshold))
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
         self._mesh = create_surface_mesh(self._seg_image,
-                                         self.label_idx,
+                                         self._label_idx,
                                          smooth_image_var,
                                          loc_tmp_save='/tmp',
                                          tmp_filename=tmp_filename,
@@ -260,25 +262,24 @@ class Mesh:
             self._mesh = vtk_deep_copy(transformer.GetOutput())
 
             if save_transform is True:
-                self.list_applied_transforms.append(transform)
-            else:
-                pass
+                self._list_applied_transforms.append(transform)
+                
         else:
             raise Exception('No transform or transformer provided')
 
     def reverse_most_recent_transform(self):
         """
-        Function to undo the most recent transformation stored in self.list_applied_transforms
+        Function to undo the most recent transformation stored in self._list_applied_transforms
         """
-        transform = self.list_applied_transforms.pop()
+        transform = self._list_applied_transforms.pop()
         transform.Inverse()
         self.apply_transform_to_mesh(transform=transform, save_transform=False)
 
     def reverse_all_transforms(self):
         """
-        Function to iterate over all of the self.list_applied_transforms (in reverse order) and undo them.
+        Function to iterate over all of the self._list_applied_transforms (in reverse order) and undo them.
         """
-        while len(self.list_applied_transforms) > 0:
+        while len(self._list_applied_transforms) > 0:
             self.reverse_most_recent_transform()
 
     @property
@@ -370,7 +371,7 @@ class Mesh:
         str
             Path to the segmentation image
         """        
-        return self.path_seg_image
+        return self._path_seg_image
     
     @path_seg_image.setter
     def path_seg_image(self, new_path_seg_image):
@@ -382,7 +383,7 @@ class Mesh:
         new_path_seg_image : str
             String to where segmentation image that should be loaded is. 
         """        
-        self.path_seg_image = new_path_seg_image
+        self._path_seg_image = new_path_seg_image
     
     @property
     def label_idx(self):
@@ -394,7 +395,7 @@ class Mesh:
         int
             Integer indeicating the index/value of the tissues in `seg_image` associated with this mesh. 
         """        
-        return self.label_idx
+        return self._label_idx
     
     @label_idx.setter
     def label_idx(self, new_label_idx):
@@ -406,7 +407,7 @@ class Mesh:
         new_label_idx : int
             Integer indeicating the index/value of the tissues in `seg_image` associated with this mesh. 
         """        
-        self.label_idx = new_label_idx
+        self._label_idx = new_label_idx
 
     @property
     def min_n_pixels(self):
@@ -418,7 +419,7 @@ class Mesh:
         int
             Minimum number of pixels needed to create a mesh. Less than this and it will be skipped / error raised. 
         """        
-        return self.min_n_pixels
+        return self._min_n_pixels
     
     @min_n_pixels.setter
     def min_n_pixels(self, new_min_n_pixels):
@@ -430,7 +431,7 @@ class Mesh:
         new_min_n_pixels : int
             Minimum number of pixels needed to create a mesh. Less than this and it will be skipped / error raised. 
         """        
-        self.min_n_pixels = new_min_n_pixels
+        self._min_n_pixels = new_min_n_pixels
 
     @property
     def list_applied_transforms(self):
@@ -442,7 +443,7 @@ class Mesh:
         list
             List of vtk.vtkTransform objects that have been applied to the current mesh. 
         """        
-        return self.list_applied_transforms
+        return self._list_applied_transforms
 
 
 class CartilageMesh(Mesh):
@@ -617,10 +618,10 @@ class BoneMesh(Mesh):
             can be applied appropriatey. {'femur', 'tibia'}, by default 'femur'.
             Patella is not an option because we do not need to crop for the patella. 
         """        
-        self.crop_percent = crop_percent
-        self.bone = bone
-        self.list_cartilage_meshes = list_cartilage_meshes
-        self.list_cartilage_labels = list_cartilage_labels
+        self._crop_percent = crop_percent
+        self._bone = bone
+        self._list_cartilage_meshes = list_cartilage_meshes
+        self._list_cartilage_labels = list_cartilage_labels
 
         super().__init__(mesh=mesh,
                          seg_image=seg_image,
@@ -684,25 +685,25 @@ class BoneMesh(Mesh):
         # Bones might need to be cropped (this isnt necessary for cartilage)
         # So, adding this functionality to the processing steps before the bone mesh is created
         if crop_percent is not None:
-            self.crop_percent = crop_percent
-        if self.crop_percent != 1.0:
-            if 'femur' in self.bone:
+            self._crop_percent = crop_percent
+        if self._crop_percent != 1.0:
+            if 'femur' in self._bone:
                 bone_crop_distal = True
-            elif 'tibia' in self.bone:
+            elif 'tibia' in self._bone:
                 bone_crop_distal = False
             else:
-                raise Exception('var bone should be "femur" or "tiba" got: {} instead'.format(self.bone))
+                raise Exception('var bone should be "femur" or "tiba" got: {} instead'.format(self._bone))
 
             self._seg_image = crop_bone_based_on_width(self._seg_image,
-                                                       self.label_idx,
-                                                       percent_width_to_crop_height=self.crop_percent,
+                                                       self._label_idx,
+                                                       percent_width_to_crop_height=self._crop_percent,
                                                        bone_crop_distal=bone_crop_distal)
            
         super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
 
     def create_cartilage_meshes(self,
-                                image_smooth_var_cart,
-                                marching_cubes_threshold):
+                                image_smooth_var_cart=0.3125 / 2,
+                                marching_cubes_threshold=0.5):
         """
         Helper function to create the list of cartilage meshes from the list of cartilage
         labels. 
@@ -721,19 +722,21 @@ class BoneMesh(Mesh):
         function gets called somewhere else? 
         """        
 
-        self.list_cartilage_meshes = []
-        for cart_label_idx in self.list_cartilage_labels:
+        self._list_cartilage_meshes = []
+        for cart_label_idx in self._list_cartilage_labels:
             seg_array_view = sitk.GetArrayViewFromImage(self._seg_image)
             n_pixels_with_cart = np.sum(seg_array_view == cart_label_idx)
             if n_pixels_with_cart == 0:
-                print("Not analyzing cartilage for label {} because it doesnt have any pixels!".format(cart_label_idx))
-                continue
-
-            cart_mesh = CartilageMesh(seg_image=self._seg_image,
-                                        label_idx=cart_label_idx)
-            cart_mesh.create_mesh(smooth_image_var=image_smooth_var_cart,
-                                    marching_cubes_threshold=marching_cubes_threshold)
-            self.list_cartilage_meshes.append(cart_mesh)
+                warnings.warn(
+                    f"Not analyzing cartilage for label {cart_label_idx} because it doesnt have any pixels!",
+                    UserWarning
+                )
+            else:
+                cart_mesh = CartilageMesh(seg_image=self._seg_image,
+                                            label_idx=cart_label_idx)
+                cart_mesh.create_mesh(smooth_image_var=image_smooth_var_cart,
+                                        marching_cubes_threshold=marching_cubes_threshold)
+                self._list_cartilage_meshes.append(cart_mesh)
 
 
     def calc_cartilage_thickness(self,
@@ -773,15 +776,15 @@ class BoneMesh(Mesh):
             No cartilage available (either `list_cartilage_meshes` or `list_cartilage_labels`)
         """        
         # If new cartilage infor/labels are provided, then replace existing with these ones. 
-        if list_cartilage_meshes is not None: self.list_cartilage_meshes = list_cartilage_meshes
-        if list_cartilage_labels is not None: self.list_cartilage_labels = list_cartilage_labels
+        if list_cartilage_meshes is not None: self._list_cartilage_meshes = list_cartilage_meshes
+        if list_cartilage_labels is not None: self._list_cartilage_labels = list_cartilage_labels
 
         # If no cartilage stuff provided, then cant do this function - raise exception. 
-        if (self.list_cartilage_meshes is None) & (self.list_cartilage_labels is None):
+        if (self._list_cartilage_meshes is None) & (self._list_cartilage_labels is None):
             raise Exception('No cartilage meshes or list of cartilage labels are provided!  - These can be provided either to the class function `calc_cartilage_thickness` directly, or can be specified at the time of instantiating the `BoneMesh` class.')
 
         # if cartilage meshes don't exist yet, then make them. 
-        if self.list_cartilage_meshes is None:
+        if self._list_cartilage_meshes is None:
             self.create_cartilage_meshes(image_smooth_var_cart=image_smooth_var_cart,
                                          marching_cubes_threshold=marching_cubes_threshold)
         
@@ -789,7 +792,7 @@ class BoneMesh(Mesh):
         thicknesses = np.zeros(self._mesh.GetNumberOfPoints())
         
         # iterate over meshes and add their thicknesses to the thicknesses list. 
-        for cart_mesh in self.list_cartilage_meshes:
+        for cart_mesh in self._list_cartilage_meshes:
             node_data = get_cartilage_properties_at_points(self._mesh,
                                                            cart_mesh._mesh,
                                                            t2_vtk_image=None,
@@ -830,7 +833,7 @@ class BoneMesh(Mesh):
         """        
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
         path_save_tmp_file = os.path.join('/tmp', tmp_filename)
-        # if self.bone == 'femur':
+        # if self._bone == 'femur':
         #     new_seg_image = qc.get_knee_segmentation_with_femur_subregions(seg_image,
         #                                                                    fem_cart_label_idx=1)
         #     sitk.WriteImage(new_seg_image, path_save_tmp_file)
@@ -851,12 +854,12 @@ class BoneMesh(Mesh):
         labels = np.zeros(self._mesh.GetNumberOfPoints(), dtype=np.int)
 
         # if cartilage meshes don't exist yet, then make them. 
-        if self.list_cartilage_meshes is None:
+        if self._list_cartilage_meshes is None:
             self.create_cartilage_meshes(image_smooth_var_cart=image_smooth_var_cart,
                                          marching_cubes_threshold=marching_cubes_threshold)
         
         # iterate over meshes and add their label (region) 
-        for cart_mesh in self.list_cartilage_meshes:
+        for cart_mesh in self._list_cartilage_meshes:
             cart_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
             node_data = get_cartilage_properties_at_points(self._mesh,
                                                            cart_mesh._mesh,
@@ -898,7 +901,7 @@ class BoneMesh(Mesh):
             surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
         """        
         print('Not yet implemented')
-        # if self.list_cartilage_meshes is None:
+        # if self._list_cartilage_meshes is None:
         #     raise('Should calculate cartialge thickness before getting T2')
         #     # ALTERNATIVELY - COULD ALLOW PASSING OF CARTILAGE REGIONS IN HERE
         #     # THOUGH, DOES THAT JUST COMPLICATE THINGS? 
@@ -933,7 +936,7 @@ class BoneMesh(Mesh):
 
         # t2 = np.zeros(self._mesh.GetNumberOfPoints())
         # # iterate over meshes and add their t2 to the t2 list. 
-        # for cart_mesh in self.list_cartilage_meshes:
+        # for cart_mesh in self._list_cartilage_meshes:
         #     if path_seg_to_t2_transform is not None:
         #         # first apply negative of center of rotation to mesh
         #         cart_mesh.apply_transform_to_mesh(transform=center_transform.GetInverse())
@@ -995,7 +998,7 @@ class BoneMesh(Mesh):
         list
             A list of `CartilageMesh` objects associated with this bone
         """        
-        return self.list_cartilage_meshes
+        return self._list_cartilage_meshes
     
     @list_cartilage_meshes.setter
     def list_cartilage_meshes(self, new_list_cartilage_meshes):
@@ -1006,8 +1009,14 @@ class BoneMesh(Mesh):
         ----------
         new_list_cartilage_meshes : list
             A list of `CartilageMesh` objects associated with this bone
-        """        
-        self.list_cartilage_meshes = new_list_cartilage_meshes
+        """
+        if type(new_list_cartilage_meshes) is list:
+            for mesh in new_list_cartilage_meshes:
+                if type(mesh) != pymskt.mesh.meshes.CartilageMesh:
+                    raise TypeError('Item in `list_cartilage_meshes` is not a `CartilageMesh`')
+        elif type(new_list_cartilage_meshes) is pymskt.mesh.meshes.CartilageMesh:
+            new_list_cartilage_meshes = [new_list_cartilage_meshes,]
+        self._list_cartilage_meshes = new_list_cartilage_meshes
     
     @property
     def list_cartilage_labels(self):
@@ -1020,7 +1029,7 @@ class BoneMesh(Mesh):
         list
             list of `int`s for the cartilage tissues associated with this bone. 
         """        
-        return self.list_cartilage_labels
+        return self._list_cartilage_labels
     
     @list_cartilage_labels.setter
     def list_cartilage_labels(self, new_list_cartilage_labels):
@@ -1032,8 +1041,14 @@ class BoneMesh(Mesh):
         ----------
         new_list_cartilage_labels : list
             list of `int`s for the cartilage tissues associated with this bone. 
-        """        
-        self.list_cartilage_labels = new_list_cartilage_labels
+        """
+        if type(new_list_cartilage_labels) == list:
+            for label in new_list_cartilage_labels:
+                if type(label) != int:
+                    raise TypeError(f'Item in `list_cartilage_labels` is not a `int` - got {type(label)}')
+        elif type(new_list_cartilage_labels) == int:
+            new_list_cartilage_labels = [new_list_cartilage_labels,]
+        self._list_cartilage_labels = new_list_cartilage_labels
     
     @property
     def crop_percent(self):
@@ -1046,7 +1061,7 @@ class BoneMesh(Mesh):
             Floating point > 0.0 indicating how much of the length of the bone should be included
             when cropping - expressed as a proportion of the width. 
         """        
-        return self.crop_percent
+        return self._crop_percent
     
     @crop_percent.setter
     def crop_percent(self, new_crop_percent):
@@ -1058,8 +1073,10 @@ class BoneMesh(Mesh):
         new_crop_percent : float
             Floating point > 0.0 indicating how much of the length of the bone should be included
             when cropping - expressed as a proportion of the width. 
-        """        
-        self.crop_percent = new_crop_percent
+        """
+        if type(new_crop_percent) != float:
+            raise TypeError(f'New `crop_percent` provided is type {type(new_crop_percent)} - expected `float`')
+        self._crop_percent = new_crop_percent
     
     @property
     def bone(self):
@@ -1071,7 +1088,7 @@ class BoneMesh(Mesh):
         str
             Name of the bone in this object - used to help identify how to crop the bone. 
         """        
-        return self.bone
+        return self._bone
 
     @bone.setter
     def bone(self, new_bone):
@@ -1082,8 +1099,10 @@ class BoneMesh(Mesh):
         ----------
         new_bone : str
             Name of the bone in this object - used to help identify how to crop the bone. 
-        """        
-        self.bone = new_bone   
+        """
+        if type(new_bone) != str:
+            raise TypeError(f'New bone provided is type {type(new_bone)} - expected `str`')   
+        self._bone = new_bone   
         
 
 
