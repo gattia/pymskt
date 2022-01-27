@@ -173,9 +173,6 @@ class ProbeVtkImageDataAlongLine:
 
         if self.non_zero_only is True:
             scalars = scalars[scalars != 0]
-        
-        if len(scalars) == 0:
-            scalars = np.array([0])
 
         return scalars
 
@@ -524,7 +521,11 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3
             pt_idx = closest_ids.GetId(closest_pts_idx)
             _point = old_mesh.GetPoint(pt_idx)
             list_scalars.append([scalars[pt_idx] for scalars in scalars_old_mesh])
-            distance_weighting.append(1 / np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point)))))
+            diff = np.asarray(point) - np.asarray(_point)
+            if diff == 0:
+                distance_weighting.append(1.0)
+            else:
+                distance_weighting.append(1 / np.sqrt(np.sum(np.square(diff))))
 
         total_distance = np.sum(distance_weighting)
         normalized_value = np.sum(np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
