@@ -12,7 +12,12 @@ ctypedef fused my_type:
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True) # Do division using C?
-def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):
+def gaussian_kernel(
+    my_type[:, :] X, 
+    my_type[:, :] Y, 
+    double sigma=1.,
+    # bool normalize=True
+):
     """
     Get gaussian kernal for every point in array X to every point in array Y.
     If X/Y are the same, then this will just smooth array X. 
@@ -26,6 +31,10 @@ def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):
         Second array to compute gaussian kernel for
     sigma : float, optional
         Standard deviation (sigma) for gaussian kernel, by default 1.
+    # normalize: bool, optional
+    #     Whether or not to normalize the scalar values. Normalizing will ensure
+    #     that each point in x is a weighted sum of all points in Y with those weightings
+    #     totalling 1.0. Therefore, 
 
     Returns
     -------
@@ -73,6 +82,16 @@ def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):
                 tmp_total += c_pow(X_view[i,k] - Y_view[j,k], 2.)
             kernel_view[i, j] = c_exp(-tmp_total / two_sigma2)
             kernel_view[i, j] *=  gaussian_multiplier
+
+    # The following normalizes all of the values. This ensures that the points in an image won't be darkened with smoothing
+    # Otherwise, all of the kernel values will be < 1.0 so the image will get darker.
+    # If we had a continuous surface, then the sum of the kernel on each point would be 1.0
+    # Since we have a discrete surface, when we calculate the kernal at finite points we lose data between those points
+    # Normalizing in this way helps preserve the scale of the data. E.g., the mean of all of the points will be less
+    # than the original mean, but it will be much closer than if we did not normalize.  
+
+    # https://en.wikipedia.org/wiki/Gaussian_blur#Implementation
+
 
     for i in range(x_i_shape):
         for j in range(y_i_shape):

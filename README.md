@@ -6,6 +6,9 @@
     or if using make: 
     - `make coverage`
 
+- When updating the cython code, it is not re-built when we re-install. Therefore we force it to do this: 
+    - `python setup.py build_ext -i --force`          
+
 # Contributing
 
 ### Tests

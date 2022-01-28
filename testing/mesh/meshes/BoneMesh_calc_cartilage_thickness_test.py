@@ -36,4 +36,4 @@ def test_create_cartilage_meshes_if_not_created_yet(
     mesh = mskt.mesh.BoneMesh(mesh=bone_mesh, list_cartilage_labels=[cart_label,], seg_image=seg_image)
     mesh.assign_cartilage_regions()
 
-    mskt.utils.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels')
+    mskt.utils.testing.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels')

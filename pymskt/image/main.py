@@ -1,7 +1,10 @@
+from typing import Optional
 import os
 import vtk
 import SimpleITK as sitk
 import numpy as np
+from vtk.util.numpy_support import numpy_to_vtk
+
 
 def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
     """
@@ -262,3 +265,61 @@ def apply_transform_retain_array(image, transform, interpolator=sitk.sitkNearest
                               new_spacing,
                               new_three_by_three.flatten().tolist())
     return new_image
+
+def create_vtk_image(
+    origin: Optional[int] = [0, 0, 0],
+    dimensions: Optional[list] = [20, 20, 20],
+    spacing: Optional[float] = [1., 1., 1.],
+    scalar: Optional[float] = 20.,
+    data: Optional[np.ndarray] = None
+):
+    """
+    Function to create a 3D vtkimage from a numpy array
+    OR to create a uniform image (all same value)
+
+    Parameters
+    ----------
+    origin : Optional[int], optional
+        X/Y/Z origin of the image, by default [0, 0, 0]
+    dimensions : Optional[list], optional
+        Size of the image along each dimension, by default [20, 20, 20]
+    spacing : Optional[float], optional
+        Image spacing along each dimension, by default [1., 1., 1.]
+    scalar : Optional[float], optional
+        Scalar value to use for a uniform image, by default 20.
+    data : Optional[np.ndarray], optional
+        Data for a non-uniform image, by default None
+    """    
+    
+    if data is None:
+        data = np.ones(dimensions) * scalar
+    else:
+        if len(data.shape) == 3:
+            dimensions = data.shape
+        else:
+            dimensions = [1, 1, 1]
+            for idx, dim_size in enumerate(data.shape):
+                dimensions[idx] = dim_size
+    vtk_array = numpy_to_vtk(data.flatten(order='F'))
+    vtk_array.SetName('test')
+
+    # points = vtk.vtkDoubleArray()
+    # points.SetName('test')
+    # points.SetNumberOfComponents(1)
+    # points.SetNumberOfTuples(np.product(dimensions))
+    # for x in range(dimensions[0]):
+    #   for y in range(dimensions[1]):
+    #      for z in range(dimensions[2]):
+    #         points.SetValue(
+    #            (z * dimensions[0] * dimensions[1]) + (x * dimensions[1]) + y,
+    #            array[x, y, z]
+    #         )
+
+    vtk_image = vtk.vtkImageData()
+    vtk_image.SetOrigin(*origin)
+    vtk_image.SetDimensions(*dimensions)
+    vtk_image.SetSpacing(*spacing)
+    vtk_image.GetPointData().SetScalars(vtk_array)            
+
+# 
+    return vtk_image

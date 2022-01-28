@@ -1,7 +1,9 @@
+from typing import Optional
 from numpy.testing import assert_allclose
 import SimpleITK as sitk
 import pymskt as mskt
 from vtk.util.numpy_support import vtk_to_numpy
+import vtk
 
 def assert_images_same(image1, image2):
     """
@@ -61,5 +63,3 @@ def assert_mesh_scalars_same(mesh1, mesh2, scalarname, scalarname2=None, rtol=1e
     scalars2 = vtk_to_numpy(mesh2.GetPointData().GetArray(scalarname2))
 
     assert_allclose(scalars1, scalars2, rtol=rtol)
-
-

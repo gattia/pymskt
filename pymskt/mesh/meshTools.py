@@ -1,5 +1,6 @@
 import os
 import time
+from turtle import distance
 
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
@@ -15,7 +16,7 @@ import pymskt.mesh.createMesh as createMesh
 import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
 
-
+epsilon = 1e-7
 
 class ProbeVtkImageDataAlongLine:
     """
@@ -521,11 +522,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3
             pt_idx = closest_ids.GetId(closest_pts_idx)
             _point = old_mesh.GetPoint(pt_idx)
             list_scalars.append([scalars[pt_idx] for scalars in scalars_old_mesh])
-            diff = np.asarray(point) - np.asarray(_point)
-            if diff == 0:
-                distance_weighting.append(1.0)
-            else:
-                distance_weighting.append(1 / np.sqrt(np.sum(np.square(diff))))
+            distance_weighting.append(1 / np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point) + epsilon))))
 
         total_distance = np.sum(distance_weighting)
         normalized_value = np.sum(np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
@@ -576,9 +573,9 @@ def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
                 pt_idx = closest_ids.GetId(closest_pt_idx)
                 _point = mesh.GetPoint(pt_idx)
                 list_scalars.append(scalars[pt_idx])
-                list_distances.append(np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point)))))
+                list_distances.append(np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point) + epsilon))))
 
-            distances_weighted = (max_dist - np.asarray(list_distances))**order / max_dist**order
+            distances_weighted = (max_dist - np.asarray(list_distances))**order
             scalars_weights = distances_weighted * np.asarray(list_scalars)
             normalized_value = np.sum(scalars_weights) / np.sum(distances_weighted)
             thickness_smoothed[idx] = normalized_value
@@ -624,7 +621,7 @@ def gaussian_smooth_surface_scalars(mesh, sigma=1., idx_coords_to_smooth=None, a
     if idx_coords_to_smooth is not None:
         point_coordinates = point_coordinates[idx_coords_to_smooth, :]
     kernel = gaussian_kernel(point_coordinates, point_coordinates, sigma=sigma)
-    
+
     original_array = mesh.GetPointData().GetArray(array_idx if array_idx is not None else array_name)
     original_scalars = np.copy(vtk_to_numpy(original_array))
 

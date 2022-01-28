@@ -2283,14 +2283,14 @@ static PyObject *__pyx_codeobj__32;
 /* "pymskt/cython/cython_functions.pyx":15
  * @cython.wraparound(False)   # Deactivate negative indexing.
  * @cython.cdivision(True) # Do division using C?
- * def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):             # <<<<<<<<<<<<<<
- *     """
- *     Get gaussian kernal for every point in array X to every point in array Y.
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
  */
 
 /* Python wrapper */
 static PyObject *__pyx_pw_6pymskt_16cython_functions_1gaussian_kernel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static char __pyx_doc_6pymskt_16cython_functions_gaussian_kernel[] = "\n    Get gaussian kernal for every point in array X to every point in array Y.\n    If X/Y are the same, then this will just smooth array X. \n    If X/Y are different, can be used to smooth one onto the other. \n\n    Parameters\n    ----------\n    X : numpy.ndarray\n        First array to compute gaussian kernel for\n    Y : numpy.ndarray\n        Second array to compute gaussian kernel for\n    sigma : float, optional\n        Standard deviation (sigma) for gaussian kernel, by default 1.\n\n    Returns\n    -------\n    numpy.ndarray\n        Array that can be multiple by scalar values to smooth them. \n        Smoothing can be done inherently, or from one surface onto another. \n    \n    Notes\n    -----\n    https://math.stackexchange.com/questions/434629/3-d-generalization-of-the-gaussian-point-spread-function\n    ";
+static char __pyx_doc_6pymskt_16cython_functions_gaussian_kernel[] = "\n    Get gaussian kernal for every point in array X to every point in array Y.\n    If X/Y are the same, then this will just smooth array X. \n    If X/Y are different, can be used to smooth one onto the other. \n\n    Parameters\n    ----------\n    X : numpy.ndarray\n        First array to compute gaussian kernel for\n    Y : numpy.ndarray\n        Second array to compute gaussian kernel for\n    sigma : float, optional\n        Standard deviation (sigma) for gaussian kernel, by default 1.\n    # normalize: bool, optional\n    #     Whether or not to normalize the scalar values. Normalizing will ensure\n    #     that each point in x is a weighted sum of all points in Y with those weightings\n    #     totalling 1.0. Therefore, \n\n    Returns\n    -------\n    numpy.ndarray\n        Array that can be multiple by scalar values to smooth them. \n        Smoothing can be done inherently, or from one surface onto another. \n    \n    Notes\n    -----\n    https://math.stackexchange.com/questions/434629/3-d-generalization-of-the-gaussian-point-spread-function\n    ";
 static PyMethodDef __pyx_mdef_6pymskt_16cython_functions_1gaussian_kernel = {"gaussian_kernel", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_6pymskt_16cython_functions_1gaussian_kernel, METH_VARARGS|METH_KEYWORDS, __pyx_doc_6pymskt_16cython_functions_gaussian_kernel};
 static PyObject *__pyx_pw_6pymskt_16cython_functions_1gaussian_kernel(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_signatures = 0;
@@ -2883,10 +2883,10 @@ static PyObject *__pyx_fuse_0__pyx_pw_6pymskt_16cython_functions_3gaussian_kerne
         default: goto __pyx_L5_argtuple_error;
       }
     }
-    __pyx_v_X = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_X.memview)) __PYX_ERR(0, 15, __pyx_L3_error)
-    __pyx_v_Y = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_Y.memview)) __PYX_ERR(0, 15, __pyx_L3_error)
+    __pyx_v_X = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[0], PyBUF_WRITABLE); if (unlikely(!__pyx_v_X.memview)) __PYX_ERR(0, 16, __pyx_L3_error)
+    __pyx_v_Y = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(values[1], PyBUF_WRITABLE); if (unlikely(!__pyx_v_Y.memview)) __PYX_ERR(0, 17, __pyx_L3_error)
     if (values[2]) {
-      __pyx_v_sigma = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_sigma == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 15, __pyx_L3_error)
+      __pyx_v_sigma = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_sigma == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
     } else {
       __pyx_v_sigma = __pyx_dynamic_args->__pyx_arg_sigma;
     }
@@ -2952,22 +2952,22 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__pyx_fuse_0gaussian_kernel", 0);
 
-  /* "pymskt/cython/cython_functions.pyx":44
+  /* "pymskt/cython/cython_functions.pyx":53
  * 
  *     if my_type is double:
  *         dtype = np.double             # <<<<<<<<<<<<<<
  *     # elif my_type is int:
  *     #     dtype = np.intc
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_double); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_double); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_dtype = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "pymskt/cython/cython_functions.pyx":50
+  /* "pymskt/cython/cython_functions.pyx":59
  *     #     dtype = np.longlong
  * 
  *     x_i_shape = X.shape[0]             # <<<<<<<<<<<<<<
@@ -2976,7 +2976,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
   __pyx_v_x_i_shape = (__pyx_v_X.shape[0]);
 
-  /* "pymskt/cython/cython_functions.pyx":51
+  /* "pymskt/cython/cython_functions.pyx":60
  * 
  *     x_i_shape = X.shape[0]
  *     x_j_shape = X.shape[1]             # <<<<<<<<<<<<<<
@@ -2985,7 +2985,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
   __pyx_v_x_j_shape = (__pyx_v_X.shape[1]);
 
-  /* "pymskt/cython/cython_functions.pyx":52
+  /* "pymskt/cython/cython_functions.pyx":61
  *     x_i_shape = X.shape[0]
  *     x_j_shape = X.shape[1]
  *     y_i_shape = Y.shape[0]             # <<<<<<<<<<<<<<
@@ -2994,7 +2994,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
   __pyx_v_y_i_shape = (__pyx_v_Y.shape[0]);
 
-  /* "pymskt/cython/cython_functions.pyx":53
+  /* "pymskt/cython/cython_functions.pyx":62
  *     x_j_shape = X.shape[1]
  *     y_i_shape = Y.shape[0]
  *     y_j_shape = Y.shape[1]             # <<<<<<<<<<<<<<
@@ -3003,7 +3003,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
   __pyx_v_y_j_shape = (__pyx_v_Y.shape[1]);
 
-  /* "pymskt/cython/cython_functions.pyx":55
+  /* "pymskt/cython/cython_functions.pyx":64
  *     y_j_shape = Y.shape[1]
  * 
  *     assert x_j_shape == y_j_shape             # <<<<<<<<<<<<<<
@@ -3014,31 +3014,31 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   if (unlikely(!Py_OptimizeFlag)) {
     if (unlikely(!((__pyx_v_x_j_shape == __pyx_v_y_j_shape) != 0))) {
       PyErr_SetNone(PyExc_AssertionError);
-      __PYX_ERR(0, 55, __pyx_L1_error)
+      __PYX_ERR(0, 64, __pyx_L1_error)
     }
   }
   #endif
 
-  /* "pymskt/cython/cython_functions.pyx":57
+  /* "pymskt/cython/cython_functions.pyx":66
  *     assert x_j_shape == y_j_shape
  * 
  *     gaussian_multiplier = 1/(c_pow(sigma, x_j_shape) * c_pow((2 * np.pi), x_j_shape/2))             # <<<<<<<<<<<<<<
  *     two_sigma2 = 2 * c_pow(sigma, 2.)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_pi); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_pi); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyNumber_Multiply(__pyx_int_2, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_int_2, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_3 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_3 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 66, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_gaussian_multiplier = (1.0 / (pow(__pyx_v_sigma, __pyx_v_x_j_shape) * pow(__pyx_t_3, (__pyx_v_x_j_shape / 2))));
 
-  /* "pymskt/cython/cython_functions.pyx":58
+  /* "pymskt/cython/cython_functions.pyx":67
  * 
  *     gaussian_multiplier = 1/(c_pow(sigma, x_j_shape) * c_pow((2 * np.pi), x_j_shape/2))
  *     two_sigma2 = 2 * c_pow(sigma, 2.)             # <<<<<<<<<<<<<<
@@ -3047,23 +3047,23 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
   __pyx_v_two_sigma2 = (2.0 * pow(__pyx_v_sigma, 2.));
 
-  /* "pymskt/cython/cython_functions.pyx":60
+  /* "pymskt/cython/cython_functions.pyx":69
  *     two_sigma2 = 2 * c_pow(sigma, 2.)
  * 
  *     kernel = np.zeros((x_i_shape, y_i_shape), dtype=dtype)             # <<<<<<<<<<<<<<
  *     cdef my_type[:,:] kernel_view = kernel
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_x_i_shape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_x_i_shape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyInt_FromSsize_t(__pyx_v_y_i_shape); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_4 = PyInt_FromSsize_t(__pyx_v_y_i_shape); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2);
@@ -3071,15 +3071,15 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_4);
   __pyx_t_2 = 0;
   __pyx_t_4 = 0;
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_5);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_5);
   __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 60, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  if (PyDict_SetItem(__pyx_t_5, __pyx_n_s_dtype, __pyx_v_dtype) < 0) __PYX_ERR(0, 60, __pyx_L1_error)
-  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 60, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_5, __pyx_n_s_dtype, __pyx_v_dtype) < 0) __PYX_ERR(0, 69, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_4, __pyx_t_5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -3087,41 +3087,41 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   __pyx_v_kernel = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "pymskt/cython/cython_functions.pyx":61
+  /* "pymskt/cython/cython_functions.pyx":70
  * 
  *     kernel = np.zeros((x_i_shape, y_i_shape), dtype=dtype)
  *     cdef my_type[:,:] kernel_view = kernel             # <<<<<<<<<<<<<<
  * 
  *     den = np.zeros(x_i_shape, dtype=dtype)
  */
-  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(__pyx_v_kernel, PyBUF_WRITABLE); if (unlikely(!__pyx_t_6.memview)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(__pyx_v_kernel, PyBUF_WRITABLE); if (unlikely(!__pyx_t_6.memview)) __PYX_ERR(0, 70, __pyx_L1_error)
   __pyx_v_kernel_view = __pyx_t_6;
   __pyx_t_6.memview = NULL;
   __pyx_t_6.data = NULL;
 
-  /* "pymskt/cython/cython_functions.pyx":63
+  /* "pymskt/cython/cython_functions.pyx":72
  *     cdef my_type[:,:] kernel_view = kernel
  * 
  *     den = np.zeros(x_i_shape, dtype=dtype)             # <<<<<<<<<<<<<<
  *     cdef my_type[:] den_view = den
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_x_i_shape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_2 = PyInt_FromSsize_t(__pyx_v_x_i_shape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_2);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2);
   __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_dtype, __pyx_v_dtype) < 0) __PYX_ERR(0, 63, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 63, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_dtype, __pyx_v_dtype) < 0) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -3129,19 +3129,19 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   __pyx_v_den = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "pymskt/cython/cython_functions.pyx":64
+  /* "pymskt/cython/cython_functions.pyx":73
  * 
  *     den = np.zeros(x_i_shape, dtype=dtype)
  *     cdef my_type[:] den_view = den             # <<<<<<<<<<<<<<
  * 
  *     cdef my_type[:, :] X_view = X
  */
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_v_den, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_v_den, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 73, __pyx_L1_error)
   __pyx_v_den_view = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "pymskt/cython/cython_functions.pyx":66
+  /* "pymskt/cython/cython_functions.pyx":75
  *     cdef my_type[:] den_view = den
  * 
  *     cdef my_type[:, :] X_view = X             # <<<<<<<<<<<<<<
@@ -3151,7 +3151,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   __PYX_INC_MEMVIEW(&__pyx_v_X, 0);
   __pyx_v_X_view = __pyx_v_X;
 
-  /* "pymskt/cython/cython_functions.pyx":67
+  /* "pymskt/cython/cython_functions.pyx":76
  * 
  *     cdef my_type[:, :] X_view = X
  *     cdef my_type[:, :] Y_view = Y             # <<<<<<<<<<<<<<
@@ -3161,7 +3161,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   __PYX_INC_MEMVIEW(&__pyx_v_Y, 0);
   __pyx_v_Y_view = __pyx_v_Y;
 
-  /* "pymskt/cython/cython_functions.pyx":69
+  /* "pymskt/cython/cython_functions.pyx":78
  *     cdef my_type[:, :] Y_view = Y
  * 
  *     for i in range(x_i_shape):             # <<<<<<<<<<<<<<
@@ -3173,7 +3173,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
 
-    /* "pymskt/cython/cython_functions.pyx":70
+    /* "pymskt/cython/cython_functions.pyx":79
  * 
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):             # <<<<<<<<<<<<<<
@@ -3185,7 +3185,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_12; __pyx_t_13+=1) {
       __pyx_v_j = __pyx_t_13;
 
-      /* "pymskt/cython/cython_functions.pyx":71
+      /* "pymskt/cython/cython_functions.pyx":80
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):
  *             tmp_total = 0             # <<<<<<<<<<<<<<
@@ -3194,7 +3194,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
  */
       __pyx_v_tmp_total = 0.0;
 
-      /* "pymskt/cython/cython_functions.pyx":72
+      /* "pymskt/cython/cython_functions.pyx":81
  *         for j in range(y_i_shape):
  *             tmp_total = 0
  *             for k in range(x_j_shape):             # <<<<<<<<<<<<<<
@@ -3206,7 +3206,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
       for (__pyx_t_16 = 0; __pyx_t_16 < __pyx_t_15; __pyx_t_16+=1) {
         __pyx_v_k = __pyx_t_16;
 
-        /* "pymskt/cython/cython_functions.pyx":73
+        /* "pymskt/cython/cython_functions.pyx":82
  *             tmp_total = 0
  *             for k in range(x_j_shape):
  *                 tmp_total += c_pow(X_view[i,k] - Y_view[j,k], 2.)             # <<<<<<<<<<<<<<
@@ -3220,7 +3220,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
         __pyx_v_tmp_total = (__pyx_v_tmp_total + pow(((*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_X_view.data + __pyx_t_17 * __pyx_v_X_view.strides[0]) ) + __pyx_t_18 * __pyx_v_X_view.strides[1]) ))) - (*((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_Y_view.data + __pyx_t_19 * __pyx_v_Y_view.strides[0]) ) + __pyx_t_20 * __pyx_v_Y_view.strides[1]) )))), 2.));
       }
 
-      /* "pymskt/cython/cython_functions.pyx":74
+      /* "pymskt/cython/cython_functions.pyx":83
  *             for k in range(x_j_shape):
  *                 tmp_total += c_pow(X_view[i,k] - Y_view[j,k], 2.)
  *             kernel_view[i, j] = c_exp(-tmp_total / two_sigma2)             # <<<<<<<<<<<<<<
@@ -3231,12 +3231,12 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
       __pyx_t_19 = __pyx_v_j;
       *((double *) ( /* dim=1 */ (( /* dim=0 */ (__pyx_v_kernel_view.data + __pyx_t_20 * __pyx_v_kernel_view.strides[0]) ) + __pyx_t_19 * __pyx_v_kernel_view.strides[1]) )) = exp(((-__pyx_v_tmp_total) / __pyx_v_two_sigma2));
 
-      /* "pymskt/cython/cython_functions.pyx":75
+      /* "pymskt/cython/cython_functions.pyx":84
  *                 tmp_total += c_pow(X_view[i,k] - Y_view[j,k], 2.)
  *             kernel_view[i, j] = c_exp(-tmp_total / two_sigma2)
  *             kernel_view[i, j] *=  gaussian_multiplier             # <<<<<<<<<<<<<<
  * 
- *     for i in range(x_i_shape):
+ *     # The following normalizes all of the values. This ensures that the points in an image won't be darkened with smoothing
  */
       __pyx_t_19 = __pyx_v_i;
       __pyx_t_20 = __pyx_v_j;
@@ -3244,8 +3244,8 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     }
   }
 
-  /* "pymskt/cython/cython_functions.pyx":77
- *             kernel_view[i, j] *=  gaussian_multiplier
+  /* "pymskt/cython/cython_functions.pyx":96
+ * 
  * 
  *     for i in range(x_i_shape):             # <<<<<<<<<<<<<<
  *         for j in range(y_i_shape):
@@ -3256,7 +3256,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
 
-    /* "pymskt/cython/cython_functions.pyx":78
+    /* "pymskt/cython/cython_functions.pyx":97
  * 
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):             # <<<<<<<<<<<<<<
@@ -3268,7 +3268,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_12; __pyx_t_13+=1) {
       __pyx_v_j = __pyx_t_13;
 
-      /* "pymskt/cython/cython_functions.pyx":79
+      /* "pymskt/cython/cython_functions.pyx":98
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):
  *             den_view[i] += kernel_view[i, j]             # <<<<<<<<<<<<<<
@@ -3282,7 +3282,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     }
   }
 
-  /* "pymskt/cython/cython_functions.pyx":81
+  /* "pymskt/cython/cython_functions.pyx":100
  *             den_view[i] += kernel_view[i, j]
  * 
  *     for i in range(x_i_shape):             # <<<<<<<<<<<<<<
@@ -3294,7 +3294,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   for (__pyx_t_10 = 0; __pyx_t_10 < __pyx_t_9; __pyx_t_10+=1) {
     __pyx_v_i = __pyx_t_10;
 
-    /* "pymskt/cython/cython_functions.pyx":82
+    /* "pymskt/cython/cython_functions.pyx":101
  * 
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):             # <<<<<<<<<<<<<<
@@ -3306,7 +3306,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_12; __pyx_t_13+=1) {
       __pyx_v_j = __pyx_t_13;
 
-      /* "pymskt/cython/cython_functions.pyx":83
+      /* "pymskt/cython/cython_functions.pyx":102
  *     for i in range(x_i_shape):
  *         for j in range(y_i_shape):
  *             kernel_view[i, j] = kernel_view[i, j] / den_view[i]             # <<<<<<<<<<<<<<
@@ -3322,7 +3322,7 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
     }
   }
 
-  /* "pymskt/cython/cython_functions.pyx":85
+  /* "pymskt/cython/cython_functions.pyx":104
  *             kernel_view[i, j] = kernel_view[i, j] / den_view[i]
  * 
  *     return kernel             # <<<<<<<<<<<<<<
@@ -3335,9 +3335,9 @@ static PyObject *__pyx_pf_6pymskt_16cython_functions_2gaussian_kernel(CYTHON_UNU
   /* "pymskt/cython/cython_functions.pyx":15
  * @cython.wraparound(False)   # Deactivate negative indexing.
  * @cython.cdivision(True) # Do division using C?
- * def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):             # <<<<<<<<<<<<<<
- *     """
- *     Get gaussian kernal for every point in array X to every point in array Y.
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
  */
 
   /* function exit code */
@@ -17294,9 +17294,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "pymskt/cython/cython_functions.pyx":15
  * @cython.wraparound(False)   # Deactivate negative indexing.
  * @cython.cdivision(True) # Do division using C?
- * def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):             # <<<<<<<<<<<<<<
- *     """
- *     Get gaussian kernal for every point in array X to every point in array Y.
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
  */
   __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_No_matching_signature_found); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__4);
@@ -17500,9 +17500,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   /* "pymskt/cython/cython_functions.pyx":15
  * @cython.wraparound(False)   # Deactivate negative indexing.
  * @cython.cdivision(True) # Do division using C?
- * def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):             # <<<<<<<<<<<<<<
- *     """
- *     Get gaussian kernal for every point in array X to every point in array Y.
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
  */
   __pyx_tuple__24 = PyTuple_Pack(20, __pyx_n_s_X, __pyx_n_s_Y, __pyx_n_s_sigma, __pyx_n_s_x_i_shape, __pyx_n_s_x_j_shape, __pyx_n_s_y_i_shape, __pyx_n_s_y_j_shape, __pyx_n_s_tmp_total, __pyx_n_s_gaussian_multiplier, __pyx_n_s_two_sigma2, __pyx_n_s_dtype, __pyx_n_s_kernel, __pyx_n_s_kernel_view, __pyx_n_s_den, __pyx_n_s_den_view, __pyx_n_s_X_view, __pyx_n_s_Y_view, __pyx_n_s_i, __pyx_n_s_j, __pyx_n_s_k); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__24);
@@ -17939,25 +17939,49 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_1) < 0) __PYX_ERR(0, 2, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
+  /* "pymskt/cython/cython_functions.pyx":18
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
+ *     double sigma=1.,             # <<<<<<<<<<<<<<
+ *     # bool normalize=True
+ * ):
+ */
+  __pyx_t_1 = PyFloat_FromDouble(1.); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+
   /* "pymskt/cython/cython_functions.pyx":15
  * @cython.wraparound(False)   # Deactivate negative indexing.
  * @cython.cdivision(True) # Do division using C?
- * def gaussian_kernel(my_type[:, :] X, my_type[:, :] Y, double sigma=1.):             # <<<<<<<<<<<<<<
- *     """
- *     Get gaussian kernal for every point in array X to every point in array Y.
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
  */
-  __pyx_t_1 = PyFloat_FromDouble(1.); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
   __pyx_t_1 = 0;
-  __pyx_t_1 = PyFloat_FromDouble(1.); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+
+  /* "pymskt/cython/cython_functions.pyx":18
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
+ *     double sigma=1.,             # <<<<<<<<<<<<<<
+ *     # bool normalize=True
+ * ):
+ */
+  __pyx_t_1 = PyFloat_FromDouble(1.); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_k_ = __pyx_t_1;
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_t_1 = 0;
+
+  /* "pymskt/cython/cython_functions.pyx":15
+ * @cython.wraparound(False)   # Deactivate negative indexing.
+ * @cython.cdivision(True) # Do division using C?
+ * def gaussian_kernel(             # <<<<<<<<<<<<<<
+ *     my_type[:, :] X,
+ *     my_type[:, :] Y,
+ */
   __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_3 = __pyx_FusedFunction_New(&__pyx_fuse_0__pyx_mdef_6pymskt_16cython_functions_3gaussian_kernel, 0, __pyx_n_s_gaussian_kernel, NULL, __pyx_n_s_pymskt_cython_functions, __pyx_d, ((PyObject *)__pyx_codeobj__25)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
