@@ -12,6 +12,16 @@
 3. Install pacakge
     `python setup.py install`
 
+### To install itkwidgets (for visualization): 
+https://pypi.org/project/itkwidgets/
+
+`conda install -c conda-forge itkwidgets` 
+or 
+`pip install itkwidgets`
+
+If you are using jupyterlab instead of jupyter notebook, you also need to install an extension: 
+
+`jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib jupyterlab-datawidgets itkwidgets`
 
 
 # Tests
