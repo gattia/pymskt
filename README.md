@@ -1,3 +1,18 @@
+# Installation
+
+1. Clone repository: 
+    `git clone https://github.com/gattia/pymskt.git`
+2. Move into repository directory: 
+    `cd pymskt`
+3. Install dependencies: 
+    Best: 
+        `conda env create -f environment.yml`
+    Second - ideally create a virtual environment first & then: 
+        `pip install -r requirements.txt`
+3. Install pacakge
+    `python setup.py install`
+
+
 
 # Tests
 - Run tests using `pytest` in the home directory or `make test`

@@ -1,0 +1,9 @@
+
+cython
+numpy
+pyacvd
+#python=3.8.12
+pyvista
+scipy
+SimpleITK
+vtk==8.1.2

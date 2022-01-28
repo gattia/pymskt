@@ -90,4 +90,4 @@ dependencies:
   - zipp=3.6.0=pyhd8ed1ab_0
   - zlib=1.2.11=h9173be1_1013
   - zstd=1.4.8=h62961b2_0
-prefix: /anaconda3/envs/mskt
+
