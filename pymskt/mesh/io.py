@@ -1,3 +1,4 @@
+from asyncore import write
 import vtk
 import os
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
@@ -22,7 +23,13 @@ def read_vtk(filepath):
     return reader.GetOutput()
 
 
-def write_vtk(mesh, filepath, scalar_name=None, points_dtype=float):
+def write_vtk(
+    mesh, 
+    filepath, 
+    scalar_name=None, 
+    points_dtype=float,
+    write_binary=False
+):
     """
     Save vtk polydata to disk. 
 
@@ -39,6 +46,8 @@ def write_vtk(mesh, filepath, scalar_name=None, points_dtype=float):
         Specifies the datatype that the points should be. 
         If they are the wrong datatype then they are changed to the requisite
         type before savinge (writing) the file. 
+    write_binary : bool, optional
+        Specify if the save file should be binary (True) or ASCII (False). Default is False (so it will save in Binary).  
 
     
     Notes
@@ -50,13 +59,23 @@ def write_vtk(mesh, filepath, scalar_name=None, points_dtype=float):
     https://gitlab.kitware.com/vtk/vtk/-/merge_requests/7652/diffs?commit_id=7f76b9e97b1a05cfe4fcd5f9af58f0d7a385b639#528e66f324b988666af9696641f935da71b6f670
     """
 
+    _, extension = os.path.splitext(filepath)
+
     points = mesh.GetPoints()
     if vtk_to_numpy(points.GetData()).dtype != points_dtype:
         points.SetData(numpy_to_vtk(vtk_to_numpy(points.GetData()).astype(float)))
 
-    writer = vtk.vtkPolyDataWriter()
+    if extension == '.vtk':
+        writer = vtk.vtkPolyDataWriter()
+    elif extension == '.stl':
+        writer = vtk.vtkSTLWriter()
     writer.SetFileName(filepath)
     writer.SetInputData(mesh)
     if scalar_name is not None:
         writer.SetScalarsName(scalar_name)
+    
+    if write_binary is True:
+        writer.SetFileTypeToBinary()
+    elif write is False:
+        writer.SetFileTypeToASCII()
     writer.Write()
