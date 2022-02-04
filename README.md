@@ -2,6 +2,9 @@
 
 pyMSKT is an open-source library for performing quantitative analyses of the musculoskeletal system. It enables creation of surface meshes of musculoskeletal anatomy and then processes these meshes to get quantitative outcomes and visualizatons, like for cartilage thickness.  
 
+<p align="center">
+<img src="./images/whole_knee_1.png" width="300">
+</p>
 
 # Installation
 
