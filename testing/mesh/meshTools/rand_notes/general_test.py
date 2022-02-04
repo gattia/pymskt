@@ -279,14 +279,14 @@
 
 
 
-def test_gaussian_smooth_surface_scalars_use_idx_for_base_mesh():
-    raise Exception('Test not implemented')
+# def test_gaussian_smooth_surface_scalars_use_idx_for_base_mesh():
+#     raise Exception('Test not implemented')
 
-def test_smooth_scalars_from_second_mesh_onto_base_use_idx_coords_to_smooth():
-    raise Exception('Test not implemented')
+# def test_smooth_scalars_from_second_mesh_onto_base_use_idx_coords_to_smooth():
+#     raise Exception('Test not implemented')
 
-def test_smooth_scalars_from_second_mesh_onto_base_use_idx_for_second_mesh():
-    raise Exception('Test not implemented')
+# def test_smooth_scalars_from_second_mesh_onto_base_use_idx_for_second_mesh():
+#     raise Exception('Test not implemented')
 
-def test_get_cartilage_properties_at_points():
-    raise Exception('Test not implemented')
+# def test_get_cartilage_properties_at_points():
+#     raise Exception('Test not implemented')
