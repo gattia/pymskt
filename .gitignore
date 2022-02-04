@@ -11,6 +11,7 @@ __pycache__/
 *.pyc
 
 *.egg-info/
+.eggs/
 
 # C extensions
 *.so
@@ -161,3 +162,7 @@ cython_debug/
 #.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+# Local files we dont want to track
+functions_from_neuralseg_nsvtk_deleting_as_added_to_pymskt.py
+vtk_bone_tools.egg-info/
