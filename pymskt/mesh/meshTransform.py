@@ -4,6 +4,25 @@ import SimpleITK as sitk
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import create_4x4_from_3x3
 
+def create_transform(transform_matrix):
+    """
+    Turn 4x4 matrix into a vtkTransform
+
+    Parameters
+    ----------
+    transform_matrix : numpy.ndarray
+        4x4 transformation matrix to be converted to transform
+    """
+
+    if np.allclose(transform_matrix.shape, [4, 4]):
+        pass
+    else:
+        raise Exception('transform matrix should be 4x4 matrix')
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(transform_matrix.flatten())
+    return transform
+
+
 def apply_transform(source, transform):
     """
     Apply transform to surface mesh
@@ -46,8 +65,8 @@ def copy_image_transform_to_mesh(mesh, image, verbose=False):
         The surface `mesh` after apply the transformation matrix from the `image` to it. 
     """    
     transform_array = create_4x4_from_3x3(image.GetDirection(), translation=image.GetOrigin())
-    transform = vtk.vtkTransform()
-    transform.SetMatrix(transform_array.flatten())
+
+    transform = create_transform(transform_array)
 
     if verbose is True:
         print(transform)
