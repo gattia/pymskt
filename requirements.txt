@@ -6,4 +6,4 @@ pyacvd
 pyvista
 scipy
 SimpleITK
-vtk==8.1.2
+vtk==8.*
