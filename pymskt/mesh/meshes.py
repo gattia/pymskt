@@ -1,4 +1,5 @@
 from logging import error
+from posixpath import supports_unicode_filenames
 import warnings
 import numpy as np
 import vtk
@@ -10,17 +11,24 @@ import SimpleITK as sitk
 import os
 import random
 import string
+import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
 
 import pymskt
 from pymskt.mesh import createMesh
 from pymskt.utils import safely_delete_tmp_file, copy_image_transform_to_mesh
 from pymskt.image import read_nrrd, crop_bone_based_on_width
 from pymskt.mesh.utils import vtk_deep_copy
-from pymskt.mesh.meshTools import gaussian_smooth_surface_scalars, get_mesh_physical_point_coords, get_cartilage_properties_at_points
+from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars, 
+                                   get_mesh_physical_point_coords, 
+                                   get_cartilage_properties_at_points,
+                                   smooth_scalars_from_second_mesh_onto_base,
+                                   transfer_mesh_scalars_get_weighted_average_n_closest
+                                   )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
-                                      get_versor_from_transform, 
-                                      break_versor_into_center_rotate_translate_transforms)
+                                       get_versor_from_transform, 
+                                       break_versor_into_center_rotate_translate_transforms)
+from pymskt.mesh.meshRegistration import non_rigidly_register
 import pymskt.mesh.io as io
 
 class Mesh:
@@ -281,6 +289,120 @@ class Mesh:
         """
         while len(self._list_applied_transforms) > 0:
             self.reverse_most_recent_transform()
+    
+    def non_rigidly_register(
+        self,
+        other_mesh,
+        as_source=True,
+        apply_transform_to_mesh=True,
+        return_transformed_mesh=False,
+        **kwargs
+    ):  
+        """
+        Function to perform non rigid registration between this mesh and another mesh. 
+
+        Parameters
+        ----------
+        other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
+            Other mesh to use in registration process
+        as_source : bool, optional
+            Should the current mesh (in this object) be the source or the target, by default True
+        apply_transform_to_mesh : bool, optional
+            If as_source is True should we apply transformation to internal mesh, by default True
+        return_transformed_mesh : bool, optional
+            Should we return the registered mesh, by default False
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+        # Setup the source & target meshes based on `as_source``
+        if as_source is True:
+            source = self._mesh
+            target = other_mesh
+        elif as_source is False:
+            source = other_mesh
+            target = self._mesh
+
+        # Get registered mesh (source to target)
+        source_transformed_to_target = non_rigidly_register(
+                target_mesh=target,
+                source_mesh=source,
+                **kwargs
+            ) 
+
+        # If current mesh is source & apply_transform_to_mesh is true then replace current mesh. 
+        if (as_source is True) & (apply_transform_to_mesh is True):
+            self._mesh = source_transformed_to_target
+        
+        # curent mesh is target, or is source & want to return mesh, then return it.  
+        if (as_source is False) or ((as_source is True) & (return_transformed_mesh is True)):
+            return source_transformed_to_target
+
+    def copy_scalars_from_other_mesh_to_currect(
+        self,
+        other_mesh,
+        new_scalars_name='scalars_from_other_mesh',
+        weighted_avg=True,                  # Use weighted average, otherwise guassian smooth transfer
+        n_closest=3,
+        sigma=1.,
+        idx_coords_to_smooth_base=None,
+        idx_coords_to_smooth_other=None,
+        set_non_smoothed_scalars_to_zero=True,
+    ):
+        """
+        Convenience function to enable easy transfer scalars from another mesh to the current. 
+        Can use either a gaussian smoothing function, or transfer using nearest neighbours. 
+
+        ** This function requires that the `other_mesh` is non-rigidly registered to the surface
+            of the mesh inside of this class. Or rigidly registered but using the same anatomy that
+            VERY closely matches. Otherwise, the transfered scalars will be bad.  
+
+        Parameters
+        ----------
+        other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
+            Mesh we want to copy 
+        new_scalars_name : str, optional
+           What to name the scalars being transfered to this current mesh, by default 'scalars_from_other_mesh'
+        weighted_avg : bool, optional
+            Should we use `weighted average` or `gaussian smooth` methods for transfer, by default True
+        n_closest : int, optional
+            If `weighted_avg` True, the number of nearest neighbours to use, by default 3
+        sigma : float, optional
+            If `weighted_avg` False, the standard deviation of gaussian kernel, by default 1.
+        idx_coords_to_smooth_base : list, optional
+            If `weighted_avg` False, list of indices from current mesh to use in transfer, by default None
+        idx_coords_to_smooth_other : list, optional
+            If `weighted_avg` False, list of indices from `other_mesh` to use in transfer, by default None
+        set_non_smoothed_scalars_to_zero : bool, optional
+            Should all other indices (not included in idx_coords_to_smooth_other) be set to 0, by default True
+        """
+        if type(other_mesh) is Mesh:
+            other_mesh = other_mesh.mesh
+        elif type(other_mesh) is vtk.vtkPolyData:
+            pass
+        else:
+            raise TypeError(f'other_mesh must be type `pymskt.mesh.Mesh` or `vtk.vtkPolyData` and received: {type(other_mesh)}')
+
+        if weighted_avg is True:
+            transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
+                self._mesh,
+                other_mesh,
+                sigma=sigma,
+                idx_coords_to_smooth_base=idx_coords_to_smooth_base,
+                idx_coords_to_smooth_second=idx_coords_to_smooth_other,
+                set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
+            )
+        else:
+            transferred_scalars = smooth_scalars_from_second_mesh_onto_base(
+                self._mesh,
+                other_mesh,
+                n=n_closest
+            )
+        vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
+        vtk_transferred_scalars.SetName(new_scalars_name)
+        self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
 
     @property
     def seg_image(self):
