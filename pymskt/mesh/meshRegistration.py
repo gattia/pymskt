@@ -1,4 +1,7 @@
+import vtk 
 import pyfocusr
+import numpy as np
+from pymskt.mesh import Mesh
 
 def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mode='similarity'):
     """
@@ -42,52 +45,85 @@ def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mod
     icp.SetMaximumNumberOfLandmarks(n_landmarks)
     return icp
 
-
-# reg = pyfocusr.Focusr(vtk_mesh_target=mesh, 
-#                           vtk_mesh_source=ref_mesh,  # WE ARE TRANSFORMING THE REF_MESH TO THE NEW MESH(es)
-#                           icp_register_first=True,
-#                           icp_registration_mode='similarity',
-#                           icp_reg_target_to_source=True,
-#                           n_spectral_features=3,
-#                           n_extra_spectral=3,
-#                           get_weighted_spectral_coords=False,
-#                           list_features_to_calc=['curvature'], # 'curvature', min_curvature' 'max_curvature'
-#                           use_features_as_coords=True,
-#                           rigid_reg_max_iterations=100,
-#                           non_rigid_alpha=0.01,
-#                           non_rigid_beta=50,
-#                           non_rigid_n_eigens=100,
-#                           non_rigid_max_iterations=500,
-#                           rigid_before_non_rigid_reg=False,
-#                           projection_smooth_iterations=30,
-#                           graph_smoothing_iterations=300,
-#                           feature_smoothing_iterations=30,
-#                           include_points_as_features=False,
-#                           norm_physical_and_spectral=True,
-#                           feature_weights=np.diag([.1,.1]),
-#                           n_coords_spectral_ordering=20000,
-#                           n_coords_spectral_registration=1000,
-#                           initial_correspondence_type='kd',
-#                           final_correspondence_type='kd')  #'kd' 'hungarian'
-#     reg.align_maps()
-#     reg.get_source_mesh_transformed_weighted_avg()
-#     ref_mesh_transformed_to_target = reg.weighted_avg_transformed_mesh
-#     scalars = vtk_functions.transfer_mesh_scalars_get_weighted_average_n_closest(
-#         ref_mesh_transformed_to_target,                                                               
-#         reg.graph_target.vtk_mesh,
-#         n=3
-#     )
+def non_rigidly_register(
+    target_mesh=None,
+    source_mesh=None,
+    final_pt_location='weighted_average',   # 'weighted_average' or 'nearest_neighbour'
+    icp_register_first=True,                # Get bones/objects into roughly the same alignment first
+    icp_registration_mode='similarity',     # similarity = rigid + scaling (isotropic), ("rigid", "similarity", "affine")
+    icp_reg_target_to_source=True,          # For shape models, the source is usually the reference so we want target in its space (true)
+    n_spectral_features=3,
+    n_extra_spectral=3,                     # For ensuring we have the right spec coords - determined using wasserstein distances. 
+    get_weighted_spectral_coords=False,
+    list_features_to_calc=['curvature'],    # 'curvature', min_curvature' 'max_curvature' (other features for registration)
+    use_features_as_coords=True,            # During registraiton - do we want to use curvature etc. 
+    rigid_reg_max_iterations=100,
+    non_rigid_alpha=0.01,
+    non_rigid_beta=50,
+    non_rigid_n_eigens=100,                 # number of eigens for low rank CPD registration
+    non_rigid_max_iterations=500,
+    rigid_before_non_rigid_reg=False,       # This is of the spectral coordinates - not the x/y/z used in icp_register_first
+    projection_smooth_iterations=30,        # Used for distributing registered points onto target surface - helps preserve diffeomorphism
+    graph_smoothing_iterations=300,         # For smoothing the target mesh before final point correspondence
+    feature_smoothing_iterations=30,        # how much should features (curvature) be smoothed before registration 
+    include_points_as_features=False,       # Do we want to incldue x/y/z positions in registration? 
+    norm_physical_and_spectral=True,        # set standardized mean and variance for each feature
+    feature_weights=np.diag([.1,.1]),       # should we weight the extra features (curvature) more/less than spectral
+    n_coords_spectral_ordering=20000,       # How many points on mesh to use for ordering spectral coordinates ()
+    n_coords_spectral_registration=1000,    # How many points to use for spectral registrtaion (usually random subsample)
+    initial_correspondence_type='kd',       # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
+    final_correspondence_type='kd'          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
+):
     
-#     scalars[np.isnan(scalars)] = 0
-#     thickness_scalars = numpy_to_vtk(scalars)
-#     thickness_scalars.SetName('thickness (mm)')
-#     ref_mesh_transformed_to_target.GetPointData().AddArray(thickness_scalars)
-#     ref_mesh_transformed_to_target.GetPointData().SetActiveScalars('thickness (mm)')
+    if final_pt_location not in ['weighted_average', 'nearest_neighbour']:
+        raise Exception('Did not specify appropriate final_pt_location, must be either "weighted_average", or "nearest_neighbour"')
 
-#     save_filename = '{}_{}_reg_to_{}.vtk'.format(leg, 
-#                                                  bone, 
-#                                                  'mean_mesh_round_1')
+    # Test if mesh is a vtk mesh, or a pymsky.Mesh object. 
+    if type(target_mesh) is Mesh:
+        vtk_mesh_target = target_mesh.mesh
+    elif type(target_mesh) is vtk.vtkPolyData:
+        vtk_mesh_target = target_mesh
     
-#     nsvtk.write_vtk(ref_mesh_transformed_to_target,
-#               save_filename,
-#               folder_name)
+    if type(source_mesh) is Mesh:
+        vtk_mesh_source = source_mesh.mesh
+    elif type(source_mesh) is vtk.vtkPolyData:
+        vtk_mesh_source = source_mesh
+    
+    reg = pyfocusr.Focusr(
+        vtk_mesh_target=vtk_mesh_target, 
+        vtk_mesh_source=vtk_mesh_source,  
+        icp_register_first=icp_register_first,
+        icp_registration_mode=icp_registration_mode,
+        icp_reg_target_to_source=icp_reg_target_to_source,
+        n_spectral_features=n_spectral_features,
+        n_extra_spectral=n_extra_spectral,
+        get_weighted_spectral_coords=get_weighted_spectral_coords,
+        list_features_to_calc=list_features_to_calc,
+        use_features_as_coords=use_features_as_coords,
+        rigid_reg_max_iterations=rigid_reg_max_iterations,
+        non_rigid_alpha=non_rigid_alpha,
+        non_rigid_beta=non_rigid_beta,
+        non_rigid_n_eigens=non_rigid_n_eigens,
+        non_rigid_max_iterations=non_rigid_max_iterations,
+        rigid_before_non_rigid_reg=rigid_before_non_rigid_reg,
+        projection_smooth_iterations=projection_smooth_iterations,
+        graph_smoothing_iterations=graph_smoothing_iterations,
+        feature_smoothing_iterations=feature_smoothing_iterations,
+        include_points_as_features=include_points_as_features,
+        norm_physical_and_spectral=norm_physical_and_spectral,
+        feature_weights=feature_weights,
+        n_coords_spectral_ordering=n_coords_spectral_ordering,
+        n_coords_spectral_registration=n_coords_spectral_registration,
+        initial_correspondence_type=initial_correspondence_type,
+        final_correspondence_type=final_correspondence_type
+    ) 
+    reg.align_maps()
+
+    if final_pt_location == 'weighted_average':
+        reg.get_source_mesh_transformed_weighted_avg()
+        mesh_transformed_to_target = reg.weighted_avg_transformed_mesh
+    elif final_pt_location == 'nearest_neighbour':
+        reg.get_source_mesh_transformed_nearest_neighbour()
+        mesh_transformed_to_target = reg.nearest_neighbour_transformed_mesh
+        
+    return mesh_transformed_to_target    
