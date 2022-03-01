@@ -1,6 +1,6 @@
-from atexit import register
-from configparser import MAX_INTERPOLATION_DEPTH
 import numpy as np
+from datetime import date
+import os
 
 
 from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
@@ -8,6 +8,8 @@ from pymskt.mesh.meshTools import get_mesh_physical_point_coords, set_mesh_physi
 from pymskt.mesh.meshTransform import apply_transform
 from pymskt.mesh.utils import get_symmetric_surface_distance, vtk_deep_copy
 from pymskt.mesh import io 
+
+today = date.today()
 
 class FindReferenceMeshICP:
     """
@@ -150,8 +152,8 @@ class ProcrustesRegistration:
         self.kwargs['icp_register_first'] = True
         self.kwargs['icp_reg_target_to_source'] = True
 
-        self.registered_pt_coords = np.zeros((len(list_mesh_paths) + 1, self.n_points, 3), dtype=float)
-        self.registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
+        self._registered_pt_coords = np.zeros((len(list_mesh_paths) + 1, self.n_points, 3), dtype=float)
+        self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
 
         self.ref_2_mean_error = 100
         self.reg_idx = 0
@@ -167,7 +169,7 @@ class ProcrustesRegistration:
             **self.kwargs
         )
 
-        self.registered_pt_coords[other_mesh_idx, :, :] = get_mesh_physical_point_coords(registered_mesh)
+        self._registered_pt_coords[other_mesh_idx, :, :] = get_mesh_physical_point_coords(registered_mesh)
     
     def execute(self):
 
@@ -185,7 +187,7 @@ class ProcrustesRegistration:
                 self.register(self._ref_mesh, idx)
             
             # Calculate the mean bone shape & create new mean bone shape mesh
-            mean_shape = np.mean(self.registered_pt_coords, axis=0)
+            mean_shape = np.mean(self._registered_pt_coords, axis=0)
             mean_mesh = vtk_deep_copy(self._ref_mesh)
             set_mesh_physical_point_coords(mean_mesh, mean_shape)
 
@@ -199,6 +201,36 @@ class ProcrustesRegistration:
                 
             self.reg_idx += 1
     
+    def save_meshes(
+        self, 
+        mesh_suffix=f'procrustes_registered_{today.strftime("%b")}_{today.day}_{today.year}',
+        folder=None
+    ):
+        mesh = vtk_deep_copy(self._ref_mesh)
+        for idx, path in enumerate(self.list_mesh_paths):
+            # parse folder / filename for saving
+            orig_folder = os.path.dirname(path)
+            orig_filename = os.path.basename(path)
+            base_filename = orig_filename[: orig_filename.rfind(".")]
+            filename = f'{base_filename}_{mesh_suffix}_{idx}.vtk'
+            if folder is None:
+                path_to_save = os.path.join(orig_folder, filename)
+            else:
+                path_to_save = os.path.join(folder, filename)        
+            
+            # Keep recycling the same base mesh, just move the x/y/z point coords around. 
+            set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
+            # save mesh to disk
+            io.write_vtk(mesh, path_to_save)
+    
+    def save_ref_mesh(self, path):
+        io.write_vtk(self._ref_mesh, path)
+
     @property
     def ref_mesh(self):
         return self._ref_mesh
+    
+    @property
+    def registered_pt_coords(self):
+        return self._registered_pt_coords
+    
