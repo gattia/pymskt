@@ -385,6 +385,25 @@ def get_cartilage_properties_at_points(surface_bone,
                 np.asarray(seg_data_probe.most_common_data, dtype=np.int)
                 )
 
+def set_mesh_physical_point_coords(mesh, new_points):
+    """
+    Convenience function to update the x/y/z point coords of a mesh
+
+    Nothing is returned becuase the mesh object is updated in-place. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Mesh object we want to update the point coordinates for
+    new_points : np.ndarray
+        Numpy array shaped n_points x 3. These are the new point coordinates that
+        we want to update the mesh to have. 
+
+    """
+    orig_point_coords = get_mesh_physical_point_coords(mesh)
+    if new_points.shape == orig_point_coords.shape:
+        mesh.GetPoints().SetData(numpy_to_vtk(new_points))
+
 
 def get_mesh_physical_point_coords(mesh):
     """
