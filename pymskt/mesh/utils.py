@@ -205,3 +205,43 @@ def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
     FWHMs = [sigma2fwhm(x) for x in sigmas]
 
     return FWHMs
+
+def get_surface_distance(surface_1, 
+                         surface_2, 
+                         return_RMS=True,
+                         return_individual_distances=False):
+
+    if (return_RMS is True) & (return_individual_distances is True):
+        raise Exception('Nothing to return - either return_RMS or return_individual_distances must be `True`')
+
+    pt_locator = vtk.vtkPointLocator()
+    pt_locator.SetDataSet(surface_2)
+    pt_locator.AutomaticOn()
+    pt_locator.BuildLocator()
+    
+    distances = np.zeros(surface_1.GetNumberOfPoints())
+    
+    for pt_idx in range(surface_1.GetNumberOfPoints()):
+        point_1 = np.asarray(surface_1.GetPoint(pt_idx))
+        pt_idx_2 = pt_locator.FindClosestPoint(point_1)
+        point_2 = np.asarray(surface_2.GetPoint(pt_idx_2))
+        distances[pt_idx] = np.sqrt(np.sum(np.square(point_2-point_1)))
+    
+    RMS = np.sqrt(np.mean(np.square(distances)))
+    
+    if return_individual_distances is True:
+        if return_RMS is True:
+            return RMS, distances
+        else:
+            return distances
+    else:
+        if return_RMS is True:
+            return RMS
+
+def get_symmetric_surface_distance(surface_1, surface_2):
+    surf1_to_2_distances = get_surface_distance(surface_1, surface_2, return_RMS=False, return_individual_distances=True)
+    surf2_to_1_distances = get_surface_distance(surface_2, surface_1, return_RMS=False, return_individual_distances=True)
+
+    symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
+
+    return symmetric_distance
