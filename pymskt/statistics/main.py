@@ -53,7 +53,8 @@ class FindReferenceMeshICP:
         """
         self.list_mesh_paths = list_mesh_paths
         self.n_meshes = len(list_mesh_paths)
-        self.symm_surface_distances = np.zeros((self.n_meshes, self.n_meshes), dtype=float)
+        self._symm_surface_distances = np.zeros((self.n_meshes, self.n_meshes), dtype=float)
+        self.mean_errors = None
 
         self.max_n_iter = max_n_iter
         self.n_landmarks = n_landmarks
@@ -81,21 +82,21 @@ class FindReferenceMeshICP:
 
         symmetric_surf_distance = get_symmetric_surface_distance(target, transformed_source)
 
-        self.symm_surface_distances[idx1_target, idx2_source] = symmetric_surf_distance
+        self._symm_surface_distances[idx1_target, idx2_source] = symmetric_surf_distance
     
     def get_template_idx(self):
-        mean_errors = np.mean(self.symm_surface_distances, axis=1)
-        self._ref_idx = np.argmin(mean_errors)
+        self._mean_errors = np.mean(self._symm_surface_distances, axis=1)
+        self._ref_idx = np.argmin(self._mean_errors)
         self._ref_path = self.list_mesh_paths[self._ref_idx]
 
 
     def execute(self):
         if self.verbose is True:
             print(f'Starting registrations, there are {len(self.list_mesh_paths)} meshes')
-        for idx1_target in enumerate(self.list_mesh_paths):
+        for idx1_target, target_path in enumerate(self.list_mesh_paths):
             if self.verbose is True:
                 print(f'\tStarting target mesh {idx1_target}')
-            for idx2_source in enumerate(self.list_mesh_paths):
+            for idx2_source, source_path in enumerate(self.list_mesh_paths):
                 if self.verbose is True:
                     print(f'\t\tStarting source mesh {idx2_source}')
                 # If the target & mesh are same skip, errors = 0
@@ -115,6 +116,14 @@ class FindReferenceMeshICP:
     @property
     def ref_path(self):
         return self._ref_path
+    
+    @property
+    def symm_surface_distances(self):
+        return self._symm_surface_distances
+    
+    @property
+    def mean_errors(self):
+        return self._mean_errors
     
 
 class ProcrustesRegistration:
