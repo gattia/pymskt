@@ -8,28 +8,47 @@ pyMSKT is an open-source library for performing quantitative analyses of the mus
 
 # Installation
 
-1. Clone repository: <br>
+This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and [`cycpd`](https://github.com/gattia/cycpd) for registration. All dependencies for these other libraries are included in the requirements for this repository - instructions for installing are included below. 
+
+1. Clone this repository & install dependencies: <br>
     ```bash
+    # clone repository
     git clone https://github.com/gattia/pymskt.git
+    
+    # move into directory
+    cd pymskt
+    
+    # Best option for creating environment & installing dependencies:
+    conda env create -n mskt
+    conda activate mskt
+    conda install --file requirements.txt
+    # Alternatively - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
+    pip install -r requirements.txt
+    
+    # Return to root dir
+    cd ..
     ```
-2. Move into repository directory: <br>
+
+2. Clone cycpd & install: <br>
+    ```bash
+    git clone https://github.com/gattia/cycpd.git
+    cd cycpd
+    python setup.py install
+    cd ..
+    ```
+3. Clone pyfocusr & install: <br>
+    ```bash
+    git clone https://github.com/gattia/pyfocusr.git
+    cd pyfocusr
+    python setup.py install
+    cd ..
+    ```
+4. Install pymskt: <br>
     ```bash
     cd pymskt
-    ```
-3. Install dependencies: <br>
-    - Best: <br>
-        ```bash
-        conda env create -f environment.yml
-        conda activate mskt
-        ```
-    - Second - ideally create a virtual environment first & then: <br>
-        ```bash
-        pip install -r requirements.txt
-        ```
-3. Install pacakge<br>
-    ```bash
     python setup.py install
     ```
+
 
 ### To install itkwidgets (for visualization): 
 https://pypi.org/project/itkwidgets/
@@ -76,17 +95,21 @@ view(geometries=[femur.mesh])
 
 
 
-# Tests
-- Run tests using `pytest` in the home directory or `make test`
+# Development / Contributing
+## Tests
+- Running tests requires pytest (`conda install pytest` or `pip install pytest`)
+- Run tests using `pytest` or `make test` in the home directory. 
+
+## Coverage
+- Coverage results/info requires `coverage` (`conda install coverage` or `pip install coverage`)
 - Can get coverage statistics by running: 
     - `coverage run -m pytest`
     or if using make: 
     - `make coverage`
 
-- When updating the cython code, it is not re-built when we re-install. Therefore we force it to do this: 
+## Notes for development
+- When updating cython code, it is not re-built when we re-install using the basic `python setup.py install`. Therefore we force it to do this: 
     - `python setup.py build_ext -i --force`          
-
-# Contributing
 
 ### Tests
 If you add a new function, or functionality to `pymskt` please add appropriate tests as well. 
@@ -95,4 +118,4 @@ The tests are located in `/testing` and are organized as:
 
 The tests use `pytest`. If you are not familiar with `pytest` a brief example is provided [here](https://docs.pytest.org/en/6.2.x/getting-started.html). 
 
-Currently, multiple tests are not passing, this is because dummy tests have been created where a test should go. If you want to help but dont know how or where to start, filling in these tests would be a great place to start. 
+Currently, multiple tests are not passing, this is because dummy tests have been created where a test should go. If you want to help but dont know how or where to start, filling in these tests would be a great place to start! And greatly appreciated.
