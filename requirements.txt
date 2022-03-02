@@ -7,3 +7,18 @@ pyvista
 scipy
 SimpleITK
 vtk==8.*
+param
+jupyter
+notebook
+traittypes
+
+
+# pyfocusr
+matplotlib
+itkwidgets
+itk
+colorcet
+zstd
+jupyter_core
+jupyter_client
+jupyter_console
