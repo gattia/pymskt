@@ -1,5 +1,8 @@
 .DS_Store
 
+# example scripts Anthony used for testing: 
+examples/**/test_*.ipynb
+
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
@@ -166,3 +169,5 @@ cython_debug/
 # Local files we dont want to track
 functions_from_neuralseg_nsvtk_deleting_as_added_to_pymskt.py
 vtk_bone_tools.egg-info/
+pymskt/cython/cython_functions.html
+pymskt/cython/cython_functions.c
