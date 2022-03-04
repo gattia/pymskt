@@ -6,6 +6,8 @@ import vtk
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
 import SimpleITK as sitk
+import pyacvd
+import pyvista as pv
 
 import numpy as np
 
@@ -660,7 +662,41 @@ def gaussian_smooth_surface_scalars(mesh, sigma=1., idx_coords_to_smooth=None, a
     # appropriately. 
     return mesh
 
+def resample_surface(mesh, subdivisions=2, clusters=10000):
+    """
+    Resample a surface mesh using the ACVD algorithm: 
+    Version used: 
+    - https://github.com/pyvista/pyacvd
+    Original version w/ more references: 
+    - https://github.com/valette/ACVD
 
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Polydata mesh to be re-sampled. 
+    subdivisions : int, optional
+        Subdivide the mesh to have more points before clustering, by default 2
+        Probably not necessary for very dense meshes.
+    clusters : int, optional
+        The number of clusters (points/vertices) to create during resampling 
+        surafce, by default 10000
+        - This is not exact, might have slight differences.
+    
+        Returns
+    -------
+    vtk.vtkPolyData :
+        Return the resampled mesh. This will be a pyvista version of the vtk mesh
+        but this is usable in all vtk function so it is not an issue. 
+        
+
+    """        
+    pv_smooth_mesh = pv.wrap(mesh)
+    clus = pyacvd.Clustering(pv_smooth_mesh)
+    clus.subdivide(subdivisions)
+    clus.cluster(clusters)
+    mesh = clus.create_mesh()
+
+    return mesh
 ### THE FOLLOWING IS AN OLD/ORIGINAL VERSION OF THIS THAT SMOOTHED ALL ARRAYS ATTACHED TO MESH
 # def gaussian_smooth_surface_scalars(mesh, sigma=(1,), idx_coords_to_smooth=None):
 #     """

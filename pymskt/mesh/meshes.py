@@ -22,7 +22,8 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    get_mesh_physical_point_coords, 
                                    get_cartilage_properties_at_points,
                                    smooth_scalars_from_second_mesh_onto_base,
-                                   transfer_mesh_scalars_get_weighted_average_n_closest
+                                   transfer_mesh_scalars_get_weighted_average_n_closest,
+                                   resample_surface
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -228,12 +229,8 @@ class Mesh:
             The number of clusters (points/vertices) to create during resampling 
             surafce, by default 10000
             - This is not exact, might have slight differences. 
-        """        
-        pv_smooth_mesh = pv.wrap(self._mesh)
-        clus = pyacvd.Clustering(pv_smooth_mesh)
-        clus.subdivide(subdivisions)
-        clus.cluster(clusters)
-        self._mesh = clus.create_mesh()
+        """
+        self._mesh = resample_surface(self._mesh, subdivisions=subdivisions, clusters=clusters)
 
     def apply_transform_to_mesh(self,
                                 transform=None,
