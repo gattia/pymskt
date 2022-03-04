@@ -1,10 +1,14 @@
+from re import sub
 import numpy as np
 from datetime import date
 import os
 
+import pyvista as pv
+import pyacvd
+
 
 from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
-from pymskt.mesh.meshTools import get_mesh_physical_point_coords, set_mesh_physical_point_coords
+from pymskt.mesh.meshTools import get_mesh_physical_point_coords, set_mesh_physical_point_coords, resample_surface
 from pymskt.mesh.meshTransform import apply_transform
 from pymskt.mesh.utils import get_symmetric_surface_distance, vtk_deep_copy
 from pymskt.mesh import io 
@@ -54,7 +58,7 @@ class FindReferenceMeshICP:
         self.list_mesh_paths = list_mesh_paths
         self.n_meshes = len(list_mesh_paths)
         self._symm_surface_distances = np.zeros((self.n_meshes, self.n_meshes), dtype=float)
-        self.mean_errors = None
+        self._mean_errors = None
 
         self.max_n_iter = max_n_iter
         self.n_landmarks = n_landmarks
@@ -132,9 +136,12 @@ class ProcrustesRegistration:
         self,
         path_ref_mesh,
         list_mesh_paths,
-        tolerance = 1e-3,
+        tolerance1=2e-1,
+        tolerance2=1e-2,
         max_n_registration_steps=10,
         verbose=True,
+        remesh_each_step=False,
+        patience=2,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -151,7 +158,8 @@ class ProcrustesRegistration:
 
         self.mean_mesh = None
 
-        self.tolerance = tolerance
+        self.tolerance1 = tolerance1
+        self.tolerance2 = tolerance2
         self.max_n_registration_steps = max_n_registration_steps
 
         self.kwargs = kwargs
@@ -161,13 +169,23 @@ class ProcrustesRegistration:
         self.kwargs['icp_register_first'] = True
         self.kwargs['icp_reg_target_to_source'] = True
 
-        self._registered_pt_coords = np.zeros((len(list_mesh_paths) + 1, self.n_points, 3), dtype=float)
+        self._registered_pt_coords = np.zeros((len(list_mesh_paths), self.n_points, 3), dtype=float)
         self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
 
-        self.ref_2_mean_error = 100
+        self.sym_error = 100
+        self.list_errors = []
+        self.list_ref_meshes = []
         self.reg_idx = 0
 
+        self.patience = patience
+        self.patience_idx = 0
+        self._best_score = 100
+
         self.verbose = verbose
+
+        self.remesh_each_step = remesh_each_step
+
+        self.error_2_error_change = 100
 
     def register(self, ref_mesh_source, other_mesh_idx):
         target_mesh = io.read_vtk(self.list_mesh_paths[other_mesh_idx])
@@ -178,43 +196,83 @@ class ProcrustesRegistration:
             **self.kwargs
         )
 
-        self._registered_pt_coords[other_mesh_idx, :, :] = get_mesh_physical_point_coords(registered_mesh)
+        return get_mesh_physical_point_coords(registered_mesh)
     
     def execute(self):
+        # create placeholder to store registered point clouds & update inherited one only if also storing 
+        registered_pt_coords = np.zeros_like(self._registered_pt_coords)
 
-        while (self.reg_idx < self.max_n_registration_steps) & (self.ref_2_mean_error > self.tolerance):
+        # keep doing registrations until max# is hit, or the minimum error between registrations is hit. 
+        while (
+            (self.reg_idx < self.max_n_registration_steps) & 
+            (self.sym_error > self.tolerance1) & 
+            (self.error_2_error_change > self.tolerance2)
+        ):
             if self.verbose is True:
                 print(f'Starting registration round {self.reg_idx}')
+            
+            # If its not the very first iteration - check whether or not we want to re-mesh after every iteration. 
+            if (self.reg_idx != 0) & (self.remesh_each_step is True):
+                n_points = self._ref_mesh.GetNumberOfPoints()
+                self._ref_mesh = resample_surface(self._ref_mesh, subdivisions=2, clusters=n_points)
+                if n_points != self.n_points:
+                    print(f'Updating n_points for mesh from {self.n_points} to {self._ref_mesh.GetNumberOfPoints()}')
+                    # re-create the array to store registered points as the # vertices might change after re-meshing. 
+                    # also update n_points. 
+                    self.n_points = n_points
+                    registered_pt_coords = np.zeros((len(self.list_mesh_paths), self.n_points, 3), dtype=float)
+
             # register the reference mesh to all other meshes
             for idx, path in enumerate(self.list_mesh_paths):
                 if self.verbose is True:
                     print(f'\tRegistering to mesh # {idx}')
                 # skip the first mesh in the list if its the first round (its the reference)
                 if (self.reg_idx == 0) & (idx == 0):
+                    # first iteration & ref mesh, just use points as they are. 
+                    registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
                     continue
                 # register & save registered coordinates in the pre-allocated array
-                self.register(self._ref_mesh, idx)
+                registered_pt_coords[idx, :, :] = self.register(self._ref_mesh, idx)
             
             # Calculate the mean bone shape & create new mean bone shape mesh
-            mean_shape = np.mean(self._registered_pt_coords, axis=0)
+            mean_shape = np.mean(registered_pt_coords, axis=0)
             mean_mesh = vtk_deep_copy(self._ref_mesh)
             set_mesh_physical_point_coords(mean_mesh, mean_shape)
+            # store in list of reference meshes
+            self.list_ref_meshes.append(mean_mesh)
 
             # Get surface distance between previous reference mesh and the new mean
-            self.ref_2_mean_error = get_symmetric_surface_distance(self._ref_mesh, mean_mesh)
+            sym_error = get_symmetric_surface_distance(self._ref_mesh, mean_mesh)
+            self.error_2_error_change = np.abs(sym_error - self.sym_error)
+            self.sym_error = sym_error
+            if self.sym_error >= self._best_score:
+                # if the error isnt going down, then keep track of that and done save the
+                # new reference mesh. 
+                self.patience_idx += 1
+            else: 
+                self.patience_idx = 0
+                # ONLY UPDATE THE REF_MESH or the REGISTERED_PTS WHEN THE INTER-MESH (REF) ERROR GETS BETTER
+                # NOT SURE IF THIS IS A GOOD IDEA - MIGHT WANT A BETTER CRITERIA? 
+                self._ref_mesh = mean_mesh
+                self._registered_pt_coords = registered_pt_coords
+            # Store the symmetric error values so they can be plotted later
+            self.list_errors.append(self.sym_error)
             if self.verbose is True:
-                print(f'\t\tSymmetric surface error: {self.ref_2_mean_error}')
+                print(f'\t\tSymmetric surface error: {self.sym_error}')
             
-            # update _ref_mesh
-            self._ref_mesh = mean_mesh
+            if self.patience_idx >= self.patience:
+                print(f'Early stopping initiated - no improvment for {self.patience_idx} iterations, patience is: {self.patience}')
+                break           
                 
             self.reg_idx += 1
-    
+
     def save_meshes(
         self, 
         mesh_suffix=f'procrustes_registered_{today.strftime("%b")}_{today.day}_{today.year}',
         folder=None
-    ):
+    ):  
+        if folder is not None:
+            os.makedirs(folder, exist_ok=True)
         mesh = vtk_deep_copy(self._ref_mesh)
         for idx, path in enumerate(self.list_mesh_paths):
             # parse folder / filename for saving
@@ -225,7 +283,7 @@ class ProcrustesRegistration:
             if folder is None:
                 path_to_save = os.path.join(orig_folder, filename)
             else:
-                path_to_save = os.path.join(folder, filename)        
+                path_to_save = os.path.join(os.path.abspath(folder), filename)        
             
             # Keep recycling the same base mesh, just move the x/y/z point coords around. 
             set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
