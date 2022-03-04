@@ -1,7 +1,7 @@
+from tkinter import N
 import vtk 
 import pyfocusr
 import numpy as np
-from pymskt.mesh import Mesh
 
 def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mode='similarity'):
     """
@@ -75,19 +75,26 @@ def non_rigidly_register(
     final_correspondence_type='kd'          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
 ):
     
+
     if final_pt_location not in ['weighted_average', 'nearest_neighbour']:
         raise Exception('Did not specify appropriate final_pt_location, must be either "weighted_average", or "nearest_neighbour"')
 
     # Test if mesh is a vtk mesh, or a pymsky.Mesh object. 
-    if type(target_mesh) is Mesh:
-        vtk_mesh_target = target_mesh.mesh
-    elif type(target_mesh) is vtk.vtkPolyData:
+    if isinstance(target_mesh, vtk.vtkPolyData):
         vtk_mesh_target = target_mesh
+    else:
+        try:
+            vtk_mesh_target = target_mesh.mesh
+        except:
+            raise Exception(f'expected type vtk.vtkPolyData or pymskt.mesh.Mesh, got: {type(target_mesh)}')
     
-    if type(source_mesh) is Mesh:
-        vtk_mesh_source = source_mesh.mesh
-    elif type(source_mesh) is vtk.vtkPolyData:
+    if isinstance(source_mesh, vtk.vtkPolyData):
         vtk_mesh_source = source_mesh
+    else:
+        try:
+            vtk_mesh_source = source_mesh.mesh
+        except:
+            raise Exception(f'expected type vtk.vtkPolyData or pymskt.mesh.Mesh, got: {type(target_mesh)}')
     
     reg = pyfocusr.Focusr(
         vtk_mesh_target=vtk_mesh_target, 
