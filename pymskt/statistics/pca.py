@@ -37,7 +37,7 @@ def pca_svd(data):
 
     Y = data.T / np.sqrt(N - 1)
 
-    U, S, V = svd(Y)
+    U, S, V = svd(Y, full_matrices=False)
     PC = V.T  # V are the principle components (PC)
     V = S ** 2  # The squared singular values are the variances (V)
 
