@@ -1,4 +1,3 @@
-from tkinter import N
 import vtk 
 import pyfocusr
 import numpy as np
