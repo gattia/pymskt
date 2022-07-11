@@ -11,7 +11,7 @@ import SimpleITK as sitk
 import os
 import random
 import string
-import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
+# import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
 
 import pymskt
 from pymskt.mesh import createMesh

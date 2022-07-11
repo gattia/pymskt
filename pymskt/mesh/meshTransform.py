@@ -4,7 +4,7 @@ import SimpleITK as sitk
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import create_4x4_from_3x3
 
-import pyfocusr
+# import pyfocusr
 
 def create_transform(transform_matrix):
     """
