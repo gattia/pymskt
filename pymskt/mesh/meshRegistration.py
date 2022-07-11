@@ -1,5 +1,13 @@
+import sys
 import vtk 
-import pyfocusr
+try:
+     import pyfocusr
+except ModuleNotFoundError:
+    print('pyfocusr not found')
+    print('If you are not using the registration tools, you can ignore this message.')
+    print('install pyfocusr as described in the README: https://github.com/gattia/pymskt')
+    print('or visit the pyfocusr github repo: https://github.com/gattia/pyfocusr')
+
 import numpy as np
 
 def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mode='similarity'):
@@ -74,6 +82,8 @@ def non_rigidly_register(
     final_correspondence_type='kd'          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
 ):
     
+    if 'pyfocusr' not in sys.modules:
+        raise ModuleNotFoundError('pyfocusr is not installed & is necessary for non-rigid registration.')
 
     if final_pt_location not in ['weighted_average', 'nearest_neighbour']:
         raise Exception('Did not specify appropriate final_pt_location, must be either "weighted_average", or "nearest_neighbour"')
