@@ -243,18 +243,97 @@ def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
     
     return(final_segmentation)
 
+def verify_and_correct_med_lat_tib_cart(
+    seg_array,  #sitk.GetArrayViewFromImage(seg)
+    tib_label=6,
+    med_tib_cart_label=2, 
+    lat_tib_cart_label=3,
+    ml_axis=0
+):
+    '''
+    Verify that the medial and lateral tibial cartilage are correctly labeled.
+    Parameters
+    ----------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+    tib_label : int
+        Label that tibial cartilage is in the seg_array
+    med_tib_cart_label : int
+        Label that medial tibial cartilage is in the seg_array
+    lat_tib_cart_label : int
+        Label that lateral tibial cartilage is in the seg_array
+    ml_axis : int
+        Medial/lateral axis of the acquired knee MRI.
+    
+    Returns
+    -------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+        The tibial cartilage regions will have been updated to ensure
+        all tib cart on med/lat sides are correctly classified.
+        
+    '''
+    #get binary array for tibia
+    array_tib = np.zeros_like(seg_array)
+    array_tib[seg_array == tib_label] = 1
+    #get binary array for tib cart
+    array_tib_cart = np.zeros_like(seg_array)
+    array_tib_cart[(seg_array == lat_tib_cart_label) + (seg_array == med_tib_cart_label)] = 1
+
+    #get the locatons of med/lat cartilage & get their centroids
+    med_cart_locs = np.asarray(np.where(seg_array == med_tib_cart_label))
+    lat_cart_locs = np.asarray(np.where(seg_array == lat_tib_cart_label))
+    middle_med_cart = med_cart_locs[ml_axis,:].mean()
+    middle_lat_cart = lat_cart_locs[ml_axis,:].mean()
+
+    #get location of tibia to get centroid of tibial plateau
+    tib_locs = np.asarray(np.where(seg_array == tib_label))
+    middle_tib = tib_locs[ml_axis, :].mean()
+    center_tibia_slice = int(middle_tib)
+
+    # infer the direction(s) for medial/lateral
+    med_direction = np.sign(middle_med_cart - middle_tib)
+    lat_direction = np.sign(middle_lat_cart - middle_tib)
+    if med_direction == lat_direction:
+        raise Exception('Middle of med and lat tibial cartilage on same side of centerline!')
+
+    #create med/lat cartilage masks - binary for updating seg masks
+    med_tib_cart_mask = np.zeros_like(seg_array)
+    lat_tib_cart_mask = np.zeros_like(seg_array)
+
+    if med_direction > 0:
+        med_tib_cart_mask[center_tibia_slice:,...] = 1
+        lat_tib_cart_mask[:center_tibia_slice,...] = 1
+    elif med_direction < 0:
+        med_tib_cart_mask[:center_tibia_slice,...] = 1
+        lat_tib_cart_mask[center_tibia_slice:,...] = 1
+
+    # create new med/lat cartilage arrays 
+    new_med_cart_array = array_tib_cart * med_tib_cart_mask
+    new_lat_cart_array = array_tib_cart * lat_tib_cart_mask
+
+    #make copy of original segmentation array & update
+    # med/lat tibial cartilage labels
+    new_seg_array = seg_array.copy()
+    new_seg_array[new_med_cart_array == 1] = med_tib_cart_label
+    new_seg_array[new_lat_cart_array == 1] = lat_tib_cart_label
+    
+    return new_seg_array
 
 def get_knee_segmentation_with_femur_subregions(seg_image,
                                                 fem_cart_label_idx=1,
                                                 wb_region_percent_dist=0.6,
-                                                femur_label=1,
+                                                # femur_label=1,
                                                 med_tibia_label=2,
                                                 lat_tibia_label=3,
                                                 ant_femur_mask=11,
                                                 med_wb_femur_mask=12,
                                                 lat_wb_femur_mask=13,
                                                 med_post_femur_mask=14,
-                                                lat_post_femur_mask=15
+                                                lat_post_femur_mask=15,
+                                                verify_med_lat_tib_cart=True,
+                                                tibia_label=6,
+                                                ml_axis=0
                                                 ):
     """
     Give seg image of knee. Return seg image with all sub-regions of femur included. 
@@ -283,6 +362,12 @@ def get_knee_segmentation_with_femur_subregions(seg_image,
         Seg label for medial posterior femur, by default 14
     lat_post_femur_mask : int, optional
         Seg label for lateral posterior femur, by default 15
+    verify_med_lat_tib_cart : bool, optional
+        Whether to verify that medial and lateral tibial cartilage is on same side of centerline, by default True
+    tibia_label : int, optional
+        Seg label for the tibia, by default 6
+    ml_axis : int, optional
+        Medial/lateral axis of the acquired knee MRI, by default 0
 
     Returns
     -------
@@ -298,7 +383,7 @@ def get_knee_segmentation_with_femur_subregions(seg_image,
                                            anteriorWBslice=troch_notch_x,
                                            posteriorWBslice=posterior_wb_slice,
                                            trochY=troch_notch_y,
-                                           femurLabel=femur_label,
+                                           femurLabel=fem_cart_label_idx,
                                            medTibiaLabel=med_tibia_label,
                                            latTibiaLabel=lat_tibia_label,
                                            antFemurMask=ant_femur_mask,
@@ -307,6 +392,13 @@ def get_knee_segmentation_with_femur_subregions(seg_image,
                                            medPostFemurMask=med_post_femur_mask,
                                            latPostFemurMask=lat_post_femur_mask
                                            )
+
+    if verify_med_lat_tib_cart:
+        new_seg_array = verify_and_correct_med_lat_tib_cart(new_seg_array,
+                                                            tib_label=tibia_label,
+                                                            med_tib_cart_label=med_tibia_label, 
+                                                            lat_tib_cart_label=lat_tibia_label,
+                                                            ml_axis=ml_axis) 
     seg_label_image = sitk.GetImageFromArray(new_seg_array)
     seg_label_image.CopyInformation(seg_image)
     return seg_label_image
