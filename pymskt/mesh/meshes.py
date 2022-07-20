@@ -386,17 +386,27 @@ class Mesh:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
                 self._mesh,
                 other_mesh,
-                sigma=sigma,
-                idx_coords_to_smooth_base=idx_coords_to_smooth_base,
-                idx_coords_to_smooth_second=idx_coords_to_smooth_other,
-                set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
+                n=n_closest
             )
         else:
             transferred_scalars = smooth_scalars_from_second_mesh_onto_base(
                 self._mesh,
                 other_mesh,
-                n=n_closest
+                sigma=sigma,
+                idx_coords_to_smooth_base=idx_coords_to_smooth_base,
+                idx_coords_to_smooth_second=idx_coords_to_smooth_other,
+                set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
             )
+        if (new_scalars_name is None) & (weighted_avg is True):
+            if transferred_scalars.shape[1] > 1:
+                n_arrays = other_mesh.GetPointData().GetNumberOfArrays()
+                array_names = [other_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)]
+                for idx, array_name in enumerate(array_names):
+                    vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:,idx])
+                    vtk_transferred_scalars.SetName(array_name)
+                    self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+                return
+
         vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
         vtk_transferred_scalars.SetName(new_scalars_name)
         self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
@@ -805,7 +815,7 @@ class BoneMesh(Mesh):
         # So, adding this functionality to the processing steps before the bone mesh is created
         if crop_percent is not None:
             self._crop_percent = crop_percent
-        if self._crop_percent != 1.0:
+        if (self._crop_percent != 1.0) and (('femur' in self._bone) or ('tibia' in self._bone)):
             if 'femur' in self._bone:
                 bone_crop_distal = True
             elif 'tibia' in self._bone:
@@ -817,6 +827,10 @@ class BoneMesh(Mesh):
                                                        self._label_idx,
                                                        percent_width_to_crop_height=self._crop_percent,
                                                        bone_crop_distal=bone_crop_distal)
+        elif self._crop_percent != 1.0:
+            print('Trying to crop bone, but only femur/tibia cropping currently exist.')
+            print('Ensure cropping is desired. If so, and using other bone, consider')
+            print('Making a pull request')
            
         super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
 
@@ -1099,11 +1113,14 @@ class BoneMesh(Mesh):
             Name of scalar array to smooth, default 'thickness (mm)'.
         scalar_array_idx : int, optional
             Index of the scalar array to smooth (alternative to using `scalar_array_name`) , by default None
-        """        
-        loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray('thickness (mm)')) > 0.01)[0]
+        """
+        if smooth_only_cartilage is True:
+            loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray('thickness (mm)')) > 0.01)[0]
+        else:
+            loc_cartilage = None
         self._mesh = gaussian_smooth_surface_scalars(self._mesh,
                                                      sigma=scalar_sigma,
-                                                     idx_coords_to_smooth=loc_cartilage if smooth_only_cartilage is True else None,
+                                                     idx_coords_to_smooth=loc_cartilage,
                                                      array_name=scalar_array_name,
                                                      array_idx=scalar_array_idx)
 
