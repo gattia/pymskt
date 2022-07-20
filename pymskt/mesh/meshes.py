@@ -713,7 +713,7 @@ class BoneMesh(Mesh):
                  min_n_pixels=5000,
                  list_cartilage_meshes=None,
                  list_cartilage_labels=None,
-                 crop_percent=1.0,
+                 crop_percent=None,
                  bone='femur',
                  ):
         """
@@ -815,7 +815,7 @@ class BoneMesh(Mesh):
         # So, adding this functionality to the processing steps before the bone mesh is created
         if crop_percent is not None:
             self._crop_percent = crop_percent
-        if (self._crop_percent != 1.0) and (('femur' in self._bone) or ('tibia' in self._bone)):
+        if (self._crop_percent is not None) and (('femur' in self._bone) or ('tibia' in self._bone)):
             if 'femur' in self._bone:
                 bone_crop_distal = True
             elif 'tibia' in self._bone:
@@ -827,11 +827,11 @@ class BoneMesh(Mesh):
                                                        self._label_idx,
                                                        percent_width_to_crop_height=self._crop_percent,
                                                        bone_crop_distal=bone_crop_distal)
-        elif self._crop_percent != 1.0:
-            print('Trying to crop bone, but only femur/tibia cropping currently exist.')
-            print('Ensure cropping is desired. If so, and using other bone, consider')
-            print('Making a pull request')
-           
+        elif self._crop_percent is not None:
+            warnings.warn(f'Trying to crop bone, but {self._bone} specified and only bones `femur`',
+                          'or `tibia` currently supported for cropping. If using another bone, consider',
+                          'making a pull request. If cropping not desired, set `crop_percent=None`.'
+                )
         super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
 
     def create_cartilage_meshes(self,
