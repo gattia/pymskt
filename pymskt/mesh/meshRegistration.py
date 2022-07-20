@@ -61,6 +61,7 @@ def non_rigidly_register(
     icp_reg_target_to_source=True,          # For shape models, the source is usually the reference so we want target in its space (true)
     n_spectral_features=3,
     n_extra_spectral=3,                     # For ensuring we have the right spec coords - determined using wasserstein distances. 
+    target_eigenmap_as_reference=True,
     get_weighted_spectral_coords=False,
     list_features_to_calc=['curvature'],    # 'curvature', min_curvature' 'max_curvature' (other features for registration)
     use_features_as_coords=True,            # During registraiton - do we want to use curvature etc. 
@@ -113,6 +114,7 @@ def non_rigidly_register(
         icp_reg_target_to_source=icp_reg_target_to_source,
         n_spectral_features=n_spectral_features,
         n_extra_spectral=n_extra_spectral,
+        target_eigenmap_as_reference=target_eigenmap_as_reference,
         get_weighted_spectral_coords=get_weighted_spectral_coords,
         list_features_to_calc=list_features_to_calc,
         use_features_as_coords=use_features_as_coords,

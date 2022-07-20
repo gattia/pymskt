@@ -142,6 +142,7 @@ class ProcrustesRegistration:
         verbose=True,
         remesh_each_step=False,
         patience=2,
+        ref_mesh_eigenmap_as_reference=True,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -155,6 +156,7 @@ class ProcrustesRegistration:
 
         self._ref_mesh = io.read_vtk(self.path_ref_mesh)
         self.n_points = self._ref_mesh.GetNumberOfPoints()
+        self.ref_mesh_eigenmap_as_reference = ref_mesh_eigenmap_as_reference
 
         self.mean_mesh = None
 
@@ -193,6 +195,7 @@ class ProcrustesRegistration:
         registered_mesh = non_rigidly_register(
             target_mesh=target_mesh,
             source_mesh=ref_mesh_source,
+            target_eigenmap_as_reference=not self.ref_mesh_eigenmap_as_reference,
             **self.kwargs
         )
 
