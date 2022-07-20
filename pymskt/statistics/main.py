@@ -143,6 +143,9 @@ class ProcrustesRegistration:
         remesh_each_step=False,
         patience=2,
         ref_mesh_eigenmap_as_reference=True,
+        registering_secondary_bone=False,    # True if registering secondary bone of joint, after
+                                             # primary already used for initial registration. E.g., 
+                                             # already did femur for knee, now applying to tibia/patella
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -165,11 +168,17 @@ class ProcrustesRegistration:
         self.max_n_registration_steps = max_n_registration_steps
 
         self.kwargs = kwargs
-        # Ensure that the source mesh (mean, or reference) is the bse mesh
+        # ORIGINALLY THIS WAS THE LOGIC:
+        # Ensure that the source mesh (mean, or reference) is the base mesh
         # We want all meshes aligned with this reference. Then we want
-        # to apply a "warp" of the ref/mean mesh to make it 
+        # to apply a "warp" of the ref/mean mesh to make it
+        # EXCETION - if we are registering a secondary bone in a joint model
+        # E.g., for registering tibia/patella in knee model. 
         self.kwargs['icp_register_first'] = True
-        self.kwargs['icp_reg_target_to_source'] = True
+        if registering_secondary_bone is False:
+            self.kwargs['icp_reg_target_to_source'] = True
+        elif registering_secondary_bone is True:
+            self.kwargs['icp_reg_target_to_source'] = False
 
         self._registered_pt_coords = np.zeros((len(list_mesh_paths), self.n_points, 3), dtype=float)
         self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
