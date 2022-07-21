@@ -381,7 +381,7 @@ class Mesh:
         if (return_transform is True) & (return_transformed_mesh is True):
             raise Exception('Cannot return both transformed mesh and transform')
 
-        if type(other_mesh) in (Mesh, BoneMesh):
+        if type(other_mesh) in (pymskt.mesh.meshes.BoneMesh, pymskt.mesh.meshes.Mesh):
             other_mesh = other_mesh.mesh
 
         # Setup the source & target meshes based on `as_source``
