@@ -103,7 +103,8 @@ class Mesh:
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
         """      
-        if type(mesh) in (str,): #accept path like objects?  
+        if type(mesh) == str: #accept path like objects?  
+            print('mesh string passed, loading mesh from disk')
             self._mesh = io.read_vtk(mesh)
         self._mesh = mesh
         self._seg_image = seg_image
