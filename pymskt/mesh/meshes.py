@@ -28,8 +28,9 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
                                        get_versor_from_transform, 
-                                       break_versor_into_center_rotate_translate_transforms)
-from pymskt.mesh.meshRegistration import non_rigidly_register
+                                       break_versor_into_center_rotate_translate_transforms,
+                                       apply_transform)
+from pymskt.mesh.meshRegistration import non_rigidly_register, get_icp_transform
 import pymskt.mesh.io as io
 
 class Mesh:
@@ -101,7 +102,9 @@ class Mesh:
             Label of anatomy of interest, by default None
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
-        """        
+        """      
+        if type(mesh) in (str,): #accept path like objects?  
+            self._mesh = io.read_vtk(mesh)
         self._mesh = mesh
         self._seg_image = seg_image
         self._path_seg_image = path_seg_image
@@ -336,6 +339,83 @@ class Mesh:
         # curent mesh is target, or is source & want to return mesh, then return it.  
         if (as_source is False) or ((as_source is True) & (return_transformed_mesh is True)):
             return source_transformed_to_target
+
+    def rigidly_register(
+        self,
+        other_mesh,
+        as_source=True,
+        apply_transform_to_mesh=True,
+        return_transformed_mesh=False,
+        return_transform=False,
+        max_n_iter=100,
+        n_landmarks=1000,
+        reg_mode='similarity'
+
+    ):
+        """
+        Function to perform rigid registration between this mesh and another mesh. 
+
+        Parameters
+        ----------
+        other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
+            Other mesh to use in registration process
+        as_source : bool, optional
+            Should the current mesh (in this object) be the source or the target, by default True
+        apply_transform_to_mesh : bool, optional
+            If as_source is True should we apply transformation to internal mesh, by default True
+        return_transformed_mesh : bool, optional
+            Should we return the registered mesh, by default False
+        max_n_iter : int, optional
+            Maximum number of iterations to perform, by default 100
+        n_landmarks : int, optional
+            Number of landmarks to use in registration, by default 1000
+        reg_mode : str, optional
+            Mode of registration to use, by default 'similarity' (similarity, rigid, or affine)
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+
+        if (return_transform is True) & (return_transformed_mesh is True):
+            raise Exception('Cannot return both transformed mesh and transform')
+
+        if type(other_mesh) in (Mesh, BoneMesh):
+            other_mesh = other_mesh.mesh
+
+        # Setup the source & target meshes based on `as_source``
+        if as_source is True:
+            source = self._mesh
+            target = other_mesh
+        elif as_source is False:
+            source = other_mesh
+            target = self._mesh
+        
+        icp_transform = get_icp_transform(
+            source=source,
+            target=target,
+            max_n_iter=max_n_iter,
+            n_landmarks=n_landmarks,
+            reg_mode=reg_mode
+        )
+
+        # If current mesh is source & apply_transform_to_mesh is true then replace current mesh. 
+        if (as_source is True) & (apply_transform_to_mesh is True):
+            self.apply_transform_to_mesh(transform=icp_transform)
+
+            if return_transformed_mesh is True:
+                return self._mesh
+            
+            elif return_transform is True:
+                return icp_transform
+        
+        # curent mesh is target, or is source & want to return mesh, then return it.  
+        elif (as_source is False) & (return_transformed_mesh is True):
+            return apply_transform(source=source, transform=icp_transform)
+
+        else:
+            raise Exception('Nothing to return from rigid registration.')
 
     def copy_scalars_from_other_mesh_to_currect(
         self,
