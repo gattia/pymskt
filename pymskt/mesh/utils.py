@@ -2,6 +2,8 @@ import vtk
 import numpy as np
 from vtk.util.numpy_support import vtk_to_numpy
 from pymskt.utils import sigma2fwhm
+import pyvista as pv
+
 
 # Some functions were originally based on the tutorial on ray casting in python + vtk 
 # by Adamos Kyriakou @:
@@ -245,3 +247,59 @@ def get_symmetric_surface_distance(surface_1, surface_2):
     symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
 
     return symmetric_distance
+
+class GIF:
+    def __init__(
+        self,
+        plotter=None,
+        color='orange', 
+        show_edges=True, 
+        edge_color='black',
+        camera_position='xz',
+        window_size=[3000, 4000],
+        background_color='white',
+        path_save='~/Downloads/ssm.gif'
+    ):
+        if plotter is None:
+            self._plotter = pv.Plotter(notebook=False, off_screen=True)
+        else:
+            self._plotter = plotter
+        
+        if path_save[-3:] != 'gif':
+            raise Exception('path must be to a file ending with suffix `.gif`')
+        
+        self.counter = 0
+        
+        self._plotter.open_gif(path_save)
+
+        self.color = color
+        self.show_edges = show_edges
+        self.edge_color = edge_color
+        self.camera_position = camera_position
+        self.window_size = window_size
+        self.background_color = background_color
+        self.path_save = path_save
+    
+    def update_view(
+        self
+    ):
+        self._plotter.camera_position = self.camera_position
+        self._plotter.window_size = self.window_size
+        self._plotter.set_background(color=self.background_color)
+    
+    def add_mesh_frame(self, mesh):
+        actor = self._plotter.add_mesh(
+            mesh, 
+            render=False,
+            color=self.color, 
+            edge_color=self.edge_color, 
+            show_edges=self.show_edges
+        )
+        if self.counter == 0:
+            self.update_view()
+        self._plotter.write_frame()
+        self._plotter.remove_actor(actor)
+        self.counter += 1
+    
+    def done(self):
+        self._plotter.close()
