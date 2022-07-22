@@ -363,17 +363,34 @@ class GIF:
         self._plotter.set_background(color=self._background_color)
     
     def add_mesh_frame(self, mesh):
-        actor = self._plotter.add_mesh(
-            mesh, 
-            render=False,
-            color=self._color, 
-            edge_color=self._edge_color, 
-            show_edges=self._show_edges
-        )
+        if type(mesh) in (list, tuple):
+            actors = []
+            for mesh_ in mesh:
+                actors.append(self._plotter.add_mesh(
+                    mesh_, 
+                    render=False,
+                    color=self._color, 
+                    edge_color=self._edge_color, 
+                    show_edges=self._show_edges
+                ))
+        else:
+            actor = self._plotter.add_mesh(
+                mesh, 
+                render=False,
+                color=self._color, 
+                edge_color=self._edge_color, 
+                show_edges=self._show_edges
+            )
+
         if self.counter == 0:
             self.update_view()
         self._plotter.write_frame()
-        self._plotter.remove_actor(actor)
+        
+        if type(mesh) in (list, tuple):
+            for actor in actors:
+                self._plotter.remove_actor(actor)
+        else:
+            self._plotter.remove_actor(actor)
         self.counter += 1
     
     def done(self):

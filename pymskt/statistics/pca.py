@@ -1,3 +1,4 @@
+from tracemalloc import start
 import numpy as np
 from scipy.linalg import svd
 import vtk
@@ -209,11 +210,39 @@ def save_gif(
         window_size=window_size,
         background_color=background_color,
     )
+
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
         if verbose is True:
             print(f'Deforming SSM with idx={idx} sd={sd}')
         pts = get_ssm_deformation(PCs, Vs, mean_coords, pc=pc, n_sds=sd)
-        mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts)
+        
+        if type(mean_mesh) == dict:
+            mesh = []
+            start_idx = 0
+            for mesh_name, mesh_params in mean_mesh.items():
+                mesh.append(
+                    create_vtk_mesh_from_deformed_points(
+                        mesh_params['mesh'], 
+                        pts[start_idx:start_idx+mesh_params['n_points'], :],
+                    )
+                )
+                start_idx += mesh_params['n_points']
+        if type(mean_mesh) in (list, tuple):
+            mesh = []
+            start_idx = 0
+            for mesh_ in mean_mesh:
+                n_pts = mesh_.GetNumberOfPoints()
+                mesh.append(
+                    create_vtk_mesh_from_deformed_points(
+                        mesh_, 
+                        pts[start_idx:start_idx+n_pts, :],
+                    )
+                )
+                start_idx += n_pts
+        
+        else:
+            mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts)
+        
         gif.add_mesh_frame(mesh)
 
     gif.done()
