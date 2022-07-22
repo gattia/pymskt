@@ -2,6 +2,7 @@ import numpy as np
 from scipy.linalg import svd
 import vtk
 from vtk.util.numpy_support import numpy_to_vtk
+from pymskt.mesh.utils import GIF
 
 def pca_svd(data):
     """
@@ -137,3 +138,78 @@ def create_vtk_mesh_from_deformed_points(mean_mesh, new_points):
     new_mesh.GetPoints().SetData(numpy_to_vtk(new_points))
     
     return new_mesh
+
+def save_gif(
+    path_save,
+    PCs,
+    Vs,
+    mean_coords,  # mean_coords could be extracted from mean mesh...?
+    mean_mesh,
+    pc=0,
+    min_sd=-3.,
+    max_sd=3.,
+    step=0.25,
+    color='orange', 
+    show_edges=True, 
+    edge_color='black',
+    camera_position='xz',
+    window_size=[3000, 4000],
+    background_color='white',
+):
+    """
+    Function to save a gif of the SSM deformation.
+
+    Parameters
+    ----------
+    path_save : str
+        Path to save the gif to.
+    PCs : numpy.ndarray
+        SSM Principal Components.
+    Vs : numpy.ndarray
+        SSM Variances.
+    mean_coords : numpy.ndarray
+        NxM ndarray; N = number of meshes, M = number of points x n_dimensions
+    mean_mesh : vtk.PolyData
+        vtk polydata of the mean mesh
+    pc : int, optional
+        The principal component of the SSM to deform, by default 0
+    min_sd : float, optional
+        The lower bound (minimum) standard deviations (sd) to deform the SSM from
+        This can be positive or negative to scale the model in either direction. , by default -3.
+    max_sd : float, optional
+        The upper bound (maximum) standard deviations (sd) to deform the SSM from
+        This can be positive or negative to scale the model in either direction. , by default 3.
+    step : float, optional
+        The step size (sd) to deform the SSM by, by default 0.25
+    color : str, optional
+        The color of the SSM surface during rendering, by default 'orange'
+    show_edges : bool, optional
+        Whether to show the edges of the SSM surface during rendering, by default True
+    edge_color : str, optional
+        The color of the edges of the SSM surface during rendering, by default 'black'
+    camera_position : str, optional
+        The camera position to use during rendering, by default 'xz'
+    window_size : list, optional
+        The window size to use during rendering, by default [3000, 4000]
+    background_color : str, optional
+        The background color to use during rendering, by default 'white'
+
+
+    """
+    # ALTERNATIVELY... could pass a bunch of the above parameters as kwargs..?? but thats less clear
+    gif = GIF(
+        path_save=path_save,
+        color=color, 
+        show_edges=show_edges, 
+        edge_color=edge_color,
+        camera_position=camera_position,
+        window_size=window_size,
+        background_color=background_color,
+    )
+    for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
+        print(idx)
+        pts = get_ssm_deformation(PCs, Vs, mean_coords, pc=pc, n_sds=sd)
+        mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts)
+        gif.add_mesh_frame(mesh)
+
+    gif.done()
