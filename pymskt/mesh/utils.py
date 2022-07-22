@@ -249,6 +249,58 @@ def get_symmetric_surface_distance(surface_1, surface_2):
     return symmetric_distance
 
 class GIF:
+    """
+    Class for generating GIF of surface meshes.
+
+    Parameters
+    ----------
+    plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    color: str, optional
+        Color to use for object, by default 'orange'
+    show_edges: bool, optional
+        Whether to show edges on mesh, by default True
+    edge_color: str, optional
+        Color to use for edges, by default 'black'
+    camera_position: list or string, optional
+        Camera position to use, by default 'xz'
+    window_size: list, optional
+        Window size to use for GIF, by default [3000, 4000]
+    background_color: str, optional
+        Background color to use, by default 'white'
+    path_save: str, optional
+        Path to save GIF, by default '~/Downloads/ssm.gif'
+    
+    Attributes
+    ----------
+    _plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    _color : str
+        Color to use for object.
+    _show_edges : bool
+        Whether to show edges on mesh.
+    _edge_color : str
+        Color to use for edges.
+    _camera_position : list or string
+        Camera position to use.
+    _window_size : list
+        Window size to use for GIF.
+    _background_color : str
+        Background color to use.
+    _path_save : str
+        Path to save GIF.
+    
+    Methods
+    -------
+    add_mesh_frame(mesh)
+        Add a mesh to the GIF.
+    update_view()
+        Update the view of the plotter.
+    done()
+        Close the plotter.
+
+
+    """
     def __init__(
         self,
         plotter=None,
@@ -260,6 +312,29 @@ class GIF:
         background_color='white',
         path_save='~/Downloads/ssm.gif'
     ):
+        """
+        Initialize the GIF class.
+
+        Parameters
+        ----------
+        plotter : pyvista.Plotter, optional
+            Plotter to use for plotting, by default None
+        color: str, optional
+            Color to use for object, by default 'orange'
+        show_edges: bool, optional
+            Whether to show edges on mesh, by default True
+        edge_color: str, optional
+            Color to use for edges, by default 'black'
+        camera_position: list or string, optional
+            Camera position to use, by default 'xz'
+        window_size: list, optional
+            Window size to use for GIF, by default [3000, 4000]
+        background_color: str, optional
+            Background color to use, by default 'white'
+        path_save: str, optional
+            Path to save GIF, by default '~/Downloads/ssm.gif'
+        
+        """
         if plotter is None:
             self._plotter = pv.Plotter(notebook=False, off_screen=True)
         else:
@@ -272,28 +347,28 @@ class GIF:
         
         self._plotter.open_gif(path_save)
 
-        self.color = color
-        self.show_edges = show_edges
-        self.edge_color = edge_color
-        self.camera_position = camera_position
-        self.window_size = window_size
-        self.background_color = background_color
-        self.path_save = path_save
+        self._color = color
+        self._show_edges = show_edges
+        self._edge_color = edge_color
+        self._camera_position = camera_position
+        self._window_size = window_size
+        self._background_color = background_color
+        self._path_save = path_save
     
     def update_view(
         self
     ):
-        self._plotter.camera_position = self.camera_position
-        self._plotter.window_size = self.window_size
-        self._plotter.set_background(color=self.background_color)
+        self._plotter.camera_position = self._camera_position
+        self._plotter.window_size = self._window_size
+        self._plotter.set_background(color=self._background_color)
     
     def add_mesh_frame(self, mesh):
         actor = self._plotter.add_mesh(
             mesh, 
             render=False,
-            color=self.color, 
-            edge_color=self.edge_color, 
-            show_edges=self.show_edges
+            color=self._color, 
+            edge_color=self._edge_color, 
+            show_edges=self._show_edges
         )
         if self.counter == 0:
             self.update_view()
@@ -303,3 +378,55 @@ class GIF:
     
     def done(self):
         self._plotter.close()
+    
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, color):
+        self._color = color
+    
+    @property
+    def show_edges(self):
+        return self._show_edges
+    
+    @show_edges.setter
+    def show_edges(self, show_edges):
+        self._show_edges = show_edges
+    
+    @property
+    def edge_color(self):
+        return self._edge_color
+    
+    @edge_color.setter
+    def edge_color(self, edge_color):
+        self._edge_color = edge_color
+    
+    @property
+    def camera_position(self):
+        return self._camera_position
+    
+    @camera_position.setter
+    def camera_position(self, camera_position):
+        self._camera_position = camera_position
+    
+    @property
+    def window_size(self):
+        return self._window_size
+    
+    @window_size.setter
+    def window_size(self, window_size):
+        self._window_size = window_size
+    
+    @property
+    def background_color(self):
+        return self._background_color
+    
+    @background_color.setter
+    def background_color(self, background_color):
+        self._background_color = background_color
+    
+    @property
+    def path_save(self):
+        return self._path_save
