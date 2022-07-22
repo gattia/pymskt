@@ -155,6 +155,7 @@ def save_gif(
     camera_position='xz',
     window_size=[3000, 4000],
     background_color='white',
+    verbose=False,
 ):
     """
     Function to save a gif of the SSM deformation.
@@ -193,6 +194,8 @@ def save_gif(
         The window size to use during rendering, by default [3000, 4000]
     background_color : str, optional
         The background color to use during rendering, by default 'white'
+    verbose : bool, optional
+        Whether to print progress to console, by default False
 
 
     """
@@ -207,7 +210,8 @@ def save_gif(
         background_color=background_color,
     )
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
-        print(idx)
+        if verbose is True:
+            print(f'Deforming SSM with idx={idx} sd={sd}')
         pts = get_ssm_deformation(PCs, Vs, mean_coords, pc=pc, n_sds=sd)
         mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts)
         gif.add_mesh_frame(mesh)
