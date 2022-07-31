@@ -1,12 +1,11 @@
-
-cython
-numpy
+numpy ==1.21.*
+Cython >= 0.29
 pyacvd
 #python=3.8.12
 pyvista
 scipy
 SimpleITK
-vtk==8.*
+vtk
 param
 jupyter
 notebook
@@ -22,3 +21,4 @@ zstd
 jupyter_core
 jupyter_client
 jupyter_console
+
