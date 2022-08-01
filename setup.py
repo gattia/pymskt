@@ -7,7 +7,7 @@ print(dir_path)
 
 try:
     from Cython.Build import cythonize
-    cython_function_path = os.path.join(dir_path, "pymskt/cython/cython_functions.pyx")
+    cython_function_path = "pymskt/cython/cython_functions.pyx"
     print(cython_function_path)
     ext_modules = cythonize([Extension(name="pymskt.cython_functions",
                                        sources=[cython_function_path])],
