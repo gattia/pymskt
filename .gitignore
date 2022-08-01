@@ -171,3 +171,4 @@ functions_from_neuralseg_nsvtk_deleting_as_added_to_pymskt.py
 vtk_bone_tools.egg-info/
 pymskt/cython/cython_functions.html
 pymskt/cython/cython_functions.c
+.vscode/settings.json
