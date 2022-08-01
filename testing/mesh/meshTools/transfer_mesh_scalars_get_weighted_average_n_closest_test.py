@@ -5,6 +5,7 @@ from vtk.util.numpy_support import numpy_to_vtk
 from numpy.testing import assert_allclose
 from pymskt.mesh.utils import vtk_deep_copy
 
+from pymskt import RTOL, ATOL
 
 #
 # transfer_mesh_scalars_get_weighted_average_n_closest
@@ -34,4 +35,4 @@ def test_transfer_mesh_scalars_get_weighted_average_n_closest(n_points=1000):
 
     transfered_scalars = meshTools.transfer_mesh_scalars_get_weighted_average_n_closest(mesh2, mesh, n=1)
 
-    assert_allclose(np_scalars, np.squeeze(transfered_scalars))
+    assert_allclose(np_scalars, np.squeeze(transfered_scalars), rtol=RTOL, atol=ATOL)

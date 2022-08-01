@@ -8,6 +8,8 @@ from numpy.testing import assert_allclose
 
 MESH = mskt.mesh.io.read_vtk('data/femur_mesh_10k_pts.vtk')
 
+from pymskt import RTOL, ATOL
+
 def test_translation_with_transform(mesh_=MESH):
     mesh = mskt.mesh.Mesh(mesh=mesh_)
     orig_points = vtk_to_numpy(mesh.mesh.GetPoints().GetData())
@@ -23,7 +25,7 @@ def test_translation_with_transform(mesh_=MESH):
     
     transformed_points = vtk_to_numpy(mesh.mesh.GetPoints().GetData())
 
-    assert_allclose(transformed_points - translation, orig_points)
+    assert_allclose(transformed_points - translation, orig_points, rtol=RTOL, atol=ATOL)
 
 def test_translation_with_transform_dont_save_transform(mesh_=MESH, save_transform=False):
     mesh = mskt.mesh.Mesh(mesh=mesh_)
@@ -76,7 +78,7 @@ def test_translation_with_transformer(mesh_=MESH):
 
     transformed_points = vtk_to_numpy(mesh.mesh.GetPoints().GetData())
 
-    assert_allclose(transformed_points - translation, orig_points)
+    assert_allclose(transformed_points - translation, orig_points, rtol=RTOL, atol=ATOL)
 
 def test_dont_provide_transform_or_transformer_raise_exception(mesh_=MESH):
     mesh = mskt.mesh.Mesh(mesh=mesh_)

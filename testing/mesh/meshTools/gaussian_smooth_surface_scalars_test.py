@@ -5,6 +5,7 @@ from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 from numpy.testing import assert_allclose
 from scipy.stats import norm
 
+from pymskt import RTOL, ATOL
 
 def test_gaussian_smooth_surface_scalars(
     sigma=1,
@@ -69,8 +70,8 @@ def test_gaussian_smooth_surface_scalars(
     pdf = pdf / (pdf[middle_idx] / unraveled[middle_idx, middle_idx])
 
     # assert that the x & y axies (down the middle) follow the expected normal distribution. 
-    assert_allclose(pdf, unraveled[middle_idx,:], atol=1e-4)
-    assert_allclose(pdf, unraveled[:, middle_idx], atol=1e-4)
+    assert_allclose(pdf, unraveled[middle_idx,:], rtol=RTOL, atol=ATOL)
+    assert_allclose(pdf, unraveled[:, middle_idx], rtol=RTOL, atol=ATOL)
 
 def test_gaussian_smooth_surface_scalars_use_idx_for_base_mesh():
     raise Exception('Test not implemented')

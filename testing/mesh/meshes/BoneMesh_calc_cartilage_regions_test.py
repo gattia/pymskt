@@ -2,6 +2,8 @@ import pytest
 import pymskt as mskt
 import SimpleITK as sitk
 
+from pymskt import RTOL, ATOL
+
 BONE_MESH = mskt.mesh.io.read_vtk('data/femur_mesh_10k_pts.vtk')
 CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/femur_cart_smoothed_binary_no_surface_resampling.vtk')
 REF_MESH = mskt.mesh.io.read_vtk('data/femur_thickness_mm_regions_10k_pts.vtk')
@@ -18,7 +20,7 @@ def test_if_calculated_cartilage_region_matches_saved_file(
     mesh = mskt.mesh.BoneMesh(mesh=bone_mesh, list_cartilage_meshes=[cart_mesh], seg_image=seg_image)
     mesh.assign_cartilage_regions()
 
-    mskt.utils.testing.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels')
+    mskt.utils.testing.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels', rtol=RTOL, atol=ATOL)
 
 def test_create_cartilage_meshes_if_not_created_yet(
     bone_mesh=BONE_MESH,
@@ -30,6 +32,6 @@ def test_create_cartilage_meshes_if_not_created_yet(
     mesh = mskt.mesh.BoneMesh(mesh=bone_mesh, list_cartilage_labels=[cart_label,], seg_image=seg_image)
     mesh.assign_cartilage_regions()
 
-    mskt.utils.testing.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels')
+    mskt.utils.testing.assert_mesh_scalars_same(mesh.mesh, ref_mesh, scalarname='labels', rtol=RTOL, atol=ATOL)
 
 
