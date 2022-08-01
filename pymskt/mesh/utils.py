@@ -1,8 +1,9 @@
 import vtk
 import numpy as np
-from vtk.util.numpy_support import vtk_to_numpy
+from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from pymskt.utils import sigma2fwhm
 import pyvista as pv
+import pymskt
 
 
 # Some functions were originally based on the tutorial on ray casting in python + vtk 
@@ -447,3 +448,44 @@ class GIF:
     @property
     def path_save(self):
         return self._path_save
+
+def get_arrow(
+    direction,
+    origin,
+    scale=100,
+    tip_length=0.25,
+    tip_radius=0.1,
+    tip_resolution=20, 
+    shaft_radius=0.05,
+    shaft_resolution=20,
+):
+
+    arrow = vtk.vtkArrowSource()
+    arrow.SetTipLength(tip_length)
+    arrow.SetTipRadius(tip_radius)
+    arrow.SetTipResolution(tip_resolution)
+    arrow.SetShaftRadius(shaft_radius)
+    arrow.SetShaftResolution(shaft_resolution)
+    arrow.Update()
+
+    arrow = arrow.GetOutput()
+    points = arrow.GetPoints().GetData()
+    array = vtk_to_numpy(points)
+    array *= scale
+    arrow.GetPoints().SetData(numpy_to_vtk(array))
+
+    normx = np.array(direction) / np.linalg.norm(direction)
+    normz = np.cross(normx, [0, 1.0, 0.0001])
+    normz /= np.linalg.norm(normz)
+    normy = np.cross(normz, normx)
+
+    four_by_four = np.identity(4)
+    four_by_four[:3,0] = normx
+    four_by_four[:3,1] = normy
+    four_by_four[:3,2] = normz
+    four_by_four[:3, 3] = origin
+
+    transform = pymskt.mesh.meshTransform.create_transform(four_by_four)
+    arrow = pymskt.mesh.meshTransform.apply_transform(arrow, transform)
+    
+    return arrow
