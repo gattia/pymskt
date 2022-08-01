@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>pymskt.image.cartilage_processing API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pymskt.image.cartilage_processing</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import SimpleITK as sitk
+import numpy as np
+from scipy import ndimage as ndi
+
+
+def CofM(array):
+    &#39;&#39;&#39;
+    Get center of mass for a row of a binary 2D image. 
+    Parameters
+    ----------
+    array : 1D array
+        Individual row of a 2D image.  
+    Returns
+    -------
+    centerPixels : 
+        Average location of 1s in the row
+    Notes
+    -----
+    Calculates the average location of cartilage for the row of image being analyzed. 
+    Returns 0 if there are no pixels
+    
+    &#39;&#39;&#39;
+    pixels = np.where(array==1)
+    centerPixels = np.mean(pixels)
+    nans = np.isnan(centerPixels)
+    if nans == True:
+        centerPixels = 0
+    return(centerPixels)
+
+def get_y_CofM(flattenedSeg):
+    &#39;&#39;&#39;
+    Get CofM of femoral cartilage for each row of the flattened segmentation. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    yCofM : 
+        Find the CofM for each row of the image. 
+    Notes
+    -----
+    Get the x/y coordinates for the CofM for each row of the flattened segmentation. 
+    
+    &#39;&#39;&#39;
+    locationFemur = np.where(flattenedSeg==1)
+    yCofM = np.zeros((flattenedSeg.shape[0], 2), dtype=int)
+    
+    # only calculate for rows with cartilage. 
+    minRow = np.min(locationFemur[0])
+    maxRow = np.max(locationFemur[0])
+    
+    # iterate over rows of image, get CofM, store CofM for row. 
+    for x in range(minRow, maxRow):
+        yCofM[x, 0] = x #store the x-coordinate (row) we calcualted CofM for. 
+        yCofM[x, 1] = int(CofM(flattenedSeg[x, :])) # store the CofM value (make it an integer for indexing)
+    yCofM = yCofM[minRow+10:maxRow-10,:] # remove 10 most medial and most lateral pixels of femoral cartilage. 
+    return(yCofM) 
+
+def absolute_CofM(flattenedSeg):
+    &#39;&#39;&#39;
+    Get absolute CofM of all the femoral cartilage pixels
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    centerX : 
+        The CofM in the X direction for the segmentation  
+    centerY : 
+        The CofM in the Y direction for the segmentation
+    Notes
+    -----
+    Get the x/y coordinates for the CofM for the whole flattened segmentation
+    
+    &#39;&#39;&#39;
+    femurPoints = np.where(flattenedSeg==1)
+    centerX = np.mean(femurPoints[0])
+    centerY = np.mean(femurPoints[1])
+    return(centerX, centerY)
+
+def findNotch(flattenedSeg, trochleaPositionX=1000):
+    &#39;&#39;&#39;
+    Get the X Y position of the trochlear notch - where medial/lateral sides of the femur meet. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    trochleaPositionY : 
+        Y position of trochlear notch  
+    trochleaPositionX : 
+        X position of trochlear notch
+    Notes
+    -----
+    Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the
+    femoral cartilage.
+    
+    &#39;&#39;&#39;
+    # Goal is to find the most anterior point that is between the medial/lateral condyles
+
+    # First guess at the troch notch in the 1st axis (med/lat axis) is the location with the smallest value for
+    # the 2nd axis CofM. This is because in axis 1, negative is anterior and we expect the most anterior CofM should 
+    # roughly align with the trochlear notch.
+    y_CofM = get_y_CofM(flattenedSeg)
+    first_guess = y_CofM[np.argmin(y_CofM[:,1]), 0]
+    # the second guess is just the CofM of the whole cartilage. 
+    centerX, centerY = absolute_CofM(flattenedSeg)
+    second_guess = centerX
+
+    # We use the 2 guesses to help define a search space for the trochlear notch.
+    min_search = int(np.min((first_guess,second_guess))-20)
+    max_search = int(np.max((first_guess,second_guess))+20)
+
+    # now, we iterate over all of the rows (axis 1) of the search space (moving in the medial/lateral direction)
+    # we are looking for the row where the most posterior point (back of femur) is furthest anterior (notch). 
+    for y in range(min_search, max_search):
+        # At each row, we find most posterior pixel labeled as cartilage. 
+        try:
+            trochleaPosition_test = np.max(np.where(flattenedSeg[y,:]==1))
+        except ValueError:
+            # if there is no cartilage we&#39;ll get a ValueError exception. 
+            # in that case, set this value to be the max it can be (the size of the first axis)
+            trochleaPosition_test = flattenedSeg.shape[1]
+        # if the most posterior point for this row is more anterior than the current trochleaPositionX,
+        # then update this to be the new trochlear notch.
+        if trochleaPosition_test &lt; trochleaPositionX:
+            trochleaPositionX = trochleaPosition_test
+            trochleaPositionY = y
+
+    return(trochleaPositionY, trochleaPositionX+1)
+
+def getAnteriorOfWeightBearing(segArray, femurIndex=1):
+    &#39;&#39;&#39;
+    Prepare full segmentation and extract the trochlear notch location. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    femurIndex : int
+        Index of the label used to localize the femur in the array. 
+    Returns
+    -------
+    trochleaPositionY : 
+        Y position of trochlear notch  
+    trochleaPositionX : 
+        X position of trochlear notch
+    Notes
+    -----
+    Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the femoral cartilage. 
+    First flatten and fill any holes in the segmentation. 
+    
+    &#39;&#39;&#39;
+
+    femurSegmentation = np.zeros_like(segArray)
+    femurSegmentation[segArray == femurIndex] = 1
+    flattenedSegmentation = np.amax(femurSegmentation, axis=1)
+    flattened_seg_filled = ndi.binary_fill_holes(flattenedSegmentation)
+    trochY, trochX = findNotch(flattened_seg_filled)
+    return(trochY, trochX)
+    
+def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
+                           femurLabel=1, medTibiaLabel=2, latTibiaLabel=3, antFemurMask=5, 
+                           medWbFemurMask=6, latWbFemurMask=7, medPostFemurMask=8, latPostFemurMask=9):
+    &#39;&#39;&#39;
+    Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.  
+    Parameters
+    ----------
+    segArray : array
+        3D array with segmentation for the cartialge regions. 
+    anteriorWBslice : int
+        Slice that seperates the anterior and weight bearing femoral cartilage.  
+    posteriorWBslice : int
+        Slice that seperates the weight bearing and posterior femoral cartilage. 
+    trochY : int
+        Slice that differentiates medial / lateral femur - trochlear notch Y component. 
+    femurLabel : int
+        Label that femur is in the segArray
+    medTibiaLabel : int
+        Label that medial tibia is in the segArray
+    latTibiaLabel : int
+        Label that lateral tibia is in the segArray
+    antFemurMask : int
+        Label anterior femur should be labeled in final segmentation. 
+    medWbFemurMask : int
+        Label medial weight bearing femur should be labeled in final segmentation.
+    latWbFemurMask : int
+        Label lateral weight bearing femur should be labeled in final segmentation. 
+    medPostFemurMask : int
+        Label medial posterior femur should be labeled in final segmentation. 
+    latPostFemurMask : int
+        Label lateral posterior femur should be labeled in final segmentation.
+    Returns
+    -------
+    final_segmentation : array
+        3D array with the updated segmentations - including weightbearing, medial/latera, anterior, and posterior. 
+    Notes
+    -----
+    
+    &#39;&#39;&#39;
+    
+    #array to store final segmentation
+    final_segmentation = np.zeros_like(segArray)
+    
+    #create masks for ant/wb/posterior femur
+    anterior_femur_mask = np.zeros_like(segArray)
+    anterior_femur_mask[:,:,:anteriorWBslice] = 1
+
+    wb_femur_mask = np.zeros_like(segArray)
+    wb_femur_mask[:,:,anteriorWBslice:posteriorWBslice] = 1
+
+    posterior_femur_mask = np.zeros_like(segArray)
+    posterior_femur_mask[:,:,posteriorWBslice:] = 1
+    
+    #create seg of just femur - and then break it into the sub-regions
+    femurSegArray = np.zeros_like(segArray)
+    femurSegArray[segArray==femurLabel] = 1
+    
+    #find the center of the medial/lateral tibia - use to distinguish M/L femur ROIs
+    locationMedialTibia = np.asarray(np.where(segArray==medTibiaLabel))
+    locationLateralTibia = np.asarray(np.where(segArray==latTibiaLabel))
+    
+    centerMedialTibia = locationMedialTibia.mean(axis=1)
+    centerLateralTibia = locationLateralTibia.mean(axis=1)
+
+    med_femur_mask = np.zeros_like(segArray)
+    lat_femur_mask = np.zeros_like(segArray)
+    if centerMedialTibia[0] &gt; trochY:
+        med_femur_mask[trochY:,:,:] = 1
+        lat_femur_mask[:trochY,:,:] = 1
+    else:
+        med_femur_mask[:trochY,:,:] = 1
+        lat_femur_mask[trochY:,:,:] = 1
+
+    final_segmentation[segArray!=femurLabel] = segArray[segArray!=femurLabel] 
+    final_segmentation += (femurSegArray * anterior_femur_mask) * antFemurMask
+    final_segmentation += (femurSegArray * wb_femur_mask * med_femur_mask) * medWbFemurMask
+    final_segmentation += (femurSegArray * wb_femur_mask * lat_femur_mask) * latWbFemurMask
+    final_segmentation += (femurSegArray * posterior_femur_mask * med_femur_mask) * medPostFemurMask
+    final_segmentation += (femurSegArray * posterior_femur_mask * lat_femur_mask) * latPostFemurMask
+    
+    return(final_segmentation)
+
+def verify_and_correct_med_lat_tib_cart(
+    seg_array,  #sitk.GetArrayViewFromImage(seg)
+    tib_label=6,
+    med_tib_cart_label=2, 
+    lat_tib_cart_label=3,
+    ml_axis=0
+):
+    &#39;&#39;&#39;
+    Verify that the medial and lateral tibial cartilage are correctly labeled.
+    Parameters
+    ----------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+    tib_label : int
+        Label that tibial cartilage is in the seg_array
+    med_tib_cart_label : int
+        Label that medial tibial cartilage is in the seg_array
+    lat_tib_cart_label : int
+        Label that lateral tibial cartilage is in the seg_array
+    ml_axis : int
+        Medial/lateral axis of the acquired knee MRI.
+    
+    Returns
+    -------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+        The tibial cartilage regions will have been updated to ensure
+        all tib cart on med/lat sides are correctly classified.
+        
+    &#39;&#39;&#39;
+    #get binary array for tibia
+    array_tib = np.zeros_like(seg_array)
+    array_tib[seg_array == tib_label] = 1
+    #get binary array for tib cart
+    array_tib_cart = np.zeros_like(seg_array)
+    array_tib_cart[(seg_array == lat_tib_cart_label) + (seg_array == med_tib_cart_label)] = 1
+
+    #get the locatons of med/lat cartilage &amp; get their centroids
+    med_cart_locs = np.asarray(np.where(seg_array == med_tib_cart_label))
+    lat_cart_locs = np.asarray(np.where(seg_array == lat_tib_cart_label))
+    middle_med_cart = med_cart_locs[ml_axis,:].mean()
+    middle_lat_cart = lat_cart_locs[ml_axis,:].mean()
+
+    #get location of tibia to get centroid of tibial plateau
+    tib_locs = np.asarray(np.where(seg_array == tib_label))
+    middle_tib = tib_locs[ml_axis, :].mean()
+    center_tibia_slice = int(middle_tib)
+
+    # infer the direction(s) for medial/lateral
+    med_direction = np.sign(middle_med_cart - middle_tib)
+    lat_direction = np.sign(middle_lat_cart - middle_tib)
+    if med_direction == lat_direction:
+        raise Exception(&#39;Middle of med and lat tibial cartilage on same side of centerline!&#39;)
+
+    #create med/lat cartilage masks - binary for updating seg masks
+    med_tib_cart_mask = np.zeros_like(seg_array)
+    lat_tib_cart_mask = np.zeros_like(seg_array)
+
+    if med_direction &gt; 0:
+        med_tib_cart_mask[center_tibia_slice:,...] = 1
+        lat_tib_cart_mask[:center_tibia_slice,...] = 1
+    elif med_direction &lt; 0:
+        med_tib_cart_mask[:center_tibia_slice,...] = 1
+        lat_tib_cart_mask[center_tibia_slice:,...] = 1
+
+    # create new med/lat cartilage arrays 
+    new_med_cart_array = array_tib_cart * med_tib_cart_mask
+    new_lat_cart_array = array_tib_cart * lat_tib_cart_mask
+
+    #make copy of original segmentation array &amp; update
+    # med/lat tibial cartilage labels
+    new_seg_array = seg_array.copy()
+    new_seg_array[new_med_cart_array == 1] = med_tib_cart_label
+    new_seg_array[new_lat_cart_array == 1] = lat_tib_cart_label
+    
+    return new_seg_array
+
+def get_knee_segmentation_with_femur_subregions(seg_image,
+                                                fem_cart_label_idx=1,
+                                                wb_region_percent_dist=0.6,
+                                                # femur_label=1,
+                                                med_tibia_label=2,
+                                                lat_tibia_label=3,
+                                                ant_femur_mask=11,
+                                                med_wb_femur_mask=12,
+                                                lat_wb_femur_mask=13,
+                                                med_post_femur_mask=14,
+                                                lat_post_femur_mask=15,
+                                                verify_med_lat_tib_cart=True,
+                                                tibia_label=6,
+                                                ml_axis=0
+                                                ):
+    &#34;&#34;&#34;
+    Give seg image of knee. Return seg image with all sub-regions of femur included. 
+
+    Parameters
+    ----------
+    seg_image : SimpleITK.Image
+        SimpleITK image of the segmentation to be processed. 
+    fem_cart_label_idx : int, optional
+        Label of femoral cartilage, by default 1
+    wb_region_percent_dist : float, optional
+        How large weightbearing region is (from not to posterior of condyles), by default 0.6
+    femur_label : int, optional
+        Seg label for the femur cartilage, by default 1
+    med_tibia_label : int, optional
+        Seg label for the medial tibia cartilage, by default 2
+    lat_tibia_label : int, optional
+        Seg label for the lateral tibia cartilage, by default 3
+    ant_femur_mask : int, optional
+        Seg label for the anterior femur region, by default 11
+    med_wb_femur_mask : int, optional
+        Seg label for medial weight-bearing femur, by default 12
+    lat_wb_femur_mask : int, optional
+        Seg label for lateral weight-bearing femur, by default 13
+    med_post_femur_mask : int, optional
+        Seg label for medial posterior femur, by default 14
+    lat_post_femur_mask : int, optional
+        Seg label for lateral posterior femur, by default 15
+    verify_med_lat_tib_cart : bool, optional
+        Whether to verify that medial and lateral tibial cartilage is on same side of centerline, by default True
+    tibia_label : int, optional
+        Seg label for the tibia, by default 6
+    ml_axis : int, optional
+        Medial/lateral axis of the acquired knee MRI, by default 0
+
+    Returns
+    -------
+    SimpleITK.Image
+        Image of the new/updated segmentation
+    &#34;&#34;&#34;
+    troch_notch_y, troch_notch_x = getAnteriorOfWeightBearing(sitk.GetArrayViewFromImage(seg_image),
+                                                              femurIndex=fem_cart_label_idx)
+    loc_fem_z, loc_fem_y, loc_fem_x = np.where(sitk.GetArrayViewFromImage(seg_image) == fem_cart_label_idx)
+    post_femur_slice = np.max(loc_fem_x)
+    posterior_wb_slice = np.round((post_femur_slice - troch_notch_x) * wb_region_percent_dist + troch_notch_x).astype(int)
+    new_seg_array = getCartilageSubRegions(sitk.GetArrayViewFromImage(seg_image),
+                                           anteriorWBslice=troch_notch_x,
+                                           posteriorWBslice=posterior_wb_slice,
+                                           trochY=troch_notch_y,
+                                           femurLabel=fem_cart_label_idx,
+                                           medTibiaLabel=med_tibia_label,
+                                           latTibiaLabel=lat_tibia_label,
+                                           antFemurMask=ant_femur_mask,
+                                           medWbFemurMask=med_wb_femur_mask,
+                                           latWbFemurMask=lat_wb_femur_mask,
+                                           medPostFemurMask=med_post_femur_mask,
+                                           latPostFemurMask=lat_post_femur_mask
+                                           )
+
+    if verify_med_lat_tib_cart:
+        new_seg_array = verify_and_correct_med_lat_tib_cart(new_seg_array,
+                                                            tib_label=tibia_label,
+                                                            med_tib_cart_label=med_tibia_label, 
+                                                            lat_tib_cart_label=lat_tibia_label,
+                                                            ml_axis=ml_axis) 
+    seg_label_image = sitk.GetImageFromArray(new_seg_array)
+    seg_label_image.CopyInformation(seg_image)
+    return seg_label_image</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="pymskt.image.cartilage_processing.CofM"><code class="name flex">
+<span>def <span class="ident">CofM</span></span>(<span>array)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get center of mass for a row of a binary 2D image.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>array</code></strong> :&ensp;<code>1D array</code></dt>
+<dd>Individual row of a 2D image.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>centerPixels</code></strong></dt>
+<dd>Average location of 1s in the row</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Calculates the average location of cartilage for the row of image being analyzed.
+Returns 0 if there are no pixels</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def CofM(array):
+    &#39;&#39;&#39;
+    Get center of mass for a row of a binary 2D image. 
+    Parameters
+    ----------
+    array : 1D array
+        Individual row of a 2D image.  
+    Returns
+    -------
+    centerPixels : 
+        Average location of 1s in the row
+    Notes
+    -----
+    Calculates the average location of cartilage for the row of image being analyzed. 
+    Returns 0 if there are no pixels
+    
+    &#39;&#39;&#39;
+    pixels = np.where(array==1)
+    centerPixels = np.mean(pixels)
+    nans = np.isnan(centerPixels)
+    if nans == True:
+        centerPixels = 0
+    return(centerPixels)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.absolute_CofM"><code class="name flex">
+<span>def <span class="ident">absolute_CofM</span></span>(<span>flattenedSeg)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get absolute CofM of all the femoral cartilage pixels
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>flattenedSeg</code></strong> :&ensp;<code>2D array</code></dt>
+<dd>Axial flattened, and filled in femoral cartilage segmentation.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>centerX</code></strong></dt>
+<dd>The CofM in the X direction for the segmentation</dd>
+<dt><strong><code>centerY</code></strong></dt>
+<dd>The CofM in the Y direction for the segmentation</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Get the x/y coordinates for the CofM for the whole flattened segmentation</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def absolute_CofM(flattenedSeg):
+    &#39;&#39;&#39;
+    Get absolute CofM of all the femoral cartilage pixels
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    centerX : 
+        The CofM in the X direction for the segmentation  
+    centerY : 
+        The CofM in the Y direction for the segmentation
+    Notes
+    -----
+    Get the x/y coordinates for the CofM for the whole flattened segmentation
+    
+    &#39;&#39;&#39;
+    femurPoints = np.where(flattenedSeg==1)
+    centerX = np.mean(femurPoints[0])
+    centerY = np.mean(femurPoints[1])
+    return(centerX, centerY)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.findNotch"><code class="name flex">
+<span>def <span class="ident">findNotch</span></span>(<span>flattenedSeg, trochleaPositionX=1000)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the X Y position of the trochlear notch - where medial/lateral sides of the femur meet.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>flattenedSeg</code></strong> :&ensp;<code>2D array</code></dt>
+<dd>Axial flattened, and filled in femoral cartilage segmentation.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>trochleaPositionY</code></strong></dt>
+<dd>Y position of trochlear notch</dd>
+<dt><strong><code>trochleaPositionX</code></strong></dt>
+<dd>X position of trochlear notch</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the
+femoral cartilage.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def findNotch(flattenedSeg, trochleaPositionX=1000):
+    &#39;&#39;&#39;
+    Get the X Y position of the trochlear notch - where medial/lateral sides of the femur meet. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    trochleaPositionY : 
+        Y position of trochlear notch  
+    trochleaPositionX : 
+        X position of trochlear notch
+    Notes
+    -----
+    Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the
+    femoral cartilage.
+    
+    &#39;&#39;&#39;
+    # Goal is to find the most anterior point that is between the medial/lateral condyles
+
+    # First guess at the troch notch in the 1st axis (med/lat axis) is the location with the smallest value for
+    # the 2nd axis CofM. This is because in axis 1, negative is anterior and we expect the most anterior CofM should 
+    # roughly align with the trochlear notch.
+    y_CofM = get_y_CofM(flattenedSeg)
+    first_guess = y_CofM[np.argmin(y_CofM[:,1]), 0]
+    # the second guess is just the CofM of the whole cartilage. 
+    centerX, centerY = absolute_CofM(flattenedSeg)
+    second_guess = centerX
+
+    # We use the 2 guesses to help define a search space for the trochlear notch.
+    min_search = int(np.min((first_guess,second_guess))-20)
+    max_search = int(np.max((first_guess,second_guess))+20)
+
+    # now, we iterate over all of the rows (axis 1) of the search space (moving in the medial/lateral direction)
+    # we are looking for the row where the most posterior point (back of femur) is furthest anterior (notch). 
+    for y in range(min_search, max_search):
+        # At each row, we find most posterior pixel labeled as cartilage. 
+        try:
+            trochleaPosition_test = np.max(np.where(flattenedSeg[y,:]==1))
+        except ValueError:
+            # if there is no cartilage we&#39;ll get a ValueError exception. 
+            # in that case, set this value to be the max it can be (the size of the first axis)
+            trochleaPosition_test = flattenedSeg.shape[1]
+        # if the most posterior point for this row is more anterior than the current trochleaPositionX,
+        # then update this to be the new trochlear notch.
+        if trochleaPosition_test &lt; trochleaPositionX:
+            trochleaPositionX = trochleaPosition_test
+            trochleaPositionY = y
+
+    return(trochleaPositionY, trochleaPositionX+1)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.getAnteriorOfWeightBearing"><code class="name flex">
+<span>def <span class="ident">getAnteriorOfWeightBearing</span></span>(<span>segArray, femurIndex=1)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Prepare full segmentation and extract the trochlear notch location.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>flattenedSeg</code></strong> :&ensp;<code>2D array</code></dt>
+<dd>Axial flattened, and filled in femoral cartilage segmentation.</dd>
+<dt><strong><code>femurIndex</code></strong> :&ensp;<code>int</code></dt>
+<dd>Index of the label used to localize the femur in the array.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>trochleaPositionY</code></strong></dt>
+<dd>Y position of trochlear notch</dd>
+<dt><strong><code>trochleaPositionX</code></strong></dt>
+<dd>X position of trochlear notch</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the femoral cartilage.
+First flatten and fill any holes in the segmentation.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getAnteriorOfWeightBearing(segArray, femurIndex=1):
+    &#39;&#39;&#39;
+    Prepare full segmentation and extract the trochlear notch location. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    femurIndex : int
+        Index of the label used to localize the femur in the array. 
+    Returns
+    -------
+    trochleaPositionY : 
+        Y position of trochlear notch  
+    trochleaPositionX : 
+        X position of trochlear notch
+    Notes
+    -----
+    Get the x/y coordinates for the trochlear notch. This is an iterative method that assumes things about the shape the femoral cartilage. 
+    First flatten and fill any holes in the segmentation. 
+    
+    &#39;&#39;&#39;
+
+    femurSegmentation = np.zeros_like(segArray)
+    femurSegmentation[segArray == femurIndex] = 1
+    flattenedSegmentation = np.amax(femurSegmentation, axis=1)
+    flattened_seg_filled = ndi.binary_fill_holes(flattenedSegmentation)
+    trochY, trochX = findNotch(flattened_seg_filled)
+    return(trochY, trochX)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.getCartilageSubRegions"><code class="name flex">
+<span>def <span class="ident">getCartilageSubRegions</span></span>(<span>segArray, anteriorWBslice, posteriorWBslice, trochY, femurLabel=1, medTibiaLabel=2, latTibiaLabel=3, antFemurMask=5, medWbFemurMask=6, latWbFemurMask=7, medPostFemurMask=8, latPostFemurMask=9)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.<br>
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>segArray</code></strong> :&ensp;<code>array</code></dt>
+<dd>3D array with segmentation for the cartialge regions.</dd>
+<dt><strong><code>anteriorWBslice</code></strong> :&ensp;<code>int</code></dt>
+<dd>Slice that seperates the anterior and weight bearing femoral cartilage.</dd>
+<dt><strong><code>posteriorWBslice</code></strong> :&ensp;<code>int</code></dt>
+<dd>Slice that seperates the weight bearing and posterior femoral cartilage.</dd>
+<dt><strong><code>trochY</code></strong> :&ensp;<code>int</code></dt>
+<dd>Slice that differentiates medial / lateral femur - trochlear notch Y component.</dd>
+<dt><strong><code>femurLabel</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that femur is in the segArray</dd>
+<dt><strong><code>medTibiaLabel</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that medial tibia is in the segArray</dd>
+<dt><strong><code>latTibiaLabel</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that lateral tibia is in the segArray</dd>
+<dt><strong><code>antFemurMask</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label anterior femur should be labeled in final segmentation.</dd>
+<dt><strong><code>medWbFemurMask</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label medial weight bearing femur should be labeled in final segmentation.</dd>
+<dt><strong><code>latWbFemurMask</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label lateral weight bearing femur should be labeled in final segmentation.</dd>
+<dt><strong><code>medPostFemurMask</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label medial posterior femur should be labeled in final segmentation.</dd>
+<dt><strong><code>latPostFemurMask</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label lateral posterior femur should be labeled in final segmentation.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>final_segmentation</code></strong> :&ensp;<code>array</code></dt>
+<dd>3D array with the updated segmentations - including weightbearing, medial/latera, anterior, and posterior.</dd>
+</dl>
+<h2 id="notes">Notes</h2></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
+                           femurLabel=1, medTibiaLabel=2, latTibiaLabel=3, antFemurMask=5, 
+                           medWbFemurMask=6, latWbFemurMask=7, medPostFemurMask=8, latPostFemurMask=9):
+    &#39;&#39;&#39;
+    Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.  
+    Parameters
+    ----------
+    segArray : array
+        3D array with segmentation for the cartialge regions. 
+    anteriorWBslice : int
+        Slice that seperates the anterior and weight bearing femoral cartilage.  
+    posteriorWBslice : int
+        Slice that seperates the weight bearing and posterior femoral cartilage. 
+    trochY : int
+        Slice that differentiates medial / lateral femur - trochlear notch Y component. 
+    femurLabel : int
+        Label that femur is in the segArray
+    medTibiaLabel : int
+        Label that medial tibia is in the segArray
+    latTibiaLabel : int
+        Label that lateral tibia is in the segArray
+    antFemurMask : int
+        Label anterior femur should be labeled in final segmentation. 
+    medWbFemurMask : int
+        Label medial weight bearing femur should be labeled in final segmentation.
+    latWbFemurMask : int
+        Label lateral weight bearing femur should be labeled in final segmentation. 
+    medPostFemurMask : int
+        Label medial posterior femur should be labeled in final segmentation. 
+    latPostFemurMask : int
+        Label lateral posterior femur should be labeled in final segmentation.
+    Returns
+    -------
+    final_segmentation : array
+        3D array with the updated segmentations - including weightbearing, medial/latera, anterior, and posterior. 
+    Notes
+    -----
+    
+    &#39;&#39;&#39;
+    
+    #array to store final segmentation
+    final_segmentation = np.zeros_like(segArray)
+    
+    #create masks for ant/wb/posterior femur
+    anterior_femur_mask = np.zeros_like(segArray)
+    anterior_femur_mask[:,:,:anteriorWBslice] = 1
+
+    wb_femur_mask = np.zeros_like(segArray)
+    wb_femur_mask[:,:,anteriorWBslice:posteriorWBslice] = 1
+
+    posterior_femur_mask = np.zeros_like(segArray)
+    posterior_femur_mask[:,:,posteriorWBslice:] = 1
+    
+    #create seg of just femur - and then break it into the sub-regions
+    femurSegArray = np.zeros_like(segArray)
+    femurSegArray[segArray==femurLabel] = 1
+    
+    #find the center of the medial/lateral tibia - use to distinguish M/L femur ROIs
+    locationMedialTibia = np.asarray(np.where(segArray==medTibiaLabel))
+    locationLateralTibia = np.asarray(np.where(segArray==latTibiaLabel))
+    
+    centerMedialTibia = locationMedialTibia.mean(axis=1)
+    centerLateralTibia = locationLateralTibia.mean(axis=1)
+
+    med_femur_mask = np.zeros_like(segArray)
+    lat_femur_mask = np.zeros_like(segArray)
+    if centerMedialTibia[0] &gt; trochY:
+        med_femur_mask[trochY:,:,:] = 1
+        lat_femur_mask[:trochY,:,:] = 1
+    else:
+        med_femur_mask[:trochY,:,:] = 1
+        lat_femur_mask[trochY:,:,:] = 1
+
+    final_segmentation[segArray!=femurLabel] = segArray[segArray!=femurLabel] 
+    final_segmentation += (femurSegArray * anterior_femur_mask) * antFemurMask
+    final_segmentation += (femurSegArray * wb_femur_mask * med_femur_mask) * medWbFemurMask
+    final_segmentation += (femurSegArray * wb_femur_mask * lat_femur_mask) * latWbFemurMask
+    final_segmentation += (femurSegArray * posterior_femur_mask * med_femur_mask) * medPostFemurMask
+    final_segmentation += (femurSegArray * posterior_femur_mask * lat_femur_mask) * latPostFemurMask
+    
+    return(final_segmentation)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.get_knee_segmentation_with_femur_subregions"><code class="name flex">
+<span>def <span class="ident">get_knee_segmentation_with_femur_subregions</span></span>(<span>seg_image, fem_cart_label_idx=1, wb_region_percent_dist=0.6, med_tibia_label=2, lat_tibia_label=3, ant_femur_mask=11, med_wb_femur_mask=12, lat_wb_femur_mask=13, med_post_femur_mask=14, lat_post_femur_mask=15, verify_med_lat_tib_cart=True, tibia_label=6, ml_axis=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Give seg image of knee. Return seg image with all sub-regions of femur included. </p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>seg_image</code></strong> :&ensp;<code>SimpleITK.Image</code></dt>
+<dd>SimpleITK image of the segmentation to be processed.</dd>
+<dt><strong><code>fem_cart_label_idx</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Label of femoral cartilage, by default 1</dd>
+<dt><strong><code>wb_region_percent_dist</code></strong> :&ensp;<code>float</code>, optional</dt>
+<dd>How large weightbearing region is (from not to posterior of condyles), by default 0.6</dd>
+<dt><strong><code>femur_label</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for the femur cartilage, by default 1</dd>
+<dt><strong><code>med_tibia_label</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for the medial tibia cartilage, by default 2</dd>
+<dt><strong><code>lat_tibia_label</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for the lateral tibia cartilage, by default 3</dd>
+<dt><strong><code>ant_femur_mask</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for the anterior femur region, by default 11</dd>
+<dt><strong><code>med_wb_femur_mask</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for medial weight-bearing femur, by default 12</dd>
+<dt><strong><code>lat_wb_femur_mask</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for lateral weight-bearing femur, by default 13</dd>
+<dt><strong><code>med_post_femur_mask</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for medial posterior femur, by default 14</dd>
+<dt><strong><code>lat_post_femur_mask</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for lateral posterior femur, by default 15</dd>
+<dt><strong><code>verify_med_lat_tib_cart</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to verify that medial and lateral tibial cartilage is on same side of centerline, by default True</dd>
+<dt><strong><code>tibia_label</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Seg label for the tibia, by default 6</dd>
+<dt><strong><code>ml_axis</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Medial/lateral axis of the acquired knee MRI, by default 0</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>SimpleITK.Image</code></dt>
+<dd>Image of the new/updated segmentation</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_knee_segmentation_with_femur_subregions(seg_image,
+                                                fem_cart_label_idx=1,
+                                                wb_region_percent_dist=0.6,
+                                                # femur_label=1,
+                                                med_tibia_label=2,
+                                                lat_tibia_label=3,
+                                                ant_femur_mask=11,
+                                                med_wb_femur_mask=12,
+                                                lat_wb_femur_mask=13,
+                                                med_post_femur_mask=14,
+                                                lat_post_femur_mask=15,
+                                                verify_med_lat_tib_cart=True,
+                                                tibia_label=6,
+                                                ml_axis=0
+                                                ):
+    &#34;&#34;&#34;
+    Give seg image of knee. Return seg image with all sub-regions of femur included. 
+
+    Parameters
+    ----------
+    seg_image : SimpleITK.Image
+        SimpleITK image of the segmentation to be processed. 
+    fem_cart_label_idx : int, optional
+        Label of femoral cartilage, by default 1
+    wb_region_percent_dist : float, optional
+        How large weightbearing region is (from not to posterior of condyles), by default 0.6
+    femur_label : int, optional
+        Seg label for the femur cartilage, by default 1
+    med_tibia_label : int, optional
+        Seg label for the medial tibia cartilage, by default 2
+    lat_tibia_label : int, optional
+        Seg label for the lateral tibia cartilage, by default 3
+    ant_femur_mask : int, optional
+        Seg label for the anterior femur region, by default 11
+    med_wb_femur_mask : int, optional
+        Seg label for medial weight-bearing femur, by default 12
+    lat_wb_femur_mask : int, optional
+        Seg label for lateral weight-bearing femur, by default 13
+    med_post_femur_mask : int, optional
+        Seg label for medial posterior femur, by default 14
+    lat_post_femur_mask : int, optional
+        Seg label for lateral posterior femur, by default 15
+    verify_med_lat_tib_cart : bool, optional
+        Whether to verify that medial and lateral tibial cartilage is on same side of centerline, by default True
+    tibia_label : int, optional
+        Seg label for the tibia, by default 6
+    ml_axis : int, optional
+        Medial/lateral axis of the acquired knee MRI, by default 0
+
+    Returns
+    -------
+    SimpleITK.Image
+        Image of the new/updated segmentation
+    &#34;&#34;&#34;
+    troch_notch_y, troch_notch_x = getAnteriorOfWeightBearing(sitk.GetArrayViewFromImage(seg_image),
+                                                              femurIndex=fem_cart_label_idx)
+    loc_fem_z, loc_fem_y, loc_fem_x = np.where(sitk.GetArrayViewFromImage(seg_image) == fem_cart_label_idx)
+    post_femur_slice = np.max(loc_fem_x)
+    posterior_wb_slice = np.round((post_femur_slice - troch_notch_x) * wb_region_percent_dist + troch_notch_x).astype(int)
+    new_seg_array = getCartilageSubRegions(sitk.GetArrayViewFromImage(seg_image),
+                                           anteriorWBslice=troch_notch_x,
+                                           posteriorWBslice=posterior_wb_slice,
+                                           trochY=troch_notch_y,
+                                           femurLabel=fem_cart_label_idx,
+                                           medTibiaLabel=med_tibia_label,
+                                           latTibiaLabel=lat_tibia_label,
+                                           antFemurMask=ant_femur_mask,
+                                           medWbFemurMask=med_wb_femur_mask,
+                                           latWbFemurMask=lat_wb_femur_mask,
+                                           medPostFemurMask=med_post_femur_mask,
+                                           latPostFemurMask=lat_post_femur_mask
+                                           )
+
+    if verify_med_lat_tib_cart:
+        new_seg_array = verify_and_correct_med_lat_tib_cart(new_seg_array,
+                                                            tib_label=tibia_label,
+                                                            med_tib_cart_label=med_tibia_label, 
+                                                            lat_tib_cart_label=lat_tibia_label,
+                                                            ml_axis=ml_axis) 
+    seg_label_image = sitk.GetImageFromArray(new_seg_array)
+    seg_label_image.CopyInformation(seg_image)
+    return seg_label_image</code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.get_y_CofM"><code class="name flex">
+<span>def <span class="ident">get_y_CofM</span></span>(<span>flattenedSeg)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get CofM of femoral cartilage for each row of the flattened segmentation.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>flattenedSeg</code></strong> :&ensp;<code>2D array</code></dt>
+<dd>Axial flattened, and filled in femoral cartilage segmentation.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>yCofM</code></strong></dt>
+<dd>Find the CofM for each row of the image.</dd>
+</dl>
+<h2 id="notes">Notes</h2>
+<p>Get the x/y coordinates for the CofM for each row of the flattened segmentation.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_y_CofM(flattenedSeg):
+    &#39;&#39;&#39;
+    Get CofM of femoral cartilage for each row of the flattened segmentation. 
+    Parameters
+    ----------
+    flattenedSeg : 2D array
+        Axial flattened, and filled in femoral cartilage segmentation.  
+    Returns
+    -------
+    yCofM : 
+        Find the CofM for each row of the image. 
+    Notes
+    -----
+    Get the x/y coordinates for the CofM for each row of the flattened segmentation. 
+    
+    &#39;&#39;&#39;
+    locationFemur = np.where(flattenedSeg==1)
+    yCofM = np.zeros((flattenedSeg.shape[0], 2), dtype=int)
+    
+    # only calculate for rows with cartilage. 
+    minRow = np.min(locationFemur[0])
+    maxRow = np.max(locationFemur[0])
+    
+    # iterate over rows of image, get CofM, store CofM for row. 
+    for x in range(minRow, maxRow):
+        yCofM[x, 0] = x #store the x-coordinate (row) we calcualted CofM for. 
+        yCofM[x, 1] = int(CofM(flattenedSeg[x, :])) # store the CofM value (make it an integer for indexing)
+    yCofM = yCofM[minRow+10:maxRow-10,:] # remove 10 most medial and most lateral pixels of femoral cartilage. 
+    return(yCofM) </code></pre>
+</details>
+</dd>
+<dt id="pymskt.image.cartilage_processing.verify_and_correct_med_lat_tib_cart"><code class="name flex">
+<span>def <span class="ident">verify_and_correct_med_lat_tib_cart</span></span>(<span>seg_array, tib_label=6, med_tib_cart_label=2, lat_tib_cart_label=3, ml_axis=0)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Verify that the medial and lateral tibial cartilage are correctly labeled.
+Parameters</p>
+<hr>
+<dl>
+<dt><strong><code>seg_array</code></strong> :&ensp;<code>array</code></dt>
+<dd>3D array with segmentation for the cartilage/bone regions.</dd>
+<dt><strong><code>tib_label</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that tibial cartilage is in the seg_array</dd>
+<dt><strong><code>med_tib_cart_label</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that medial tibial cartilage is in the seg_array</dd>
+<dt><strong><code>lat_tib_cart_label</code></strong> :&ensp;<code>int</code></dt>
+<dd>Label that lateral tibial cartilage is in the seg_array</dd>
+<dt><strong><code>ml_axis</code></strong> :&ensp;<code>int</code></dt>
+<dd>Medial/lateral axis of the acquired knee MRI.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><strong><code>seg_array</code></strong> :&ensp;<code>array</code></dt>
+<dd>3D array with segmentation for the cartilage/bone regions.
+The tibial cartilage regions will have been updated to ensure
+all tib cart on med/lat sides are correctly classified.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def verify_and_correct_med_lat_tib_cart(
+    seg_array,  #sitk.GetArrayViewFromImage(seg)
+    tib_label=6,
+    med_tib_cart_label=2, 
+    lat_tib_cart_label=3,
+    ml_axis=0
+):
+    &#39;&#39;&#39;
+    Verify that the medial and lateral tibial cartilage are correctly labeled.
+    Parameters
+    ----------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+    tib_label : int
+        Label that tibial cartilage is in the seg_array
+    med_tib_cart_label : int
+        Label that medial tibial cartilage is in the seg_array
+    lat_tib_cart_label : int
+        Label that lateral tibial cartilage is in the seg_array
+    ml_axis : int
+        Medial/lateral axis of the acquired knee MRI.
+    
+    Returns
+    -------
+    seg_array : array
+        3D array with segmentation for the cartilage/bone regions.
+        The tibial cartilage regions will have been updated to ensure
+        all tib cart on med/lat sides are correctly classified.
+        
+    &#39;&#39;&#39;
+    #get binary array for tibia
+    array_tib = np.zeros_like(seg_array)
+    array_tib[seg_array == tib_label] = 1
+    #get binary array for tib cart
+    array_tib_cart = np.zeros_like(seg_array)
+    array_tib_cart[(seg_array == lat_tib_cart_label) + (seg_array == med_tib_cart_label)] = 1
+
+    #get the locatons of med/lat cartilage &amp; get their centroids
+    med_cart_locs = np.asarray(np.where(seg_array == med_tib_cart_label))
+    lat_cart_locs = np.asarray(np.where(seg_array == lat_tib_cart_label))
+    middle_med_cart = med_cart_locs[ml_axis,:].mean()
+    middle_lat_cart = lat_cart_locs[ml_axis,:].mean()
+
+    #get location of tibia to get centroid of tibial plateau
+    tib_locs = np.asarray(np.where(seg_array == tib_label))
+    middle_tib = tib_locs[ml_axis, :].mean()
+    center_tibia_slice = int(middle_tib)
+
+    # infer the direction(s) for medial/lateral
+    med_direction = np.sign(middle_med_cart - middle_tib)
+    lat_direction = np.sign(middle_lat_cart - middle_tib)
+    if med_direction == lat_direction:
+        raise Exception(&#39;Middle of med and lat tibial cartilage on same side of centerline!&#39;)
+
+    #create med/lat cartilage masks - binary for updating seg masks
+    med_tib_cart_mask = np.zeros_like(seg_array)
+    lat_tib_cart_mask = np.zeros_like(seg_array)
+
+    if med_direction &gt; 0:
+        med_tib_cart_mask[center_tibia_slice:,...] = 1
+        lat_tib_cart_mask[:center_tibia_slice,...] = 1
+    elif med_direction &lt; 0:
+        med_tib_cart_mask[:center_tibia_slice,...] = 1
+        lat_tib_cart_mask[center_tibia_slice:,...] = 1
+
+    # create new med/lat cartilage arrays 
+    new_med_cart_array = array_tib_cart * med_tib_cart_mask
+    new_lat_cart_array = array_tib_cart * lat_tib_cart_mask
+
+    #make copy of original segmentation array &amp; update
+    # med/lat tibial cartilage labels
+    new_seg_array = seg_array.copy()
+    new_seg_array[new_med_cart_array == 1] = med_tib_cart_label
+    new_seg_array[new_lat_cart_array == 1] = lat_tib_cart_label
+    
+    return new_seg_array</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pymskt.image" href="index.html">pymskt.image</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="pymskt.image.cartilage_processing.CofM" href="#pymskt.image.cartilage_processing.CofM">CofM</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.absolute_CofM" href="#pymskt.image.cartilage_processing.absolute_CofM">absolute_CofM</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.findNotch" href="#pymskt.image.cartilage_processing.findNotch">findNotch</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.getAnteriorOfWeightBearing" href="#pymskt.image.cartilage_processing.getAnteriorOfWeightBearing">getAnteriorOfWeightBearing</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.getCartilageSubRegions" href="#pymskt.image.cartilage_processing.getCartilageSubRegions">getCartilageSubRegions</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.get_knee_segmentation_with_femur_subregions" href="#pymskt.image.cartilage_processing.get_knee_segmentation_with_femur_subregions">get_knee_segmentation_with_femur_subregions</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.get_y_CofM" href="#pymskt.image.cartilage_processing.get_y_CofM">get_y_CofM</a></code></li>
+<li><code><a title="pymskt.image.cartilage_processing.verify_and_correct_med_lat_tib_cart" href="#pymskt.image.cartilage_processing.verify_and_correct_med_lat_tib_cart">verify_and_correct_med_lat_tib_cart</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
