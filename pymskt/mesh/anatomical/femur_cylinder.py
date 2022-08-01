@@ -82,12 +82,22 @@ class FitCylinderFemur:
         if self.inertial_matrix_artic_surf is None:
             self.get_inertial_matrix_articular_surface()
         min_x = self.inertial_aligned_pts_articular_cylinder[0,:].min() # this is going to be fully medial or laterl
+        max_x = self.inertial_aligned_pts_articular_cylinder[0,:].max() # this is going to be fully medial or laterl (opposite above)
         mean_y = self.inertial_aligned_pts_articular_cylinder[1,:].mean() # use this as the origin y 
         mean_z = self.inertial_aligned_pts_articular_cylinder[2,:].mean() # I think this is going to be too close to the articular surface... but maybe good enought start? 
 
-        origin = np.asarray([[min_x, mean_y, mean_z],])
-        origin = self.inv_inertial_matrix_artic_surf @ origin.T
-        origin = np.squeeze(origin.T)
+        # Get points in roughly the center of the cylinder of the condyle on the medial & lateral sides. 
+        origin1 = np.asarray([[min_x, mean_y, mean_z],])
+        origin2 = np.asarray([[max_x, mean_y, mean_z],])
+
+        origin1 = self.inv_inertial_matrix_artic_surf @ origin1.T
+        origin1 = np.squeeze(origin1.T)
+        origin2 = self.inv_inertial_matrix_artic_surf @ origin2.T
+        origin2 = np.squeeze(origin2.T)
+
+        # Set the origin to a point just inside of the extreme on the min_x side (whether thats medial or lateral)
+        origin = (origin2 - origin1) * 0.05 + origin1
+        
         self._origin = origin
 
     def guess_vector(self):
@@ -106,9 +116,6 @@ class FitCylinderFemur:
     def guess_radius(self):
         if self.inertial_aligned_pts_articular_cylinder is None:
             self.get_artic_pts_aligned_inertial_matrix()
-        min_x = self.inertial_aligned_pts_articular_cylinder[0,:].min() # this is going to be fully medial or laterl
-        mean_y = self.inertial_aligned_pts_articular_cylinder[1,:].mean() # use this as the origin y 
-        mean_z = self.inertial_aligned_pts_articular_cylinder[2,:].mean() # I think this is going to be too close to the articular surface... but maybe good enought start? 
 
         range_y = self.inertial_aligned_pts_articular_cylinder[1,:].max() - self.inertial_aligned_pts_articular_cylinder[1,:].min()
         radius = range_y/2
