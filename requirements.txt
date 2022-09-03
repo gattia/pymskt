@@ -12,6 +12,8 @@ notebook
 traittypes
 
 pyfocusr
+itkwidgets # dependency needed for pyfocusr
+
 cycpd
 
 # pyfocusr
