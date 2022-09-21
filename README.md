@@ -105,14 +105,11 @@ femur_acs.fit()
 The resulting anatomical coorindate system can be used to create arrows & visualize the result: 
 
 ```python
-radius = 0.01
-radius_ratio = 4
+AP_arrow = get_arrow(femur_acs.ap_axis, origin=femur_acs.origin )
+IS_arrow = get_arrow(femur_acs.is_axis, origin=femur_acs.origin)
+ML_arrow = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin)
 
-AP_arrow = get_arrow(femur_acs.ap_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
-IS_arrow = get_arrow(femur_acs.is_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
-ML_arrow_right = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
-
-view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow_right])
+view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow])
 ```
 |*Anatomical Coordinate System - Cartilage Thickness* | *Anatomical Coordinate System - Cartilage Subregions* |
 |:---:       |:---:        |
