@@ -93,6 +93,42 @@ view(geometries=[femur.mesh])
 
 ![](/images/femur_itkwidgets.png)
 
+After creating the above mesh, creating cartilage subregions & an anatomical coordinate
+system is as simple as: 
+
+```python
+# Load in full seg image
+seg_image = sitk.ReadImage(location_seg)
+# break into sub regions. (weightbearing / trochlea / posterior condyles)
+seg_image = mskt.image.cartilage_processing.get_knee_segmentation_with_femur_subregions(seg_image)
+
+# assign femoral condyle cartilage sub regions to femur 
+femur.seg_image = seg_image
+femur.list_cartilage_labels=[11, 12, 13, 14, 15]
+femur.assign_cartilage_regions()
+
+# use cartilage regions to fit cylinder to condyles and create anatomic coordinate system 
+femur_acs = FemurACS(femur, cart_label=(11, 12, 13, 14, 15))
+femur_acs.fit()
+```
+
+The resulting anatomical coorindate system can be used to create arrows & visualize the result: 
+
+```python
+radius = 0.01
+radius_ratio = 4
+
+AP_arrow = get_arrow(femur_acs.ap_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
+IS_arrow = get_arrow(femur_acs.is_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
+ML_arrow_right = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin, shaft_radius=radius, tip_radius=radius*radius_ratio)
+
+view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow_right])
+```
+|*Coordinate System - Thickness* | *Coordinate System - Subregions* |
+|:---:       |:---:        |
+|![](/images/femur_acs.png)   | ![](/images/femur_subregions.png) |
+
+
 
 
 # Development / Contributing
