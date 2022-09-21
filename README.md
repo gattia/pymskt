@@ -124,11 +124,9 @@ ML_arrow_right = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin, shaft_rad
 
 view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow_right])
 ```
-|*Coordinate System - Thickness* | *Coordinate System - Subregions* |
+|*Anatomical Coordinate System - Cartilage Thickness* | *Anatomical Coordinate System - Cartilage Subregions* |
 |:---:       |:---:        |
 |![](/images/femur_acs.png)   | ![](/images/femur_subregions.png) |
-
-
 
 
 # Development / Contributing
