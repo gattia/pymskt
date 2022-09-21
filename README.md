@@ -21,8 +21,11 @@ This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and 
     # Best option for creating environment & installing dependencies:
     conda env create -n mskt
     conda activate mskt
-    conda install --file requirements.txt
-    # Alternatively - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
+    conda install --file requirements.txt. # pip (below) can alternatively be used to install dependencies in conda env
+    
+    # ALTERNATIVELY - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
+    python -m venv venv
+    source venv/bin/activate  # you will need to source the venv each time you want to use it
     pip install -r requirements.txt
     
     # Return to root dir
@@ -33,38 +36,25 @@ This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and 
     ```bash
     git clone https://github.com/gattia/cycpd.git
     cd cycpd
-    python setup.py install
+    pip install .
     cd ..
     ```
 3. Clone pyfocusr & install: <br>
     ```bash
     git clone https://github.com/gattia/pyfocusr.git
     cd pyfocusr
-    python setup.py install
+    pip install .
     cd ..
     ```
 4. Install pymskt: <br>
     ```bash
     cd pymskt
-    python setup.py install
+    pip install .
     ```
 
 
 ### To install itkwidgets (for visualization): 
-https://pypi.org/project/itkwidgets/
-
-```bash
-conda install -c conda-forge itkwidgets
-```
-
-### OR
-
-```bash
-pip install itkwidgets
-```
-
 If you are using jupyterlab instead of jupyter notebook, you also need to install an extension: 
-
 ```
 jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib jupyterlab-datawidgets itkwidgets
 ```
