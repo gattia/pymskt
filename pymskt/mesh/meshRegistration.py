@@ -1,5 +1,6 @@
 import sys
-import vtk 
+import vtk
+from pymskt.mesh.meshTools import transfer_mesh_scalars_get_weighted_average_n_closest
 try:
      import pyfocusr
 except ModuleNotFoundError:
@@ -80,7 +81,8 @@ def non_rigidly_register(
     n_coords_spectral_ordering=20000,       # How many points on mesh to use for ordering spectral coordinates ()
     n_coords_spectral_registration=1000,    # How many points to use for spectral registrtaion (usually random subsample)
     initial_correspondence_type='kd',       # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
-    final_correspondence_type='kd'          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
+    final_correspondence_type='kd',          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
+    transfer_scalars=False
 ):
     
     if 'pyfocusr' not in sys.modules:
@@ -143,5 +145,13 @@ def non_rigidly_register(
     elif final_pt_location == 'nearest_neighbour':
         reg.get_source_mesh_transformed_nearest_neighbour()
         mesh_transformed_to_target = reg.nearest_neighbour_transformed_mesh
+    
+    if transfer_scalars is True:
+        mesh_transformed_to_target = transfer_mesh_scalars_get_weighted_average_n_closest(
+            mesh_transformed_to_target, 
+            vtk_mesh_source,
+            n=3,
+            return_mesh=True,
+            create_new_mesh=False)
         
     return mesh_transformed_to_target    
