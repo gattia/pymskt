@@ -279,6 +279,13 @@ class SSM:
         self.n_extra_spectral = dict_model_params['n_extra_spectral']
         self.include_points_as_features = dict_model_params['include_points_as_features']
 
+    def calculate_total_variance(self):
+        """Calculate total variance"""
+        pass
+    
+    def calculate_variance_explained_per_pc(self):
+        """Calculate variance explained per PC"""
+        pass
     
     def deform_model(self, pc=0, std=3):
         """Deform model"""
