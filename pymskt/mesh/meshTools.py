@@ -12,11 +12,12 @@ import pyvista as pv
 import numpy as np
 
 from pymskt.utils import n2l, l2n, safely_delete_tmp_file
-from pymskt.mesh.utils import is_hit, get_intersect, get_surface_normals, get_obb_surface
+from pymskt.mesh.utils import is_hit, get_intersect, get_surface_normals, get_obb_surface, vtk_deep_copy
 import pymskt.image as pybtimage
 import pymskt.mesh.createMesh as createMesh 
 import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
+
 
 epsilon = 1e-7
 
@@ -458,6 +459,37 @@ def get_mesh_physical_point_coords(mesh):
     point_coordinates = vtk_to_numpy(mesh.GetPoints().GetData())
     return point_coordinates
 
+def get_mesh_point_features(mesh, features):
+    """
+    Get a numpy array of the x/y/z location of each point (vertex) on the `mesh`.
+
+    Parameters
+    ----------
+    mesh : 
+        vtkPolyData object
+    
+    features : list
+        List of strings associated with features to retrieve.
+
+    Returns
+    -------
+    numpy.ndarray
+        n_points x len(features) array of the featurs at each point/vertex. 
+    
+    Notes
+    -----
+
+    """
+    # ensure this is a list
+    if isinstance(features, str):
+        features = [features]
+
+    vertex_features = np.zeros((mesh.GetNumberOfPoints(), len(features)))
+    for i, feature in enumerate(features):
+        feature_vec = vtk_to_numpy(mesh.GetPointData().GetArray(feature))
+        vertex_features[:, i] = feature_vec.copy()
+    return vertex_features
+
 def smooth_scalars_from_second_mesh_onto_base(base_mesh,
                                               second_mesh,
                                               sigma=1.,
@@ -521,7 +553,12 @@ def smooth_scalars_from_second_mesh_onto_base(base_mesh,
         return smoothed_scalars_on_base
 
 
-def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3):
+def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, 
+                                                         old_mesh, 
+                                                         n=3, 
+                                                         return_mesh=False, 
+                                                         create_new_mesh=False
+                                                        ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
     nodes/points/vertices. Similar but not exactly the same as `smooth_scalars_from_second_mesh_onto_base`
@@ -581,7 +618,20 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3
         # print('normalized_value', normalized_value)
         # print('new_scalars shape', new_scalars.shape)
         new_scalars[new_mesh_pt_idx, :] = normalized_value
-    return new_scalars
+    if return_mesh is False:
+        return new_scalars
+    else:
+        if create_new_mesh is True:
+            # create a new memory/vtk object. 
+            new_mesh_ = vtk_deep_copy(new_mesh)
+        else:
+            # this just makes a reference to the existing new_mesh in memory. 
+            new_mesh_ = new_mesh
+        for idx, array_name in enumerate(array_names):
+            new_array = numpy_to_vtk(new_scalars[:, idx])
+            new_array.SetName(array_name)
+            new_mesh_.GetPointData().AddArray(new_array)
+        return new_mesh_
 
 def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
     """
