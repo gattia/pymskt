@@ -2,7 +2,7 @@ from pymskt.statistics import ProcrustesRegistration
 from pymskt.mesh import io
 from pymskt.mesh.meshTools import get_mesh_physical_point_coords, get_mesh_point_features
 from pymskt.mesh.meshRegistration import non_rigidly_register
-from pymskt.statistics.pca import pca_svd
+from pymskt.statistics.pca import pca_svd, save_meshes_across_pc
 import numpy as np
 import os
 import json
@@ -108,7 +108,7 @@ class SSM:
         #     self._path_ref_mesh = path_ref_mesh
         # if list_mesh_paths is not None:
         #     self._list_mesh_paths = list_mesh_paths
-        procrustes_reg = mskt.statistics.ProcrustesRegistration(
+        procrustes_reg = ProcrustesRegistration(
             path_ref_mesh=self._path_ref_mesh, # using the idx of the best mesh from the previous step
             list_mesh_paths=self._list_mesh_paths, # This will automatically remove the ref_mesh path if it is in the list.
             max_n_registration_steps=self.max_n_procrustes_steps,
@@ -291,9 +291,39 @@ class SSM:
         """Deform model"""
         pass
     
-    def save_gif(self, pc, std, view, n_steps):
-        """Save gif"""
+    def save_meshes_across_pc(self, folder_save, pc, std, step_size=1):
+        """Save meshes across PC"""
+        # save_meshes_across_pc(
+        #     meshes=self._ref_mesh,
+        #     mean_coords=self._mean,
+        #     PCs=self._PCs,
+        #     Vs=self._Vs,
+        #     pc=pc, 
+        #     min_sd=-abs(std), 
+        #     max_sd=abs(std), 
+        #     step_size=step_size,
+        #     loc_save=folder_save, 
+        #     mesh_name=[pc,],#['tibia', 'patella', 'femur'], #['femur', 'tibia', 'patella'],
+        #     save_filename='{mesh_name}_{sd}.vtk'
+        # )
+
         pass
+    
+    def save_gif(self, path_save, pc, std, n_steps=1):
+        """Save gif"""
+        # save_meshes_across_pc(
+        #     meshes=self._ref_mesh,
+        #     mean_coords=self._mean,
+        #     PCs=self._PCs,
+        #     Vs=self._Vs,
+        #     pc=pc, 
+        #     min_sd=-abs(std), 
+        #     max_sd=abs(std), 
+        #     step_size=n_steps,
+        #     loc_save=path_save, 
+        #     mesh_name=['tibia', 'patella', 'femur'], #['femur', 'tibia', 'patella'],
+        #     save_filename='{mesh_name}_{sd}.vtk'
+        # )
     
     def register_ref_to_mesh(self, mesh):
         registered_mesh = non_rigidly_register(
