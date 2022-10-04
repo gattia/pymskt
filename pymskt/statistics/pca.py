@@ -1,3 +1,4 @@
+from statistics import mean
 from tracemalloc import start
 import numpy as np
 from scipy.linalg import svd
@@ -74,11 +75,13 @@ def get_ssm_deformation(PCs, Vs, mean_coords, pc=0, n_sds=3):
         This includes the x/y/z position of each surface node after deformation using the SSM and
         the specified characteristics (pc, n_sds)
     """
+    if len(mean_coords.shape) > 1:
+        mean_coords = mean_coords.flatten()
 
     pc_vector = PCs[:, pc]
     pc_vector_scale = np.sqrt(Vs[pc]) * n_sds # convert Variances to SDs & multiply by n_sds (negative/positive important)
     coords_deformation = pc_vector * pc_vector_scale
-    deformed_coords = (mean_coords.flatten() + coords_deformation).reshape(mean_coords.shape)
+    deformed_coords = mean_coords + coords_deformation
     return deformed_coords
 
 def get_rand_bone_shape(PCs, Vs, mean_coords, n_pcs=100, n_samples=1, mean_=0., sd_=1.0):
@@ -118,7 +121,53 @@ def get_rand_bone_shape(PCs, Vs, mean_coords, n_pcs=100, n_samples=1, mean_=0., 
     
     return rand_data   
 
-def create_vtk_mesh_from_deformed_points(mean_mesh, new_points):
+def create_vtk_mesh_from_deformed_points(mean_mesh, new_points, features=None):    
+    if features is None:
+        n_features = 0
+    else:
+        n_features = len(features)
+    if type(mean_mesh) is dict:
+        mean_mesh_ = []
+        for mesh_name, mesh_params in mean_mesh.items():
+            mean_mesh_.append(mesh_params['mesh'])
+        mean_mesh = mean_mesh_
+
+    if type(mean_mesh) in (list, tuple):
+        n_points_per_mesh = []
+        for mesh_ in mean_mesh:
+            n_pts = mesh_.GetNumberOfPoints()
+            n_points_per_mesh.append(n_pts)
+        
+        n_inputs = new_points.shape[0] / (np.sum(n_points_per_mesh))
+        n_features = n_inputs - 3
+        if features is not None:
+            assert(n_features == len(features))
+        elif features is None:
+            features = [f'feature_{i}' for i in range(n_features)]
+
+        mesh = []
+        start_idx = 0
+        for idx, mesh_ in enumerate(mean_mesh):
+            n_pts = mesh_.GetNumberOfPoints()
+            n_inputs = n_features + 3
+            mesh.append(
+                create_vtk_mesh_from_deformed_points_(
+                    mesh_, 
+                    new_points[start_idx:start_idx+(n_inputs * n_pts)],
+                    features=features
+                )
+            )
+            start_idx += (n_pts * n_inputs)
+    else:
+        mesh = create_vtk_mesh_from_deformed_points_(
+            mean_mesh, 
+            new_points,
+            features=features
+        )
+    return mesh
+        
+
+def create_vtk_mesh_from_deformed_points_(mean_mesh, new_points, features=None, active_scalars=None):
     """
     Create new vtk mesh (polydata) from a set of points (ndarray) deformed using the SSM. 
 
@@ -127,18 +176,48 @@ def create_vtk_mesh_from_deformed_points(mean_mesh, new_points):
     mean_mesh : vtk.PolyData
         vtk polydata of the mean mesh
     new_points : numpy.ndarray
-        3xN ndarray; N=number of points on mesh surface (same as number of points on mean_mesh).
-        This includes the x/y/z position of each surface node should be deformed to.
+        (3xN + Nf*N) 1d ndarray; N=number of points on mesh surface (same as number of points on mean_mesh).
+        This includes the x/y/z position of each surface node should be deformed to. Nf is the number of features
+    features : list, optional
+        List of feature names, by default None
 
     Returns
     -------
     vtk.PolyData
-        vtk polydata of the deformed mesh
-    """
+        vtk polydata of the deformed mesh & updated scalar features
+    """ 
+    
+    # get the number of points/vertices on the mesh
+    n_points = mean_mesh.GetNumberOfPoints()
+    # infer the number of features
+    n_inputs = new_points.shape[0] / n_points
+    assert(n_inputs.is_integer())
+    n_inputs = int(n_inputs)
+    n_features = n_inputs - 3
 
+    # get the actual xyz points
+    xyz = new_points[:n_points*3].reshape((n_points, 3))
+    # assign points to a new mesh
     new_mesh = vtk.vtkPolyData()
     new_mesh.DeepCopy(mean_mesh)
-    new_mesh.GetPoints().SetData(numpy_to_vtk(new_points))
+    new_mesh.GetPoints().SetData(numpy_to_vtk(xyz))
+    
+    # handle features if they exist
+    if n_features > 0:
+        # if no names, create sequential feature names
+        if (n_features > 0) & (features is None):
+            features = [f'feature_{i}' for i in range(n_features)]
+        else:
+            assert(len(features) == n_features)
+        features_ = new_points[n_points*3:].reshape((n_points, n_features))
+        for feature_idx, feature in enumerate(features):
+            scalars = numpy_to_vtk(features_[:, feature_idx])
+            scalars.SetName(feature)
+            new_mesh.GetPointData().AddArray(scalars)
+        if active_scalars is not None:
+            new_mesh.GetPointData().SetActiveScalars(active_scalars)
+        else:
+            new_mesh.GetPointData().SetActiveScalars(features[0])
     
     return new_mesh
 
@@ -148,6 +227,7 @@ def save_gif(
     Vs,
     mean_coords,  # mean_coords could be extracted from mean mesh...?
     mean_mesh,
+    features=None,
     pc=0,
     min_sd=-3.,
     max_sd=3.,
@@ -158,6 +238,7 @@ def save_gif(
     camera_position='xz',
     window_size=[3000, 4000],
     background_color='white',
+    scalar_bar_range=[0, 4],
     verbose=False,
 ):
     """
@@ -211,6 +292,7 @@ def save_gif(
         camera_position=camera_position,
         window_size=window_size,
         background_color=background_color,
+        scalar_bar_range=scalar_bar_range,
     )
 
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
@@ -218,32 +300,9 @@ def save_gif(
             print(f'Deforming SSM with idx={idx} sd={sd}')
         pts = get_ssm_deformation(PCs, Vs, mean_coords, pc=pc, n_sds=sd)
         
-        if type(mean_mesh) == dict:
-            mesh = []
-            start_idx = 0
-            for mesh_name, mesh_params in mean_mesh.items():
-                mesh.append(
-                    create_vtk_mesh_from_deformed_points(
-                        mesh_params['mesh'], 
-                        pts[start_idx:start_idx+mesh_params['n_points'], :],
-                    )
-                )
-                start_idx += mesh_params['n_points']
-        if type(mean_mesh) in (list, tuple):
-            mesh = []
-            start_idx = 0
-            for mesh_ in mean_mesh:
-                n_pts = mesh_.GetNumberOfPoints()
-                mesh.append(
-                    create_vtk_mesh_from_deformed_points(
-                        mesh_, 
-                        pts[start_idx:start_idx+n_pts, :],
-                    )
-                )
-                start_idx += n_pts
-        
-        else:
-            mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts)
+        # return mesh(es) from deformed points. 
+        # if >1 mesh, returned as list of meshes
+        mesh = create_vtk_mesh_from_deformed_points(mean_mesh, pts, features=features)
         
         gif.add_mesh_frame(mesh)
 
@@ -254,6 +313,7 @@ def save_meshes_across_pc(
     mean_coords,
     PCs,
     Vs,
+    features=None,
     pc=0, 
     min_sd=-3, 
     max_sd=3, 
@@ -262,40 +322,28 @@ def save_meshes_across_pc(
     mesh_name='bone', #['femur', 'tibia', 'patella'],
     save_filename='{mesh_name}_{sd}.vtk',
     verbose=True
-):
+):  
+
+    # TODO: create/confirm a single type for the vtkpolydata (or whatever is used)
+    if type(mesh) not in (list, tuple):
+        mesh = [mesh,]
+
     os.makedirs(loc_save, exist_ok=True)
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step_size, step_size)):
         if verbose is True:
             print(f'Deforming SSM with idx={idx} sd={sd}')
         pts = get_ssm_deformation(PCs, Vs, mean_coords, pc=pc, n_sds=sd)
         
-        if type(mesh) in [list, tuple]:
-            start_idx = 0
-            for mesh_idx, mesh_ in enumerate(mesh):
-                mesh_name_ = mesh_name[mesh_idx]
-                # load bone specific mesh
-                n_pts = mesh_.GetNumberOfPoints()                
+        # return mesh(es) from deformed points.
+        # if >1 mesh, returned as list of meshes
+        updated_mesh = create_vtk_mesh_from_deformed_points(mesh, pts, features=features)
+        if type(updated_mesh) is list:
+            for mesh_idx, mesh_ in enumerate(updated_mesh):
+                save_filename_ = save_filename.format(mesh_name=mesh_name[mesh_idx], sd=sd)
+                save_path = os.path.join(loc_save, save_filename_)
+                write_vtk(mesh=mesh_, filepath=save_path)              
 
-                updated_mesh = create_vtk_mesh_from_deformed_points(
-                    mesh_, 
-                    pts[start_idx:start_idx+n_pts, :],
-                )
-                write_vtk(mesh=updated_mesh, filepath=os.path.join(loc_save, save_filename.format(mesh_name=mesh_name_, sd=sd)))
-                start_idx += n_pts
-        
-        elif type(mesh) is dict:
-            start_idx = 0
-            for mesh_name_, mesh_params in mesh.items():
-                updated_mesh = create_vtk_mesh_from_deformed_points(
-                    mesh_params['mesh'], 
-                    pts[start_idx:start_idx+mesh_params['n_points'], :],
-                )
-                write_vtk(mesh=updated_mesh, filepath=os.path.join(loc_save, save_filename.format(mesh_name=mesh_name_, sd=sd)))                
-                start_idx += mesh_params['n_points']
-        else:
-            updated_mesh = create_vtk_mesh_from_deformed_points(mesh, pts)
-            write_vtk(mesh=updated_mesh, filepath=os.path.join(loc_save, save_filename.format(mesh_name=mesh_name, sd=sd)))                
-                                       
+
 def save_gif_vec_2_vec(
     path_save,
     PCs,
@@ -305,12 +353,14 @@ def save_gif_vec_2_vec(
     vec_1,
     vec_2,
     n_steps=24,
+    features=None,
     color='orange', 
     show_edges=True, 
     edge_color='black',
     camera_position='xz',
     window_size=[900, 1200], #[3000, 4000],
     background_color='white',
+    scalar_bar_range=[0, 4],
     verbose=False,
 ):
     """
@@ -361,6 +411,7 @@ def save_gif_vec_2_vec(
         camera_position=camera_position,
         window_size=window_size,
         background_color=background_color,
+        scalar_bar_range=scalar_bar_range,
     )
     
     if PCs.shape[0] == np.product(mean_coords.shape):
@@ -396,34 +447,9 @@ def save_gif_vec_2_vec(
         coords_deformation = vec_ @ PCs[:len(vec_), :]
         deformed_coords = (mean_coords.flatten() + coords_deformation).reshape(mean_coords.shape)
         
-        # the following will add the deformation(s) to the GIF
-        # properly handles single meshes, lists of meshes or a dict with meshes
-        if type(mean_mesh) == dict:
-            mesh = []
-            start_idx = 0
-            for mesh_name, mesh_params in mean_mesh.items():
-                mesh.append(
-                    create_vtk_mesh_from_deformed_points(
-                        mesh_params['mesh'], 
-                        deformed_coords[start_idx:start_idx+mesh_params['n_points'], :],
-                    )
-                )
-                start_idx += mesh_params['n_points']
-        if type(mean_mesh) in (list, tuple):
-            mesh = []
-            start_idx = 0
-            for mesh_ in mean_mesh:
-                n_pts = mesh_.GetNumberOfPoints()
-                mesh.append(
-                    create_vtk_mesh_from_deformed_points(
-                        mesh_, 
-                        deformed_coords[start_idx:start_idx+n_pts, :],
-                    )
-                )
-                start_idx += n_pts
-        else:
-            mesh = create_vtk_mesh_from_deformed_points(mean_mesh, deformed_coords)
-        
+        # create new mesh(es) from deformed points
+        mesh = create_vtk_mesh_from_deformed_points(mean_mesh, deformed_coords, features=features)
+
         gif.add_mesh_frame(mesh)
 
     gif.done()
