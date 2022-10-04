@@ -311,7 +311,8 @@ class GIF:
         camera_position='xz',
         window_size=[3000, 4000],
         background_color='white',
-        path_save='~/Downloads/ssm.gif'
+        path_save='~/Downloads/ssm.gif',
+        scalar_bar_range=[0, 4],
     ):
         """
         Initialize the GIF class.
@@ -355,6 +356,7 @@ class GIF:
         self._window_size = window_size
         self._background_color = background_color
         self._path_save = path_save
+        self._scalar_bar_range = scalar_bar_range
     
     def update_view(
         self
@@ -385,6 +387,7 @@ class GIF:
 
         if self.counter == 0:
             self.update_view()
+        self._plotter.update_scalar_bar_range(clim=self._scalar_bar_range)
         self._plotter.write_frame()
         
         if type(mesh) in (list, tuple):
@@ -397,6 +400,15 @@ class GIF:
     def done(self):
         self._plotter.close()
     
+    @property
+    def scalar_bar_range(self):
+        return self._scalar_bar_range
+    
+    @scalar_bar_range.setter
+    def scalar_bar_range(self, scalar_bar_range):
+        self._scalar_bar_range = scalar_bar_range
+        self._plotter.update_scalar_bar_range(clim=scalar_bar_range)
+
     @property
     def color(self):
         return self._color
