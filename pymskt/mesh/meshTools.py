@@ -490,6 +490,34 @@ def get_mesh_point_features(mesh, features):
         vertex_features[:, i] = feature_vec.copy()
     return vertex_features
 
+def set_mesh_point_features(mesh, features, feature_names=None):
+    if len(features.shape) == 1:
+        if feature_names is None:
+            feature_name = 'feature_1'
+        elif type(feature_name) in (list, tuple):
+            feature_name = feature_names[0]
+        else:
+            feature_name = feature_names
+        scalars = numpy_to_vtk(features)
+        scalars.SetName(feature_name)
+        mesh.GetPointData().AddArray(scalars)
+    elif len(features.shape) == 2:
+        n_pts = mesh.GetNumberOfPoints()
+        if features.shape[1] == n_pts:
+            features = features.T
+        assert features.shape[0] == n_pts, "Features must be n_points x n_features"
+        if feature_names is None:
+            feature_names = [f'feature_{i}' for i in range(features.shape[1])]
+        elif type(feature_names) in (list, tuple):
+            assert len(feature_names) == features.shape[1], "Must provide a feature name for each feature"
+        else:
+            feature_names = [feature_names]
+        for feature_idx in range(features.shape[1]):
+            scalars = numpy_to_vtk(features[:, feature_idx])
+            scalars.SetName(feature_names[feature_idx])
+            mesh.GetPointData().AddArray(scalars)
+    return mesh
+
 def smooth_scalars_from_second_mesh_onto_base(base_mesh,
                                               second_mesh,
                                               sigma=1.,
