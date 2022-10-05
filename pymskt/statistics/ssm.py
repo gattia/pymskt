@@ -2,7 +2,7 @@ from pymskt.statistics import ProcrustesRegistration
 from pymskt.mesh import io
 from pymskt.mesh.meshTools import get_mesh_physical_point_coords, get_mesh_point_features
 from pymskt.mesh.meshRegistration import non_rigidly_register
-from pymskt.statistics.pca import pca_svd, save_meshes_across_pc
+from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif
 import numpy as np
 import os
 import json
@@ -291,39 +291,57 @@ class SSM:
         """Deform model"""
         pass
     
-    def save_meshes_across_pc(self, folder_save, pc, std, step_size=1):
+    def save_meshes_across_pc(self, folder_save, pc, std, step_size=1, mesh_name='bone'):
         """Save meshes across PC"""
-        # save_meshes_across_pc(
-        #     meshes=self._ref_mesh,
-        #     mean_coords=self._mean,
-        #     PCs=self._PCs,
-        #     Vs=self._Vs,
-        #     pc=pc, 
-        #     min_sd=-abs(std), 
-        #     max_sd=abs(std), 
-        #     step_size=step_size,
-        #     loc_save=folder_save, 
-        #     mesh_name=[pc,],#['tibia', 'patella', 'femur'], #['femur', 'tibia', 'patella'],
-        #     save_filename='{mesh_name}_{sd}.vtk'
-        # )
-
-        pass
+        # TODO: Eventually update all functions to take multiple bones
+        # Will need to unpack self._ref_mesh to be multiple meshes.
+        
+        save_meshes_across_pc(
+            mesh=self._ref_mesh,
+            mean_coords=self._mean,
+            PCs=self._PCs,
+            Vs=self._Vs,
+            pc=pc, 
+            min_sd=-abs(std), 
+            max_sd=abs(std), 
+            step_size=step_size,
+            loc_save=folder_save, 
+            mesh_name=f'{mesh_name}_{pc}',   #['tibia', 'patella', 'femur'], #['femur', 'tibia', 'patella'],
+            save_filename='{mesh_name}_{sd}.vtk' #specifically not with `f` so we can fill in later. 
+        )
     
-    def save_gif(self, path_save, pc, std, n_steps=1):
+    def save_gif_across_pc(
+            self, 
+            path_save, 
+            pc, 
+            std, 
+            step_size=0.25, 
+            camera_position='xz',
+            scalar_bar_range=[0, 4],
+            background_color='white'
+        ):
+
         """Save gif"""
-        # save_meshes_across_pc(
-        #     meshes=self._ref_mesh,
-        #     mean_coords=self._mean,
-        #     PCs=self._PCs,
-        #     Vs=self._Vs,
-        #     pc=pc, 
-        #     min_sd=-abs(std), 
-        #     max_sd=abs(std), 
-        #     step_size=n_steps,
-        #     loc_save=path_save, 
-        #     mesh_name=['tibia', 'patella', 'femur'], #['femur', 'tibia', 'patella'],
-        #     save_filename='{mesh_name}_{sd}.vtk'
-        # )
+        save_gif(
+            path_save=path_save,
+            PCs=self._PCs,
+            Vs=self._Vs,
+            mean_coords=self._mean,  # mean_coords could be extracted from mean mesh...?
+            mean_mesh=self._ref_mesh,
+            features=self.vertex_features,
+            pc=pc,
+            min_sd=-abs(std),
+            max_sd=abs(std),
+            step=step_size,
+            color='orange' if self.vertex_features is None else None, 
+            show_edges=True, 
+            edge_color='black',
+            camera_position=camera_position,
+            window_size=[3000, 4000],
+            background_color=background_color,
+            scalar_bar_range=scalar_bar_range,
+            verbose=False,
+        )
     
     def register_ref_to_mesh(self, mesh):
         registered_mesh = non_rigidly_register(
