@@ -147,6 +147,7 @@ def non_rigidly_register(
         mesh_transformed_to_target = reg.nearest_neighbour_transformed_mesh
     
     if transfer_scalars is True:
+        print('Transferring scalars')
         mesh_transformed_to_target = transfer_mesh_scalars_get_weighted_average_n_closest(
             mesh_transformed_to_target, 
             vtk_mesh_target,
