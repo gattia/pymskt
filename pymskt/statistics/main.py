@@ -196,7 +196,7 @@ class ProcrustesRegistration:
         if self.vertex_features is not None:
             self._registered_vertex_features = np.zeros(
                 (   
-                    len(list_mesh_paths), 
+                    len(self.list_mesh_paths), 
                     self.n_points, 
                     len(self.vertex_features)
                 ), 
@@ -244,6 +244,8 @@ class ProcrustesRegistration:
     def execute(self):
         # create placeholder to store registered point clouds & update inherited one only if also storing 
         registered_pt_coords = np.zeros_like(self._registered_pt_coords)
+        if self.vertex_features is not None:
+            registered_vertex_features = np.zeros_like(self._registered_vertex_features)
 
         # keep doing registrations until max# is hit, or the minimum error between registrations is hit. 
         while (
@@ -274,7 +276,7 @@ class ProcrustesRegistration:
                     # first iteration & ref mesh, just use points as they are. 
                     registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
                     if self.vertex_features is not None:
-                        registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[i])
+                        registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[idx])
                         # for i, feature in enumerate(self.vertex_features):
                         #     feature_vec = vtk_to_numpy(self._ref_mesh.GetPointData().GetArray(feature))
                         #     registered_vertex_features[idx, :, i] = feature_vec.copy()
