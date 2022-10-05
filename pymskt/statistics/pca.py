@@ -139,6 +139,8 @@ def create_vtk_mesh_from_deformed_points(mean_mesh, new_points, features=None):
             n_points_per_mesh.append(n_pts)
         
         n_inputs = new_points.shape[0] / (np.sum(n_points_per_mesh))
+        assert(n_inputs.is_integer())
+        n_inputs = int(n_inputs)
         n_features = n_inputs - 3
         if features is not None:
             assert(n_features == len(features))
