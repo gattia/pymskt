@@ -149,7 +149,7 @@ def non_rigidly_register(
     if transfer_scalars is True:
         mesh_transformed_to_target = transfer_mesh_scalars_get_weighted_average_n_closest(
             mesh_transformed_to_target, 
-            vtk_mesh_source,
+            vtk_mesh_target,
             n=3,
             return_mesh=True,
             create_new_mesh=False)
