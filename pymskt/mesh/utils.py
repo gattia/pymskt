@@ -4,6 +4,7 @@ from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from pymskt.utils import sigma2fwhm
 import pyvista as pv
 import pymskt
+from matplotlib import pyplot as plt
 
 
 # Some functions were originally based on the tutorial on ray casting in python + vtk 
@@ -313,6 +314,8 @@ class GIF:
         background_color='white',
         path_save='~/Downloads/ssm.gif',
         scalar_bar_range=[0, 4],
+        cmap='viridis',
+
     ):
         """
         Initialize the GIF class.
@@ -357,6 +360,7 @@ class GIF:
         self._background_color = background_color
         self._path_save = path_save
         self._scalar_bar_range = scalar_bar_range
+        self._cmap = plt.cm.get_cmap(cmap)
     
     def update_view(
         self
@@ -374,7 +378,9 @@ class GIF:
                     render=False,
                     color=self._color, 
                     edge_color=self._edge_color, 
-                    show_edges=self._show_edges
+                    show_edges=self._show_edges,
+                    cmap=self._cmap,
+                    clim=self._scalar_bar_range,
                 ))
         else:
             actor = self._plotter.add_mesh(
@@ -382,7 +388,10 @@ class GIF:
                 render=False,
                 color=self._color, 
                 edge_color=self._edge_color, 
-                show_edges=self._show_edges
+                show_edges=self._show_edges,
+                cmap=self._cmap,
+                clim=self._scalar_bar_range,
+
             )
 
         if self.counter == 0:
