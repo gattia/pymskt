@@ -467,6 +467,10 @@ class SSM:
     def path_ref_mesh(self, value):
         assert(isinstance(value, str))
         self._path_ref_mesh = value
+    
+    @ref_mesh.setter
+    def ref_mesh(self, value):
+        self._ref_mesh = value
 
     
         

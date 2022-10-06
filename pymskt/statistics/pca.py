@@ -241,6 +241,7 @@ def save_gif(
     window_size=[3000, 4000],
     background_color='white',
     scalar_bar_range=[0, 4],
+    cmap=None,
     verbose=False,
 ):
     """
@@ -295,6 +296,7 @@ def save_gif(
         window_size=window_size,
         background_color=background_color,
         scalar_bar_range=scalar_bar_range,
+        cmap=cmap,
     )
 
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
@@ -363,6 +365,7 @@ def save_gif_vec_2_vec(
     window_size=[900, 1200], #[3000, 4000],
     background_color='white',
     scalar_bar_range=[0, 4],
+    cmap=None,
     verbose=False,
 ):
     """
@@ -414,6 +417,7 @@ def save_gif_vec_2_vec(
         window_size=window_size,
         background_color=background_color,
         scalar_bar_range=scalar_bar_range,
+        cmap=cmap,
     )
     
     if PCs.shape[0] == np.product(mean_coords.shape):
