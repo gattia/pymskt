@@ -342,6 +342,7 @@ class ProcrustesRegistration:
             
             # Keep recycling the same base mesh, just move the x/y/z point coords around. 
             set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
+            set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
             # save mesh to disk
             io.write_vtk(mesh, path_to_save)
     
