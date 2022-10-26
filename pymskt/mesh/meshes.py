@@ -203,7 +203,8 @@ class Mesh:
                                tmp_filename)
     
     def save_mesh(self,
-                  filepath):
+                  filepath,
+                  write_binary=False):
         """
         Save the surface mesh from this class to disk. 
 
@@ -211,8 +212,10 @@ class Mesh:
         ----------
         filepath : str
             Location & filename to save the surface mesh (vtk.vtkPolyData) to. 
+        write_binary : bool, optional
+            Should the mesh be saved as a binary or ASCII format, by default False
         """        
-        io.write_vtk(self._mesh, filepath)
+        io.write_vtk(self._mesh, filepath, write_binary=write_binary)
 
     def resample_surface(self,
                          subdivisions=2,
