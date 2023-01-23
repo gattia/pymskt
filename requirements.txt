@@ -1,6 +1,6 @@
 
 cython
-numpy
+numpy>=1.21
 pyacvd
 #python=3.8.12
 pyvista
