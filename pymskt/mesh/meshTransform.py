@@ -1,3 +1,4 @@
+import json
 import vtk
 import numpy as np
 import SimpleITK as sitk
@@ -5,6 +6,143 @@ from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import create_4x4_from_3x3
 
 # import pyfocusr
+
+def separate_scale_and_transform(transform, tolerance=1e-5):
+    """
+    Separate a 3x3 or 4x4 transform into a scale and a unit transform.
+
+    Parameters
+    ----------
+    transform : np.ndarray
+        The transform to separate.
+    tolerance : float, optional
+        The tolerance to use when checking if the scales are uniform, by default 1e-5
+    
+    Returns
+    -------
+    float
+        The scale of the transform.
+    np.ndarray
+        The unit transform of the transform.
+    
+    Raises
+    ------
+    Exception
+        If the transform is not 3x3 or 4x4.
+    Exception
+        If the scales are not uniform.
+    
+    Notes
+    -----
+    The scale is the average of the norms of the rows of the transform.
+    The unit transform is the transform divided by the scale.
+    """
+    if transform.shape[0] == 3:
+        pass
+    elif transform.shape[0] == 4:
+        transform = transform[:3, :3]
+    else:
+        raise Exception('Transform should be 3x3 or 4x4 np array')
+    
+    scales = []
+    for row in range(3):
+        scales.append(np.linalg.norm(transform[row, :]))
+    
+    for i in range(1, 3):
+        if not math.isclose(scales[0], scales[i], abs_tol=tolerance):
+            raise Exception('Scales along axes ' +
+                            'do not appear to be uniform: ' +
+                            f'{scales[0]} & {scales[i]}; ' +
+                            f'tolerance is {tolerance}')
+        else:
+            pass
+    # There might be very small differences b/w norms - so, average them.
+    scale = np.mean(scales) 
+    
+    unit_transform = np.eye(3)
+    for row in range(3):
+        unit_transform[row,:] = transform[row, :] / np.linalg.norm(transform[row, :])
+    
+    return scale, unit_transform
+
+def write_linear_transform(transform, filepath):
+    """
+    Write a linear transform to a file. 
+
+    Parameters
+    ----------
+    transform : vtk.vtkTransform (or subclass)
+        The transform to write to file. 
+    filepath : str
+        The filepath to write the transform to.
+
+    Returns
+    -------
+    None
+    """    
+    four_by_four = np.eye(4)
+    transform_matrix = transform.GetMatrix()
+    for row in range(4):
+        for col in range(4):
+            four_by_four[row, col] = transform_matrix.GetElement(row, col)
+    
+    scale, unit_transform = separate_scale_and_transform(four_by_four)
+
+    transform_dict = {
+        'transform_matrix': four_by_four.tolist(),
+        'scale': scale,
+        'unit_transform': unit_transform.tolist()
+    }
+
+    with open(filepath, 'w') as f:
+        json.dump(transform_dict, f, indent=4)
+
+def read_linear_transform(filepath, return_scale=False, return_unit_transform=False):
+    """
+    Read a linear transform from a file. 
+
+    Parameters
+    ----------
+    filepath : str
+        The filepath to read the transform from.
+    return_scale : bool, optional
+        Whether to return the scale of the transform, by default False
+    return_unit_transform : bool, optional
+        Whether to return the unit transform of the transform, by default False
+
+    Returns
+    -------
+    vtk.vtkTransform
+        The transform that was read from the file.
+    float, optional
+        The scale of the transform, if `return_scale` is True.
+    np.ndarray, optional
+        The unit transform of the transform, if `return_unit_transform` is True.
+
+    """    
+    with open(filepath, 'r') as f:
+        transform_dict = json.load(f)
+    
+    matrix = vtk.vtkMatrix4x4()
+    for row in range(4):
+        for col in range(4):
+            idx = row * 4 + col
+            matrix.SetElement(row, col, transform_dict['transform_matrix'][idx])
+    
+    transform = vtk.vtkTransform()
+    transform.SetMatrix(matrix)
+
+    if return_scale:
+        if return_unit_transform:
+            return transform, transform_dict['scale'], transform_dict['unit_transform']
+        else:
+            return transform, transform_dict['scale']
+    else:
+        if return_unit_transform:
+            return transform, transform_dict['unit_transform']
+        else:
+            return transform
+
 
 def create_transform(transform_matrix):
     """
