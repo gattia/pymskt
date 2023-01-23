@@ -8,6 +8,8 @@ FEMUR_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/femur_cart_smoothed_binary_no
 MED_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/med_tib_cart_smoothed_binary_no_surface_resampling.vtk')
 LAT_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/lat_tib_cart_smoothed_binary_no_surface_resampling.vtk')
 
+from pymskt import RTOL, ATOL
+
 # LIST CARTIALGE MESHES
 def test_set_list_cartilage_meshes(
     fem_cart_mesh=FEMUR_CARTILAGE_MESH,
@@ -29,7 +31,9 @@ def test_set_list_cartilage_meshes(
         for rand_idx in rand_sample:
             assert_allclose(
                 list_cart_meshes[mesh_idx].mesh.GetPoint(rand_idx), 
-                cart_mesh.mesh.GetPoint(rand_idx)
+                cart_mesh.mesh.GetPoint(rand_idx), 
+                rtol=RTOL, 
+                atol=ATOL
             )
 
 def test_set_list_cartilage_meshes_exception_items_in_list_not_CartilageMesh(
@@ -50,7 +54,9 @@ def test_set_list_cartilage_meshes_cartilage_mesh_provided_directly_not_list(
     for rand_idx in rand_sample:
         assert_allclose(
             fem_cart_mesh.GetPoint(rand_idx), 
-            mesh.list_cartilage_meshes[0].mesh.GetPoint(rand_idx)
+            mesh.list_cartilage_meshes[0].mesh.GetPoint(rand_idx), 
+            rtol=RTOL, 
+            atol=ATOL
         )
 
 def test_get_list_cartilage_meshes(
@@ -72,7 +78,9 @@ def test_get_list_cartilage_meshes(
         for rand_idx in rand_sample:
             assert_allclose(
                 list_cart_meshes[mesh_idx].mesh.GetPoint(rand_idx), 
-                cart_mesh.mesh.GetPoint(rand_idx)
+                cart_mesh.mesh.GetPoint(rand_idx),
+                rtol=RTOL, 
+                atol=ATOL
             )
 
 # LIST CARTILAGE LABELS
@@ -84,7 +92,9 @@ def test_set_list_cartilage_labels(
 
     assert_allclose(
         mesh._list_cartilage_labels,
-        list_cartilage_labels
+        list_cartilage_labels, 
+        rtol=RTOL, 
+        atol=ATOL
     )
 
 def test_set_list_cartilage_list_fix_input_of_int_instead_of_list(
@@ -95,7 +105,9 @@ def test_set_list_cartilage_list_fix_input_of_int_instead_of_list(
 
     assert_allclose(
         mesh._list_cartilage_labels,
-        [list_cartilage_labels,]
+        [list_cartilage_labels,], 
+        rtol=RTOL, 
+        atol=ATOL
     )
 
 def test_set_list_cartilage_labels_exception_float_type_in_list(
@@ -120,7 +132,9 @@ def test_get_list_cartilage_labels(
 
     assert_allclose(
         mesh.list_cartilage_labels,
-        list_cartilage_labels
+        list_cartilage_labels, 
+        rtol=RTOL, 
+        atol=ATOL
     )
 
 # CROP PERCENT

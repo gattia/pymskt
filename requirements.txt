@@ -1,24 +1,28 @@
-
-cython
-numpy>=1.21
+numpy ==1.21.*
+Cython >= 0.29
 pyacvd
 #python=3.8.12
 pyvista
 scipy
 SimpleITK
-vtk==8.*
+vtk
 param
 jupyter
 notebook
 traittypes
 
+pyfocusr
+itkwidgets # dependency needed for pyfocusr
+
+cycpd
 
 # pyfocusr
-matplotlib
-itkwidgets
-itk
-colorcet
-zstd
-jupyter_core
-jupyter_client
-jupyter_console
+# matplotlib
+# itkwidgets
+# itk
+# colorcet
+# zstd
+# jupyter_core
+# jupyter_client
+# jupyter_console
+

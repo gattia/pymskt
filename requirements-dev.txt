@@ -1,0 +1,7 @@
+pytest 
+black 
+isort 
+wheel 
+pdoc3 
+coverage 
+build

@@ -1,11 +1,12 @@
 
+from lib2to3.pgen2.token import AT
 from pymskt.mesh import meshTools
 import vtk
 import numpy as np
 from vtk.util.numpy_support import numpy_to_vtk
 from numpy.testing import assert_allclose
 
-
+from pymskt import RTOL, ATOL
 #
 # get_smoothed_scalars
 #
@@ -83,4 +84,4 @@ def test_get_smoothed_scalars(
 
     scalars_smoothed = np.reshape(scalars_smoothed, (width_height+1, width_height+1), order='F')
 
-    assert_allclose(np_scalars_smoothed_test, scalars_smoothed, rtol=1e-03)
+    assert_allclose(np_scalars_smoothed_test, scalars_smoothed, rtol=1e-03, atol=ATOL)

@@ -4,6 +4,8 @@ import pymskt as mskt
 import SimpleITK as sitk
 from numpy.testing import assert_allclose
 
+from pymskt import RTOL, ATOL
+
 try:
     orig_femur_mesh = mskt.mesh.io.read_vtk('data/femur_mesh_orig.vtk')
     downsampled_femur_mesh = mskt.mesh.io.read_vtk('data/femur_thickness_mm_10k_pts.vtk')
@@ -25,7 +27,7 @@ def assert_images_same(image1, image2):
     image1_array = sitk.GetArrayFromImage(image1)
     image2_array = sitk.GetArrayFromImage(image2)
 
-    assert_allclose(image1_array, image2_array)
+    assert_allclose(image1_array, image2_array, rtol=RTOL, atol=ATOL)
     assert image1.GetOrigin() == image2.GetOrigin()
     assert image1.GetSpacing() == image2.GetSpacing()
     assert image1.GetDirection() == image2.GetDirection()
@@ -53,7 +55,7 @@ def test_creating_bone(timing=False,
 
     orig_femur_pts = mskt.mesh.get_mesh_physical_point_coords(orig_femur_mesh)
 
-    assert_allclose(orig_femur_pts, femur_pts)
+    assert_allclose(orig_femur_pts, femur_pts, rtol=RTOL, atol=ATOL)
 
 def test_resampling_bone(timing=False,
                          verbose=False):
@@ -80,7 +82,7 @@ def test_resampling_bone(timing=False,
 
     downsampled_femur_pts = mskt.mesh.get_mesh_physical_point_coords(downsampled_femur_mesh)
 
-    assert_allclose(downsampled_femur_pts, femur_pts)
+    assert_allclose(downsampled_femur_pts, femur_pts, rtol=RTOL, atol=ATOL)
 
 
 

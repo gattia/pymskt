@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>pymskt.mesh.utils API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pymskt.mesh.utils</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import vtk
+import numpy as np
+from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
+from pymskt.utils import sigma2fwhm
+import pyvista as pv
+import pymskt
+
+
+# Some functions were originally based on the tutorial on ray casting in python + vtk 
+# by Adamos Kyriakou @:
+# https://pyscience.wordpress.com/2014/09/21/ray-casting-with-python-and-vtk-intersecting-linesrays-with-surface-meshes/
+
+
+def is_hit(obb_tree, source, target):
+    &#34;&#34;&#34;
+    Return True if line intersects mesh (`obb_tree`). The line starts at `source` and ends at `target`.
+
+    Parameters
+    ----------
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    source : list
+        x/y/z position of starting point of ray (to find intersection)
+    target : list
+        x/y/z position of ending point of ray (to find intersection)
+
+    Returns
+    -------
+    bool
+        Telling if the line (source to target) intersects the obb_tree. 
+    &#34;&#34;&#34;    
+
+    code = obb_tree.IntersectWithLine(source, target, None, None)
+    if code == 0:
+        return False
+    else: 
+        return True
+
+
+def get_intersect(obbTree, pSource, pTarget):
+    &#34;&#34;&#34;
+    Get intersecting points on the obbTree between a line from pSource to pTarget. 
+
+    Parameters
+    ----------
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    pSource : list
+        x/y/z position of starting point of ray (to find intersection)
+    pTarget : list
+        x/y/z position of ending point of ray (to find intersection)
+
+    Returns
+    -------
+    tuple (list1, list2)
+        list1 is of the intersection points
+        list2 is the idx of the cells that were intersected. 
+    &#34;&#34;&#34;    
+    # Create an empty &#39;vtkPoints&#39; object to store the intersection point coordinates
+    points = vtk.vtkPoints()
+    # Create an empty &#39;vtkIdList&#39; object to store the ids of the cells that intersect
+    # with the cast rays
+    cell_ids = vtk.vtkIdList()
+
+    # Perform intersection
+    code = obbTree.IntersectWithLine(pSource, pTarget, points, cell_ids)
+
+    # Get point-data
+    point_data = points.GetData()
+    # Get number of intersection points found
+    n_points = point_data.GetNumberOfTuples()
+    # Get number of intersected cell ids
+    n_Ids = cell_ids.GetNumberOfIds()
+
+    assert (n_points == n_Ids)
+
+    # Loop through the found points and cells and store
+    # them in lists
+    points_inter = []
+    cell_ids_inter = []
+    for idx in range(n_points):
+        points_inter.append(point_data.GetTuple3(idx))
+        cell_ids_inter.append(cell_ids.GetId(idx))
+
+    return points_inter, cell_ids_inter
+
+
+def get_surface_normals(surface,
+                        point_normals_on=True,
+                        cell_normals_on=True):
+    &#34;&#34;&#34;
+    Get the surface normals of a mesh (`surface`
+
+    Parameters
+    ----------
+    surface : vtk.vtkPolyData
+        surface mesh to get normals from 
+    point_normals_on : bool, optional
+        Whether or not to get normals of points (vertices), by default True
+    cell_normals_on : bool, optional
+        Whether or not to get normals from cells (faces?), by default True
+
+    Returns
+    -------
+    vtk.vtkPolyDataNormals
+        Normval vectors for points/cells. 
+    &#34;&#34;&#34;    
+
+    normals = vtk.vtkPolyDataNormals()
+    normals.SetInputData(surface)
+
+    # Disable normal calculation at cell vertices
+    if point_normals_on is True:
+        normals.ComputePointNormalsOn()
+    elif point_normals_on is False:
+        normals.ComputePointNormalsOff()
+    # Enable normal calculation at cell centers
+    if cell_normals_on is True:
+        normals.ComputeCellNormalsOn()
+    elif cell_normals_on is False:
+        normals.ComputeCellNormalsOff()
+    # Disable splitting of sharp edges
+    normals.SplittingOff()
+    # Disable global flipping of normal orientation
+    normals.FlipNormalsOff()
+    # Enable automatic determination of correct normal orientation
+    normals.AutoOrientNormalsOn()
+    # Perform calculation
+    normals.Update()
+
+    return normals
+
+
+def get_obb_surface(surface):
+    &#34;&#34;&#34;
+    Get vtk.vtkOBBTree for a surface mesh
+    Get obb of a surface mesh. This can be queried to see if a line etc. intersects a surface.
+
+    Parameters
+    ----------
+    surface : vtk.vtkPolyData
+        The surface mesh to get an OBBTree for. 
+
+    Returns
+    -------
+    vtk.vtkOBBTree
+        The OBBTree to be used to find intersections for calculating cartilage thickness etc. 
+    &#34;&#34;&#34;    
+
+    obb = vtk.vtkOBBTree()
+    obb.SetDataSet(surface)
+    obb.BuildLocator()
+    return obb
+
+
+def vtk_deep_copy(mesh):
+    &#34;&#34;&#34;
+    &#34;Deep&#34; copy a vtk.vtkPolyData so that they are not connected in any way. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Mesh to copy. 
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        Copy of the input mesh. 
+    &#34;&#34;&#34;    
+    new_mesh = vtk.vtkPolyData()
+    new_mesh.DeepCopy(mesh)
+    return new_mesh
+
+def estimate_mesh_scalars_FWHMs(mesh, scalar_name=&#39;thickness_mm&#39;):
+    &#34;&#34;&#34;
+    Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Surface mesh to estimate FWHM of the scalars from. 
+    scalar_name : str, optional
+        Name of the scalars to calcualte FWHM for, by default &#39;thickness_mm&#39;
+
+    Returns
+    -------
+    list
+        List of the FWHM values. Assuming they are for X/Y/Z
+    &#34;&#34;&#34;    
+    gradient_filter = vtk.vtkGradientFilter()
+    gradient_filter.SetInputData(mesh)
+    gradient_filter.Update()
+    gradient_mesh = vtk.vtkPolyData()
+    gradient_mesh.DeepCopy(gradient_filter.GetOutput())
+
+    scalars = vtk_to_numpy(mesh.GetPointData().GetScalars())
+    location_non_zero = np.where(scalars != 0)
+    gradient_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray(&#39;Gradients&#39;))
+    cartilage_gradients = gradient_scalars[location_non_zero, :][0]
+
+    thickness_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray(scalar_name))
+    cartilage_thicknesses = thickness_scalars[location_non_zero]
+
+    V0 = np.mean((cartilage_thicknesses - np.mean(cartilage_thicknesses)) ** 2)
+    V1 = np.mean((cartilage_gradients - np.mean(cartilage_gradients)) ** 2, axis=0)
+    sigma2s = -1 / (4 * np.log(1 - (V1 / (2 * V0))))
+    sigmas = np.sqrt(sigma2s)
+    FWHMs = [sigma2fwhm(x) for x in sigmas]
+
+    return FWHMs
+
+def get_surface_distance(surface_1, 
+                         surface_2, 
+                         return_RMS=True,
+                         return_individual_distances=False):
+
+    if (return_RMS is True) &amp; (return_individual_distances is True):
+        raise Exception(&#39;Nothing to return - either return_RMS or return_individual_distances must be `True`&#39;)
+
+    pt_locator = vtk.vtkPointLocator()
+    pt_locator.SetDataSet(surface_2)
+    pt_locator.AutomaticOn()
+    pt_locator.BuildLocator()
+    
+    distances = np.zeros(surface_1.GetNumberOfPoints())
+    
+    for pt_idx in range(surface_1.GetNumberOfPoints()):
+        point_1 = np.asarray(surface_1.GetPoint(pt_idx))
+        pt_idx_2 = pt_locator.FindClosestPoint(point_1)
+        point_2 = np.asarray(surface_2.GetPoint(pt_idx_2))
+        distances[pt_idx] = np.sqrt(np.sum(np.square(point_2-point_1)))
+    
+    RMS = np.sqrt(np.mean(np.square(distances)))
+    
+    if return_individual_distances is True:
+        if return_RMS is True:
+            return RMS, distances
+        else:
+            return distances
+    else:
+        if return_RMS is True:
+            return RMS
+
+def get_symmetric_surface_distance(surface_1, surface_2):
+    surf1_to_2_distances = get_surface_distance(surface_1, surface_2, return_RMS=False, return_individual_distances=True)
+    surf2_to_1_distances = get_surface_distance(surface_2, surface_1, return_RMS=False, return_individual_distances=True)
+
+    symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
+
+    return symmetric_distance
+
+class GIF:
+    &#34;&#34;&#34;
+    Class for generating GIF of surface meshes.
+
+    Parameters
+    ----------
+    plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    color: str, optional
+        Color to use for object, by default &#39;orange&#39;
+    show_edges: bool, optional
+        Whether to show edges on mesh, by default True
+    edge_color: str, optional
+        Color to use for edges, by default &#39;black&#39;
+    camera_position: list or string, optional
+        Camera position to use, by default &#39;xz&#39;
+    window_size: list, optional
+        Window size to use for GIF, by default [3000, 4000]
+    background_color: str, optional
+        Background color to use, by default &#39;white&#39;
+    path_save: str, optional
+        Path to save GIF, by default &#39;~/Downloads/ssm.gif&#39;
+    
+    Attributes
+    ----------
+    _plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    _color : str
+        Color to use for object.
+    _show_edges : bool
+        Whether to show edges on mesh.
+    _edge_color : str
+        Color to use for edges.
+    _camera_position : list or string
+        Camera position to use.
+    _window_size : list
+        Window size to use for GIF.
+    _background_color : str
+        Background color to use.
+    _path_save : str
+        Path to save GIF.
+    
+    Methods
+    -------
+    add_mesh_frame(mesh)
+        Add a mesh to the GIF.
+    update_view()
+        Update the view of the plotter.
+    done()
+        Close the plotter.
+
+
+    &#34;&#34;&#34;
+    def __init__(
+        self,
+        plotter=None,
+        color=&#39;orange&#39;, 
+        show_edges=True, 
+        edge_color=&#39;black&#39;,
+        camera_position=&#39;xz&#39;,
+        window_size=[3000, 4000],
+        background_color=&#39;white&#39;,
+        path_save=&#39;~/Downloads/ssm.gif&#39;
+    ):
+        &#34;&#34;&#34;
+        Initialize the GIF class.
+
+        Parameters
+        ----------
+        plotter : pyvista.Plotter, optional
+            Plotter to use for plotting, by default None
+        color: str, optional
+            Color to use for object, by default &#39;orange&#39;
+        show_edges: bool, optional
+            Whether to show edges on mesh, by default True
+        edge_color: str, optional
+            Color to use for edges, by default &#39;black&#39;
+        camera_position: list or string, optional
+            Camera position to use, by default &#39;xz&#39;
+        window_size: list, optional
+            Window size to use for GIF, by default [3000, 4000]
+        background_color: str, optional
+            Background color to use, by default &#39;white&#39;
+        path_save: str, optional
+            Path to save GIF, by default &#39;~/Downloads/ssm.gif&#39;
+        
+        &#34;&#34;&#34;
+        if plotter is None:
+            self._plotter = pv.Plotter(notebook=False, off_screen=True)
+        else:
+            self._plotter = plotter
+        
+        if path_save[-3:] != &#39;gif&#39;:
+            raise Exception(&#39;path must be to a file ending with suffix `.gif`&#39;)
+        
+        self.counter = 0
+        
+        self._plotter.open_gif(path_save)
+
+        self._color = color
+        self._show_edges = show_edges
+        self._edge_color = edge_color
+        self._camera_position = camera_position
+        self._window_size = window_size
+        self._background_color = background_color
+        self._path_save = path_save
+    
+    def update_view(
+        self
+    ):
+        self._plotter.camera_position = self._camera_position
+        self._plotter.window_size = self._window_size
+        self._plotter.set_background(color=self._background_color)
+    
+    def add_mesh_frame(self, mesh):
+        if type(mesh) in (list, tuple):
+            actors = []
+            for mesh_ in mesh:
+                actors.append(self._plotter.add_mesh(
+                    mesh_, 
+                    render=False,
+                    color=self._color, 
+                    edge_color=self._edge_color, 
+                    show_edges=self._show_edges
+                ))
+        else:
+            actor = self._plotter.add_mesh(
+                mesh, 
+                render=False,
+                color=self._color, 
+                edge_color=self._edge_color, 
+                show_edges=self._show_edges
+            )
+
+        if self.counter == 0:
+            self.update_view()
+        self._plotter.write_frame()
+        
+        if type(mesh) in (list, tuple):
+            for actor in actors:
+                self._plotter.remove_actor(actor)
+        else:
+            self._plotter.remove_actor(actor)
+        self.counter += 1
+    
+    def done(self):
+        self._plotter.close()
+    
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, color):
+        self._color = color
+    
+    @property
+    def show_edges(self):
+        return self._show_edges
+    
+    @show_edges.setter
+    def show_edges(self, show_edges):
+        self._show_edges = show_edges
+    
+    @property
+    def edge_color(self):
+        return self._edge_color
+    
+    @edge_color.setter
+    def edge_color(self, edge_color):
+        self._edge_color = edge_color
+    
+    @property
+    def camera_position(self):
+        return self._camera_position
+    
+    @camera_position.setter
+    def camera_position(self, camera_position):
+        self._camera_position = camera_position
+    
+    @property
+    def window_size(self):
+        return self._window_size
+    
+    @window_size.setter
+    def window_size(self, window_size):
+        self._window_size = window_size
+    
+    @property
+    def background_color(self):
+        return self._background_color
+    
+    @background_color.setter
+    def background_color(self, background_color):
+        self._background_color = background_color
+    
+    @property
+    def path_save(self):
+        return self._path_save
+
+def get_arrow(
+    direction,
+    origin,
+    scale=100,
+    tip_length=0.25,
+    tip_radius=0.1,
+    tip_resolution=20, 
+    shaft_radius=0.05,
+    shaft_resolution=20,
+):
+
+    arrow = vtk.vtkArrowSource()
+    arrow.SetTipLength(tip_length)
+    arrow.SetTipRadius(tip_radius)
+    arrow.SetTipResolution(tip_resolution)
+    arrow.SetShaftRadius(shaft_radius)
+    arrow.SetShaftResolution(shaft_resolution)
+    arrow.Update()
+
+    arrow = arrow.GetOutput()
+    points = arrow.GetPoints().GetData()
+    array = vtk_to_numpy(points)
+    array *= scale
+    arrow.GetPoints().SetData(numpy_to_vtk(array))
+
+    normx = np.array(direction) / np.linalg.norm(direction)
+    normz = np.cross(normx, [0, 1.0, 0.0001])
+    normz /= np.linalg.norm(normz)
+    normy = np.cross(normz, normx)
+
+    four_by_four = np.identity(4)
+    four_by_four[:3,0] = normx
+    four_by_four[:3,1] = normy
+    four_by_four[:3,2] = normz
+    four_by_four[:3, 3] = origin
+
+    transform = pymskt.mesh.meshTransform.create_transform(four_by_four)
+    arrow = pymskt.mesh.meshTransform.apply_transform(arrow, transform)
+    
+    return arrow</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="pymskt.mesh.utils.estimate_mesh_scalars_FWHMs"><code class="name flex">
+<span>def <span class="ident">estimate_mesh_scalars_FWHMs</span></span>(<span>mesh, scalar_name='thickness_mm')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars. </p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>mesh</code></strong> :&ensp;<code>vtk.vtkPolyData</code></dt>
+<dd>Surface mesh to estimate FWHM of the scalars from.</dd>
+<dt><strong><code>scalar_name</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Name of the scalars to calcualte FWHM for, by default 'thickness_mm'</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>list</code></dt>
+<dd>List of the FWHM values. Assuming they are for X/Y/Z</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def estimate_mesh_scalars_FWHMs(mesh, scalar_name=&#39;thickness_mm&#39;):
+    &#34;&#34;&#34;
+    Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Surface mesh to estimate FWHM of the scalars from. 
+    scalar_name : str, optional
+        Name of the scalars to calcualte FWHM for, by default &#39;thickness_mm&#39;
+
+    Returns
+    -------
+    list
+        List of the FWHM values. Assuming they are for X/Y/Z
+    &#34;&#34;&#34;    
+    gradient_filter = vtk.vtkGradientFilter()
+    gradient_filter.SetInputData(mesh)
+    gradient_filter.Update()
+    gradient_mesh = vtk.vtkPolyData()
+    gradient_mesh.DeepCopy(gradient_filter.GetOutput())
+
+    scalars = vtk_to_numpy(mesh.GetPointData().GetScalars())
+    location_non_zero = np.where(scalars != 0)
+    gradient_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray(&#39;Gradients&#39;))
+    cartilage_gradients = gradient_scalars[location_non_zero, :][0]
+
+    thickness_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray(scalar_name))
+    cartilage_thicknesses = thickness_scalars[location_non_zero]
+
+    V0 = np.mean((cartilage_thicknesses - np.mean(cartilage_thicknesses)) ** 2)
+    V1 = np.mean((cartilage_gradients - np.mean(cartilage_gradients)) ** 2, axis=0)
+    sigma2s = -1 / (4 * np.log(1 - (V1 / (2 * V0))))
+    sigmas = np.sqrt(sigma2s)
+    FWHMs = [sigma2fwhm(x) for x in sigmas]
+
+    return FWHMs</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_arrow"><code class="name flex">
+<span>def <span class="ident">get_arrow</span></span>(<span>direction, origin, scale=100, tip_length=0.25, tip_radius=0.1, tip_resolution=20, shaft_radius=0.05, shaft_resolution=20)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_arrow(
+    direction,
+    origin,
+    scale=100,
+    tip_length=0.25,
+    tip_radius=0.1,
+    tip_resolution=20, 
+    shaft_radius=0.05,
+    shaft_resolution=20,
+):
+
+    arrow = vtk.vtkArrowSource()
+    arrow.SetTipLength(tip_length)
+    arrow.SetTipRadius(tip_radius)
+    arrow.SetTipResolution(tip_resolution)
+    arrow.SetShaftRadius(shaft_radius)
+    arrow.SetShaftResolution(shaft_resolution)
+    arrow.Update()
+
+    arrow = arrow.GetOutput()
+    points = arrow.GetPoints().GetData()
+    array = vtk_to_numpy(points)
+    array *= scale
+    arrow.GetPoints().SetData(numpy_to_vtk(array))
+
+    normx = np.array(direction) / np.linalg.norm(direction)
+    normz = np.cross(normx, [0, 1.0, 0.0001])
+    normz /= np.linalg.norm(normz)
+    normy = np.cross(normz, normx)
+
+    four_by_four = np.identity(4)
+    four_by_four[:3,0] = normx
+    four_by_four[:3,1] = normy
+    four_by_four[:3,2] = normz
+    four_by_four[:3, 3] = origin
+
+    transform = pymskt.mesh.meshTransform.create_transform(four_by_four)
+    arrow = pymskt.mesh.meshTransform.apply_transform(arrow, transform)
+    
+    return arrow</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_intersect"><code class="name flex">
+<span>def <span class="ident">get_intersect</span></span>(<span>obbTree, pSource, pTarget)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get intersecting points on the obbTree between a line from pSource to pTarget. </p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>obb_tree</code></strong> :&ensp;<code>vtk.vtkOBBTree</code></dt>
+<dd>OBBTree of a surface mesh.</dd>
+<dt><strong><code>pSource</code></strong> :&ensp;<code>list</code></dt>
+<dd>x/y/z position of starting point of ray (to find intersection)</dd>
+<dt><strong><code>pTarget</code></strong> :&ensp;<code>list</code></dt>
+<dd>x/y/z position of ending point of ray (to find intersection)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>tuple (list1, list2)</code></dt>
+<dd>list1 is of the intersection points
+list2 is the idx of the cells that were intersected.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_intersect(obbTree, pSource, pTarget):
+    &#34;&#34;&#34;
+    Get intersecting points on the obbTree between a line from pSource to pTarget. 
+
+    Parameters
+    ----------
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    pSource : list
+        x/y/z position of starting point of ray (to find intersection)
+    pTarget : list
+        x/y/z position of ending point of ray (to find intersection)
+
+    Returns
+    -------
+    tuple (list1, list2)
+        list1 is of the intersection points
+        list2 is the idx of the cells that were intersected. 
+    &#34;&#34;&#34;    
+    # Create an empty &#39;vtkPoints&#39; object to store the intersection point coordinates
+    points = vtk.vtkPoints()
+    # Create an empty &#39;vtkIdList&#39; object to store the ids of the cells that intersect
+    # with the cast rays
+    cell_ids = vtk.vtkIdList()
+
+    # Perform intersection
+    code = obbTree.IntersectWithLine(pSource, pTarget, points, cell_ids)
+
+    # Get point-data
+    point_data = points.GetData()
+    # Get number of intersection points found
+    n_points = point_data.GetNumberOfTuples()
+    # Get number of intersected cell ids
+    n_Ids = cell_ids.GetNumberOfIds()
+
+    assert (n_points == n_Ids)
+
+    # Loop through the found points and cells and store
+    # them in lists
+    points_inter = []
+    cell_ids_inter = []
+    for idx in range(n_points):
+        points_inter.append(point_data.GetTuple3(idx))
+        cell_ids_inter.append(cell_ids.GetId(idx))
+
+    return points_inter, cell_ids_inter</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_obb_surface"><code class="name flex">
+<span>def <span class="ident">get_obb_surface</span></span>(<span>surface)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get vtk.vtkOBBTree for a surface mesh
+Get obb of a surface mesh. This can be queried to see if a line etc. intersects a surface.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>surface</code></strong> :&ensp;<code>vtk.vtkPolyData</code></dt>
+<dd>The surface mesh to get an OBBTree for.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>vtk.vtkOBBTree</code></dt>
+<dd>The OBBTree to be used to find intersections for calculating cartilage thickness etc.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_obb_surface(surface):
+    &#34;&#34;&#34;
+    Get vtk.vtkOBBTree for a surface mesh
+    Get obb of a surface mesh. This can be queried to see if a line etc. intersects a surface.
+
+    Parameters
+    ----------
+    surface : vtk.vtkPolyData
+        The surface mesh to get an OBBTree for. 
+
+    Returns
+    -------
+    vtk.vtkOBBTree
+        The OBBTree to be used to find intersections for calculating cartilage thickness etc. 
+    &#34;&#34;&#34;    
+
+    obb = vtk.vtkOBBTree()
+    obb.SetDataSet(surface)
+    obb.BuildLocator()
+    return obb</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_surface_distance"><code class="name flex">
+<span>def <span class="ident">get_surface_distance</span></span>(<span>surface_1, surface_2, return_RMS=True, return_individual_distances=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_surface_distance(surface_1, 
+                         surface_2, 
+                         return_RMS=True,
+                         return_individual_distances=False):
+
+    if (return_RMS is True) &amp; (return_individual_distances is True):
+        raise Exception(&#39;Nothing to return - either return_RMS or return_individual_distances must be `True`&#39;)
+
+    pt_locator = vtk.vtkPointLocator()
+    pt_locator.SetDataSet(surface_2)
+    pt_locator.AutomaticOn()
+    pt_locator.BuildLocator()
+    
+    distances = np.zeros(surface_1.GetNumberOfPoints())
+    
+    for pt_idx in range(surface_1.GetNumberOfPoints()):
+        point_1 = np.asarray(surface_1.GetPoint(pt_idx))
+        pt_idx_2 = pt_locator.FindClosestPoint(point_1)
+        point_2 = np.asarray(surface_2.GetPoint(pt_idx_2))
+        distances[pt_idx] = np.sqrt(np.sum(np.square(point_2-point_1)))
+    
+    RMS = np.sqrt(np.mean(np.square(distances)))
+    
+    if return_individual_distances is True:
+        if return_RMS is True:
+            return RMS, distances
+        else:
+            return distances
+    else:
+        if return_RMS is True:
+            return RMS</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_surface_normals"><code class="name flex">
+<span>def <span class="ident">get_surface_normals</span></span>(<span>surface, point_normals_on=True, cell_normals_on=True)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get the surface normals of a mesh (<code>surface</code></p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>surface</code></strong> :&ensp;<code>vtk.vtkPolyData</code></dt>
+<dd>surface mesh to get normals from</dd>
+<dt><strong><code>point_normals_on</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether or not to get normals of points (vertices), by default True</dd>
+<dt><strong><code>cell_normals_on</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether or not to get normals from cells (faces?), by default True</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>vtk.vtkPolyDataNormals</code></dt>
+<dd>Normval vectors for points/cells.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_surface_normals(surface,
+                        point_normals_on=True,
+                        cell_normals_on=True):
+    &#34;&#34;&#34;
+    Get the surface normals of a mesh (`surface`
+
+    Parameters
+    ----------
+    surface : vtk.vtkPolyData
+        surface mesh to get normals from 
+    point_normals_on : bool, optional
+        Whether or not to get normals of points (vertices), by default True
+    cell_normals_on : bool, optional
+        Whether or not to get normals from cells (faces?), by default True
+
+    Returns
+    -------
+    vtk.vtkPolyDataNormals
+        Normval vectors for points/cells. 
+    &#34;&#34;&#34;    
+
+    normals = vtk.vtkPolyDataNormals()
+    normals.SetInputData(surface)
+
+    # Disable normal calculation at cell vertices
+    if point_normals_on is True:
+        normals.ComputePointNormalsOn()
+    elif point_normals_on is False:
+        normals.ComputePointNormalsOff()
+    # Enable normal calculation at cell centers
+    if cell_normals_on is True:
+        normals.ComputeCellNormalsOn()
+    elif cell_normals_on is False:
+        normals.ComputeCellNormalsOff()
+    # Disable splitting of sharp edges
+    normals.SplittingOff()
+    # Disable global flipping of normal orientation
+    normals.FlipNormalsOff()
+    # Enable automatic determination of correct normal orientation
+    normals.AutoOrientNormalsOn()
+    # Perform calculation
+    normals.Update()
+
+    return normals</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.get_symmetric_surface_distance"><code class="name flex">
+<span>def <span class="ident">get_symmetric_surface_distance</span></span>(<span>surface_1, surface_2)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_symmetric_surface_distance(surface_1, surface_2):
+    surf1_to_2_distances = get_surface_distance(surface_1, surface_2, return_RMS=False, return_individual_distances=True)
+    surf2_to_1_distances = get_surface_distance(surface_2, surface_1, return_RMS=False, return_individual_distances=True)
+
+    symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
+
+    return symmetric_distance</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.is_hit"><code class="name flex">
+<span>def <span class="ident">is_hit</span></span>(<span>obb_tree, source, target)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return True if line intersects mesh (<code>obb_tree</code>). The line starts at <code>source</code> and ends at <code>target</code>.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>obb_tree</code></strong> :&ensp;<code>vtk.vtkOBBTree</code></dt>
+<dd>OBBTree of a surface mesh.</dd>
+<dt><strong><code>source</code></strong> :&ensp;<code>list</code></dt>
+<dd>x/y/z position of starting point of ray (to find intersection)</dd>
+<dt><strong><code>target</code></strong> :&ensp;<code>list</code></dt>
+<dd>x/y/z position of ending point of ray (to find intersection)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>Telling if the line (source to target) intersects the obb_tree.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_hit(obb_tree, source, target):
+    &#34;&#34;&#34;
+    Return True if line intersects mesh (`obb_tree`). The line starts at `source` and ends at `target`.
+
+    Parameters
+    ----------
+    obb_tree : vtk.vtkOBBTree
+        OBBTree of a surface mesh. 
+    source : list
+        x/y/z position of starting point of ray (to find intersection)
+    target : list
+        x/y/z position of ending point of ray (to find intersection)
+
+    Returns
+    -------
+    bool
+        Telling if the line (source to target) intersects the obb_tree. 
+    &#34;&#34;&#34;    
+
+    code = obb_tree.IntersectWithLine(source, target, None, None)
+    if code == 0:
+        return False
+    else: 
+        return True</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.vtk_deep_copy"><code class="name flex">
+<span>def <span class="ident">vtk_deep_copy</span></span>(<span>mesh)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>"Deep" copy a vtk.vtkPolyData so that they are not connected in any way. </p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>mesh</code></strong> :&ensp;<code>vtk.vtkPolyData</code></dt>
+<dd>Mesh to copy.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>vtk.vtkPolyData</code></dt>
+<dd>Copy of the input mesh.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def vtk_deep_copy(mesh):
+    &#34;&#34;&#34;
+    &#34;Deep&#34; copy a vtk.vtkPolyData so that they are not connected in any way. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData
+        Mesh to copy. 
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        Copy of the input mesh. 
+    &#34;&#34;&#34;    
+    new_mesh = vtk.vtkPolyData()
+    new_mesh.DeepCopy(mesh)
+    return new_mesh</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pymskt.mesh.utils.GIF"><code class="flex name class">
+<span>class <span class="ident">GIF</span></span>
+<span>(</span><span>plotter=None, color='orange', show_edges=True, edge_color='black', camera_position='xz', window_size=[3000, 4000], background_color='white', path_save='~/Downloads/ssm.gif')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class for generating GIF of surface meshes.</p>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>plotter</code></strong> :&ensp;<code>pyvista.Plotter</code></dt>
+<dd>Plotter to use for plotting.</dd>
+<dt><strong><code>color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Color to use for object, by default 'orange'</dd>
+<dt><strong><code>show_edges</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to show edges on mesh, by default True</dd>
+<dt><strong><code>edge_color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Color to use for edges, by default 'black'</dd>
+<dt><strong><code>camera_position</code></strong> :&ensp;<code>list</code> or <code>string</code>, optional</dt>
+<dd>Camera position to use, by default 'xz'</dd>
+<dt><strong><code>window_size</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Window size to use for GIF, by default [3000, 4000]</dd>
+<dt><strong><code>background_color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Background color to use, by default 'white'</dd>
+<dt><strong><code>path_save</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Path to save GIF, by default '~/Downloads/ssm.gif'</dd>
+</dl>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>_plotter</code></strong> :&ensp;<code>pyvista.Plotter</code></dt>
+<dd>Plotter to use for plotting.</dd>
+<dt><strong><code>_color</code></strong> :&ensp;<code>str</code></dt>
+<dd>Color to use for object.</dd>
+<dt><strong><code>_show_edges</code></strong> :&ensp;<code>bool</code></dt>
+<dd>Whether to show edges on mesh.</dd>
+<dt><strong><code>_edge_color</code></strong> :&ensp;<code>str</code></dt>
+<dd>Color to use for edges.</dd>
+<dt><strong><code>_camera_position</code></strong> :&ensp;<code>list</code> or <code>string</code></dt>
+<dd>Camera position to use.</dd>
+<dt><strong><code>_window_size</code></strong> :&ensp;<code>list</code></dt>
+<dd>Window size to use for GIF.</dd>
+<dt><strong><code>_background_color</code></strong> :&ensp;<code>str</code></dt>
+<dd>Background color to use.</dd>
+<dt><strong><code>_path_save</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to save GIF.</dd>
+</dl>
+<h2 id="methods">Methods</h2>
+<p>add_mesh_frame(mesh)
+Add a mesh to the GIF.
+update_view()
+Update the view of the plotter.
+done()
+Close the plotter.</p>
+<p>Initialize the GIF class.</p>
+<h2 id="parameters_1">Parameters</h2>
+<dl>
+<dt><strong><code>plotter</code></strong> :&ensp;<code>pyvista.Plotter</code>, optional</dt>
+<dd>Plotter to use for plotting, by default None</dd>
+<dt><strong><code>color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Color to use for object, by default 'orange'</dd>
+<dt><strong><code>show_edges</code></strong> :&ensp;<code>bool</code>, optional</dt>
+<dd>Whether to show edges on mesh, by default True</dd>
+<dt><strong><code>edge_color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Color to use for edges, by default 'black'</dd>
+<dt><strong><code>camera_position</code></strong> :&ensp;<code>list</code> or <code>string</code>, optional</dt>
+<dd>Camera position to use, by default 'xz'</dd>
+<dt><strong><code>window_size</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dd>Window size to use for GIF, by default [3000, 4000]</dd>
+<dt><strong><code>background_color</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Background color to use, by default 'white'</dd>
+<dt><strong><code>path_save</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Path to save GIF, by default '~/Downloads/ssm.gif'</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GIF:
+    &#34;&#34;&#34;
+    Class for generating GIF of surface meshes.
+
+    Parameters
+    ----------
+    plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    color: str, optional
+        Color to use for object, by default &#39;orange&#39;
+    show_edges: bool, optional
+        Whether to show edges on mesh, by default True
+    edge_color: str, optional
+        Color to use for edges, by default &#39;black&#39;
+    camera_position: list or string, optional
+        Camera position to use, by default &#39;xz&#39;
+    window_size: list, optional
+        Window size to use for GIF, by default [3000, 4000]
+    background_color: str, optional
+        Background color to use, by default &#39;white&#39;
+    path_save: str, optional
+        Path to save GIF, by default &#39;~/Downloads/ssm.gif&#39;
+    
+    Attributes
+    ----------
+    _plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    _color : str
+        Color to use for object.
+    _show_edges : bool
+        Whether to show edges on mesh.
+    _edge_color : str
+        Color to use for edges.
+    _camera_position : list or string
+        Camera position to use.
+    _window_size : list
+        Window size to use for GIF.
+    _background_color : str
+        Background color to use.
+    _path_save : str
+        Path to save GIF.
+    
+    Methods
+    -------
+    add_mesh_frame(mesh)
+        Add a mesh to the GIF.
+    update_view()
+        Update the view of the plotter.
+    done()
+        Close the plotter.
+
+
+    &#34;&#34;&#34;
+    def __init__(
+        self,
+        plotter=None,
+        color=&#39;orange&#39;, 
+        show_edges=True, 
+        edge_color=&#39;black&#39;,
+        camera_position=&#39;xz&#39;,
+        window_size=[3000, 4000],
+        background_color=&#39;white&#39;,
+        path_save=&#39;~/Downloads/ssm.gif&#39;
+    ):
+        &#34;&#34;&#34;
+        Initialize the GIF class.
+
+        Parameters
+        ----------
+        plotter : pyvista.Plotter, optional
+            Plotter to use for plotting, by default None
+        color: str, optional
+            Color to use for object, by default &#39;orange&#39;
+        show_edges: bool, optional
+            Whether to show edges on mesh, by default True
+        edge_color: str, optional
+            Color to use for edges, by default &#39;black&#39;
+        camera_position: list or string, optional
+            Camera position to use, by default &#39;xz&#39;
+        window_size: list, optional
+            Window size to use for GIF, by default [3000, 4000]
+        background_color: str, optional
+            Background color to use, by default &#39;white&#39;
+        path_save: str, optional
+            Path to save GIF, by default &#39;~/Downloads/ssm.gif&#39;
+        
+        &#34;&#34;&#34;
+        if plotter is None:
+            self._plotter = pv.Plotter(notebook=False, off_screen=True)
+        else:
+            self._plotter = plotter
+        
+        if path_save[-3:] != &#39;gif&#39;:
+            raise Exception(&#39;path must be to a file ending with suffix `.gif`&#39;)
+        
+        self.counter = 0
+        
+        self._plotter.open_gif(path_save)
+
+        self._color = color
+        self._show_edges = show_edges
+        self._edge_color = edge_color
+        self._camera_position = camera_position
+        self._window_size = window_size
+        self._background_color = background_color
+        self._path_save = path_save
+    
+    def update_view(
+        self
+    ):
+        self._plotter.camera_position = self._camera_position
+        self._plotter.window_size = self._window_size
+        self._plotter.set_background(color=self._background_color)
+    
+    def add_mesh_frame(self, mesh):
+        if type(mesh) in (list, tuple):
+            actors = []
+            for mesh_ in mesh:
+                actors.append(self._plotter.add_mesh(
+                    mesh_, 
+                    render=False,
+                    color=self._color, 
+                    edge_color=self._edge_color, 
+                    show_edges=self._show_edges
+                ))
+        else:
+            actor = self._plotter.add_mesh(
+                mesh, 
+                render=False,
+                color=self._color, 
+                edge_color=self._edge_color, 
+                show_edges=self._show_edges
+            )
+
+        if self.counter == 0:
+            self.update_view()
+        self._plotter.write_frame()
+        
+        if type(mesh) in (list, tuple):
+            for actor in actors:
+                self._plotter.remove_actor(actor)
+        else:
+            self._plotter.remove_actor(actor)
+        self.counter += 1
+    
+    def done(self):
+        self._plotter.close()
+    
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, color):
+        self._color = color
+    
+    @property
+    def show_edges(self):
+        return self._show_edges
+    
+    @show_edges.setter
+    def show_edges(self, show_edges):
+        self._show_edges = show_edges
+    
+    @property
+    def edge_color(self):
+        return self._edge_color
+    
+    @edge_color.setter
+    def edge_color(self, edge_color):
+        self._edge_color = edge_color
+    
+    @property
+    def camera_position(self):
+        return self._camera_position
+    
+    @camera_position.setter
+    def camera_position(self, camera_position):
+        self._camera_position = camera_position
+    
+    @property
+    def window_size(self):
+        return self._window_size
+    
+    @window_size.setter
+    def window_size(self, window_size):
+        self._window_size = window_size
+    
+    @property
+    def background_color(self):
+        return self._background_color
+    
+    @background_color.setter
+    def background_color(self, background_color):
+        self._background_color = background_color
+    
+    @property
+    def path_save(self):
+        return self._path_save</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pymskt.mesh.utils.GIF.background_color"><code class="name">var <span class="ident">background_color</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def background_color(self):
+    return self._background_color</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.camera_position"><code class="name">var <span class="ident">camera_position</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def camera_position(self):
+    return self._camera_position</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.color"><code class="name">var <span class="ident">color</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def color(self):
+    return self._color</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.edge_color"><code class="name">var <span class="ident">edge_color</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def edge_color(self):
+    return self._edge_color</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.path_save"><code class="name">var <span class="ident">path_save</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def path_save(self):
+    return self._path_save</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.show_edges"><code class="name">var <span class="ident">show_edges</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def show_edges(self):
+    return self._show_edges</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.window_size"><code class="name">var <span class="ident">window_size</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def window_size(self):
+    return self._window_size</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pymskt.mesh.utils.GIF.add_mesh_frame"><code class="name flex">
+<span>def <span class="ident">add_mesh_frame</span></span>(<span>self, mesh)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_mesh_frame(self, mesh):
+    if type(mesh) in (list, tuple):
+        actors = []
+        for mesh_ in mesh:
+            actors.append(self._plotter.add_mesh(
+                mesh_, 
+                render=False,
+                color=self._color, 
+                edge_color=self._edge_color, 
+                show_edges=self._show_edges
+            ))
+    else:
+        actor = self._plotter.add_mesh(
+            mesh, 
+            render=False,
+            color=self._color, 
+            edge_color=self._edge_color, 
+            show_edges=self._show_edges
+        )
+
+    if self.counter == 0:
+        self.update_view()
+    self._plotter.write_frame()
+    
+    if type(mesh) in (list, tuple):
+        for actor in actors:
+            self._plotter.remove_actor(actor)
+    else:
+        self._plotter.remove_actor(actor)
+    self.counter += 1</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.done"><code class="name flex">
+<span>def <span class="ident">done</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def done(self):
+    self._plotter.close()</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.utils.GIF.update_view"><code class="name flex">
+<span>def <span class="ident">update_view</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_view(
+    self
+):
+    self._plotter.camera_position = self._camera_position
+    self._plotter.window_size = self._window_size
+    self._plotter.set_background(color=self._background_color)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pymskt.mesh" href="index.html">pymskt.mesh</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="pymskt.mesh.utils.estimate_mesh_scalars_FWHMs" href="#pymskt.mesh.utils.estimate_mesh_scalars_FWHMs">estimate_mesh_scalars_FWHMs</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_arrow" href="#pymskt.mesh.utils.get_arrow">get_arrow</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_intersect" href="#pymskt.mesh.utils.get_intersect">get_intersect</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_obb_surface" href="#pymskt.mesh.utils.get_obb_surface">get_obb_surface</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_surface_distance" href="#pymskt.mesh.utils.get_surface_distance">get_surface_distance</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_surface_normals" href="#pymskt.mesh.utils.get_surface_normals">get_surface_normals</a></code></li>
+<li><code><a title="pymskt.mesh.utils.get_symmetric_surface_distance" href="#pymskt.mesh.utils.get_symmetric_surface_distance">get_symmetric_surface_distance</a></code></li>
+<li><code><a title="pymskt.mesh.utils.is_hit" href="#pymskt.mesh.utils.is_hit">is_hit</a></code></li>
+<li><code><a title="pymskt.mesh.utils.vtk_deep_copy" href="#pymskt.mesh.utils.vtk_deep_copy">vtk_deep_copy</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pymskt.mesh.utils.GIF" href="#pymskt.mesh.utils.GIF">GIF</a></code></h4>
+<ul class="two-column">
+<li><code><a title="pymskt.mesh.utils.GIF.add_mesh_frame" href="#pymskt.mesh.utils.GIF.add_mesh_frame">add_mesh_frame</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.background_color" href="#pymskt.mesh.utils.GIF.background_color">background_color</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.camera_position" href="#pymskt.mesh.utils.GIF.camera_position">camera_position</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.color" href="#pymskt.mesh.utils.GIF.color">color</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.done" href="#pymskt.mesh.utils.GIF.done">done</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.edge_color" href="#pymskt.mesh.utils.GIF.edge_color">edge_color</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.path_save" href="#pymskt.mesh.utils.GIF.path_save">path_save</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.show_edges" href="#pymskt.mesh.utils.GIF.show_edges">show_edges</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.update_view" href="#pymskt.mesh.utils.GIF.update_view">update_view</a></code></li>
+<li><code><a title="pymskt.mesh.utils.GIF.window_size" href="#pymskt.mesh.utils.GIF.window_size">window_size</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

@@ -12,11 +12,12 @@ import pyvista as pv
 import numpy as np
 
 from pymskt.utils import n2l, l2n, safely_delete_tmp_file
-from pymskt.mesh.utils import is_hit, get_intersect, get_surface_normals, get_obb_surface
+from pymskt.mesh.utils import is_hit, get_intersect, get_surface_normals, get_obb_surface, vtk_deep_copy
 import pymskt.image as pybtimage
 import pymskt.mesh.createMesh as createMesh 
 import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
+
 
 epsilon = 1e-7
 
@@ -93,6 +94,7 @@ class ProbeVtkImageDataAlongLine:
                  save_mean=False,
                  save_std=False,
                  save_most_common=False,
+                 save_max=False,
                  filler=0,
                  non_zero_only=True,
                  data_categorical=False
@@ -115,6 +117,8 @@ class ProbeVtkImageDataAlongLine:
         save_most_common : bool, optional
             Whether the mode (most common) value should be saved used for identifying cartilage
             regions on the bone surface, by default False
+        save_max : bool, optional
+            Whether the max value should be saved along the line, be default False
         filler : int, optional
             What value should be placed at locations where we don't have a value
             (e.g., where we don't have T2 values), by default 0
@@ -130,6 +134,7 @@ class ProbeVtkImageDataAlongLine:
         self.save_mean = save_mean
         self.save_std = save_std
         self.save_most_common = save_most_common
+        self.save_max = save_max
         self.filler = filler
         self.non_zero_only = non_zero_only
 
@@ -148,6 +153,8 @@ class ProbeVtkImageDataAlongLine:
                 self._std_data = []
             if self.save_most_common is True:
                 self._most_common_data = []
+            if self.save_max is True:
+                self._max_data = []
 
     def get_data_along_line(self,
                             start_pt,
@@ -203,6 +210,8 @@ class ProbeVtkImageDataAlongLine:
                 # to be a cartilage ROI. This is becuase there might be a normal vector that
                 # cross > 1 cartilage region (e.g., weight-bearing vs anterior fem cartilage)
                 self._most_common_data.append(np.bincount(scalars).argmax())
+            if self.save_max is True:
+                self._max_data.append(np.max(scalars))
         else:
             self.append_filler()
 
@@ -217,6 +226,8 @@ class ProbeVtkImageDataAlongLine:
             self._std_data.append(self.filler)
         if self.save_most_common is True:
             self._most_common_data.append(self.filler)
+        if self.save_max is True:
+            self._max_data.append(self.filler)
 
     @property
     def mean_data(self):
@@ -260,6 +271,21 @@ class ProbeVtkImageDataAlongLine:
         """        
         if self.save_most_common is True:
             return self._most_common_data
+        else:
+            return None
+    
+    @property
+    def max_data(self):
+        """
+        Return the `_max_data`
+
+        Returns
+        -------
+        list
+            List of the most common value for each line tested. 
+        """        
+        if self.save_max is True:
+            return self._max_data
         else:
             return None
 
@@ -433,6 +459,65 @@ def get_mesh_physical_point_coords(mesh):
     point_coordinates = vtk_to_numpy(mesh.GetPoints().GetData())
     return point_coordinates
 
+def get_mesh_point_features(mesh, features):
+    """
+    Get a numpy array of the x/y/z location of each point (vertex) on the `mesh`.
+
+    Parameters
+    ----------
+    mesh : 
+        vtkPolyData object
+    
+    features : list
+        List of strings associated with features to retrieve.
+
+    Returns
+    -------
+    numpy.ndarray
+        n_points x len(features) array of the featurs at each point/vertex. 
+    
+    Notes
+    -----
+
+    """
+    # ensure this is a list
+    if isinstance(features, str):
+        features = [features]
+
+    vertex_features = np.zeros((mesh.GetNumberOfPoints(), len(features)))
+    for i, feature in enumerate(features):
+        feature_vec = vtk_to_numpy(mesh.GetPointData().GetArray(feature))
+        vertex_features[:, i] = feature_vec.copy()
+    return vertex_features
+
+def set_mesh_point_features(mesh, features, feature_names=None):
+    if len(features.shape) == 1:
+        if feature_names is None:
+            feature_name = 'feature_1'
+        elif type(feature_name) in (list, tuple):
+            feature_name = feature_names[0]
+        else:
+            feature_name = feature_names
+        scalars = numpy_to_vtk(features)
+        scalars.SetName(feature_name)
+        mesh.GetPointData().AddArray(scalars)
+    elif len(features.shape) == 2:
+        n_pts = mesh.GetNumberOfPoints()
+        if features.shape[1] == n_pts:
+            features = features.T
+        assert features.shape[0] == n_pts, "Features must be n_points x n_features"
+        if feature_names is None:
+            feature_names = [f'feature_{i}' for i in range(features.shape[1])]
+        elif type(feature_names) in (list, tuple):
+            assert len(feature_names) == features.shape[1], "Must provide a feature name for each feature"
+        else:
+            feature_names = [feature_names]
+        for feature_idx in range(features.shape[1]):
+            scalars = numpy_to_vtk(features[:, feature_idx])
+            scalars.SetName(feature_names[feature_idx])
+            mesh.GetPointData().AddArray(scalars)
+    return mesh
+
 def smooth_scalars_from_second_mesh_onto_base(base_mesh,
                                               second_mesh,
                                               sigma=1.,
@@ -496,7 +581,12 @@ def smooth_scalars_from_second_mesh_onto_base(base_mesh,
         return smoothed_scalars_on_base
 
 
-def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3):
+def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, 
+                                                         old_mesh, 
+                                                         n=3, 
+                                                         return_mesh=False, 
+                                                         create_new_mesh=False
+                                                        ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
     nodes/points/vertices. Similar but not exactly the same as `smooth_scalars_from_second_mesh_onto_base`
@@ -531,6 +621,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3
     array_names = [old_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)]
     new_scalars = np.zeros((new_mesh.GetNumberOfPoints(), n_arrays))
     scalars_old_mesh = [np.copy(vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))) for array_name in array_names]
+    # print('len scalars_old_mesh', len(scalars_old_mesh))
     # scalars_old_mesh = np.copy(vtk_to_numpy(old_mesh.GetPointData().GetScalars()))
     for new_mesh_pt_idx in range(new_mesh.GetNumberOfPoints()):
         point = new_mesh.GetPoint(new_mesh_pt_idx)
@@ -544,12 +635,31 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, old_mesh, n=3
             _point = old_mesh.GetPoint(pt_idx)
             list_scalars.append([scalars[pt_idx] for scalars in scalars_old_mesh])
             distance_weighting.append(1 / np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point) + epsilon))))
-
+    
         total_distance = np.sum(distance_weighting)
+        # print('list_scalars', list_scalars)
+        # print('distance_weighting', distance_weighting)
+        # print('total_distance', total_distance)
         normalized_value = np.sum(np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
                                   axis=0) / total_distance
+        # print('new_mesh_pt_idx', new_mesh_pt_idx)
+        # print('normalized_value', normalized_value)
+        # print('new_scalars shape', new_scalars.shape)
         new_scalars[new_mesh_pt_idx, :] = normalized_value
-    return new_scalars
+    if return_mesh is False:
+        return new_scalars
+    else:
+        if create_new_mesh is True:
+            # create a new memory/vtk object. 
+            new_mesh_ = vtk_deep_copy(new_mesh)
+        else:
+            # this just makes a reference to the existing new_mesh in memory. 
+            new_mesh_ = new_mesh
+        for idx, array_name in enumerate(array_names):
+            new_array = numpy_to_vtk(new_scalars[:, idx])
+            new_array.SetName(array_name)
+            new_mesh_.GetPointData().AddArray(new_array)
+        return new_mesh_
 
 def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
     """

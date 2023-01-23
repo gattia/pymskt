@@ -1,7 +1,11 @@
 import vtk
 import numpy as np
-from vtk.util.numpy_support import vtk_to_numpy
+from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from pymskt.utils import sigma2fwhm
+import pyvista as pv
+import pymskt
+from matplotlib import pyplot as plt
+
 
 # Some functions were originally based on the tutorial on ray casting in python + vtk 
 # by Adamos Kyriakou @:
@@ -245,3 +249,264 @@ def get_symmetric_surface_distance(surface_1, surface_2):
     symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
 
     return symmetric_distance
+
+class GIF:
+    """
+    Class for generating GIF of surface meshes.
+
+    Parameters
+    ----------
+    plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    color: str, optional
+        Color to use for object, by default 'orange'
+    show_edges: bool, optional
+        Whether to show edges on mesh, by default True
+    edge_color: str, optional
+        Color to use for edges, by default 'black'
+    camera_position: list or string, optional
+        Camera position to use, by default 'xz'
+    window_size: list, optional
+        Window size to use for GIF, by default [3000, 4000]
+    background_color: str, optional
+        Background color to use, by default 'white'
+    path_save: str, optional
+        Path to save GIF, by default '~/Downloads/ssm.gif'
+    
+    Attributes
+    ----------
+    _plotter : pyvista.Plotter
+        Plotter to use for plotting.
+    _color : str
+        Color to use for object.
+    _show_edges : bool
+        Whether to show edges on mesh.
+    _edge_color : str
+        Color to use for edges.
+    _camera_position : list or string
+        Camera position to use.
+    _window_size : list
+        Window size to use for GIF.
+    _background_color : str
+        Background color to use.
+    _path_save : str
+        Path to save GIF.
+    
+    Methods
+    -------
+    add_mesh_frame(mesh)
+        Add a mesh to the GIF.
+    update_view()
+        Update the view of the plotter.
+    done()
+        Close the plotter.
+
+
+    """
+    def __init__(
+        self,
+        plotter=None,
+        color='orange', 
+        show_edges=True, 
+        edge_color='black',
+        camera_position='xz',
+        window_size=[3000, 4000],
+        background_color='white',
+        path_save='~/Downloads/ssm.gif',
+        scalar_bar_range=[0, 4],
+        cmap='viridis',
+
+    ):
+        """
+        Initialize the GIF class.
+
+        Parameters
+        ----------
+        plotter : pyvista.Plotter, optional
+            Plotter to use for plotting, by default None
+        color: str, optional
+            Color to use for object, by default 'orange'
+        show_edges: bool, optional
+            Whether to show edges on mesh, by default True
+        edge_color: str, optional
+            Color to use for edges, by default 'black'
+        camera_position: list or string, optional
+            Camera position to use, by default 'xz'
+        window_size: list, optional
+            Window size to use for GIF, by default [3000, 4000]
+        background_color: str, optional
+            Background color to use, by default 'white'
+        path_save: str, optional
+            Path to save GIF, by default '~/Downloads/ssm.gif'
+        
+        """
+        if plotter is None:
+            self._plotter = pv.Plotter(notebook=False, off_screen=True)
+        else:
+            self._plotter = plotter
+        
+        if path_save[-3:] != 'gif':
+            raise Exception('path must be to a file ending with suffix `.gif`')
+        
+        self.counter = 0
+        
+        self._plotter.open_gif(path_save)
+
+        self._color = color
+        self._show_edges = show_edges
+        self._edge_color = edge_color
+        self._camera_position = camera_position
+        self._window_size = window_size
+        self._background_color = background_color
+        self._path_save = path_save
+        self._scalar_bar_range = scalar_bar_range
+        self._cmap = plt.cm.get_cmap(cmap)
+    
+    def update_view(
+        self
+    ):
+        self._plotter.camera_position = self._camera_position
+        self._plotter.window_size = self._window_size
+        self._plotter.set_background(color=self._background_color)
+    
+    def add_mesh_frame(self, mesh):
+        if type(mesh) in (list, tuple):
+            actors = []
+            for mesh_ in mesh:
+                actors.append(self._plotter.add_mesh(
+                    mesh_, 
+                    render=False,
+                    color=self._color, 
+                    edge_color=self._edge_color, 
+                    show_edges=self._show_edges,
+                    cmap=self._cmap,
+                    clim=self._scalar_bar_range,
+                ))
+        else:
+            actor = self._plotter.add_mesh(
+                mesh, 
+                render=False,
+                color=self._color, 
+                edge_color=self._edge_color, 
+                show_edges=self._show_edges,
+                cmap=self._cmap,
+                clim=self._scalar_bar_range,
+
+            )
+
+        if self.counter == 0:
+            self.update_view()
+        self._plotter.update_scalar_bar_range(clim=self._scalar_bar_range)
+        self._plotter.write_frame()
+        
+        if type(mesh) in (list, tuple):
+            for actor in actors:
+                self._plotter.remove_actor(actor)
+        else:
+            self._plotter.remove_actor(actor)
+        self.counter += 1
+    
+    def done(self):
+        self._plotter.close()
+    
+    @property
+    def scalar_bar_range(self):
+        return self._scalar_bar_range
+    
+    @scalar_bar_range.setter
+    def scalar_bar_range(self, scalar_bar_range):
+        self._scalar_bar_range = scalar_bar_range
+        self._plotter.update_scalar_bar_range(clim=scalar_bar_range)
+
+    @property
+    def color(self):
+        return self._color
+    
+    @color.setter
+    def color(self, color):
+        self._color = color
+    
+    @property
+    def show_edges(self):
+        return self._show_edges
+    
+    @show_edges.setter
+    def show_edges(self, show_edges):
+        self._show_edges = show_edges
+    
+    @property
+    def edge_color(self):
+        return self._edge_color
+    
+    @edge_color.setter
+    def edge_color(self, edge_color):
+        self._edge_color = edge_color
+    
+    @property
+    def camera_position(self):
+        return self._camera_position
+    
+    @camera_position.setter
+    def camera_position(self, camera_position):
+        self._camera_position = camera_position
+    
+    @property
+    def window_size(self):
+        return self._window_size
+    
+    @window_size.setter
+    def window_size(self, window_size):
+        self._window_size = window_size
+    
+    @property
+    def background_color(self):
+        return self._background_color
+    
+    @background_color.setter
+    def background_color(self, background_color):
+        self._background_color = background_color
+    
+    @property
+    def path_save(self):
+        return self._path_save
+
+def get_arrow(
+    direction,
+    origin,
+    scale=100,
+    tip_length=0.25,
+    tip_radius=0.1,
+    tip_resolution=20, 
+    shaft_radius=0.05,
+    shaft_resolution=20,
+):
+
+    arrow = vtk.vtkArrowSource()
+    arrow.SetTipLength(tip_length)
+    arrow.SetTipRadius(tip_radius)
+    arrow.SetTipResolution(tip_resolution)
+    arrow.SetShaftRadius(shaft_radius)
+    arrow.SetShaftResolution(shaft_resolution)
+    arrow.Update()
+
+    arrow = arrow.GetOutput()
+    points = arrow.GetPoints().GetData()
+    array = vtk_to_numpy(points)
+    array *= scale
+    arrow.GetPoints().SetData(numpy_to_vtk(array))
+
+    normx = np.array(direction) / np.linalg.norm(direction)
+    normz = np.cross(normx, [0, 1.0, 0.0001])
+    normz /= np.linalg.norm(normz)
+    normy = np.cross(normz, normx)
+
+    four_by_four = np.identity(4)
+    four_by_four[:3,0] = normx
+    four_by_four[:3,1] = normy
+    four_by_four[:3,2] = normz
+    four_by_four[:3, 3] = origin
+
+    transform = pymskt.mesh.meshTransform.create_transform(four_by_four)
+    arrow = pymskt.mesh.meshTransform.apply_transform(arrow, transform)
+    
+    return arrow
