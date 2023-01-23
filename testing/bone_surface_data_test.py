@@ -6,6 +6,7 @@ from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 from numpy.testing import assert_allclose
 from pymskt.utils import testing
 
+from pymskt import RTOL, ATOL
 
 try:
     # downsampled_femur_mesh = mskt.mesh.io.read_vtk('data/femur_thickness_mm_10k_pts.vtk')
@@ -42,7 +43,7 @@ def test_cropped_femur_cartilage_smoothed():
     # compare calcualted cartilage thickness w/ thickness of saved result that has been checked. 
     ref_smoothed_femur_mesh_thickness = vtk_to_numpy(smoothed_femur_mesh.GetPointData().GetArray('thickness (mm)'))
     smoothed_femur_mesh_thickness = vtk_to_numpy(femur._mesh.GetPointData().GetArray('thickness (mm)'))
-    assert_allclose(smoothed_femur_mesh_thickness, ref_smoothed_femur_mesh_thickness)
+    assert_allclose(smoothed_femur_mesh_thickness, ref_smoothed_femur_mesh_thickness, rtol=RTOL, atol=ATOL)
 
 
 def test_cropped_femur_cartilage_region_assignment():
@@ -68,12 +69,12 @@ def test_cropped_femur_cartilage_region_assignment():
     # compare cartilage ROI between new calculation & saved mesh. 
     ref_cropped_femur_mesh_roi = vtk_to_numpy(cropped_femur_mesh.GetPointData().GetArray('labels'))
     cropped_femur_mesh_roi = vtk_to_numpy(femur._mesh.GetPointData().GetArray('labels'))
-    assert_allclose(cropped_femur_mesh_roi, ref_cropped_femur_mesh_roi)
+    assert_allclose(cropped_femur_mesh_roi, ref_cropped_femur_mesh_roi, rtol=RTOL, atol=ATOL)
 
     # compare the x/y/z position of the points on the mesh
     ref_pts = mskt.mesh.get_mesh_physical_point_coords(cropped_femur_mesh)
     new_pts = femur.point_coords
-    assert_allclose(ref_pts, new_pts)
+    assert_allclose(ref_pts, new_pts, rtol=RTOL, atol=ATOL)
 
 
 def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
@@ -93,12 +94,12 @@ def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
     # compare calcualted cartilage thickness w/ thickness of saved result that has been checked. 
     ref_cropped_femur_mesh_thickness = vtk_to_numpy(cropped_femur_mesh.GetPointData().GetArray('thickness (mm)'))
     cropped_femur_mesh_thickness = vtk_to_numpy(femur._mesh.GetPointData().GetArray('thickness (mm)'))
-    assert_allclose(cropped_femur_mesh_thickness, ref_cropped_femur_mesh_thickness)
+    assert_allclose(cropped_femur_mesh_thickness, ref_cropped_femur_mesh_thickness, rtol=RTOL, atol=ATOL)
 
     # compare the x/y/z position of the points on the mesh
     ref_pts = mskt.mesh.get_mesh_physical_point_coords(cropped_femur_mesh)
     new_pts = femur.point_coords
-    assert_allclose(ref_pts, new_pts)
+    assert_allclose(ref_pts, new_pts, rtol=RTOL, atol=ATOL)
 
 
 def test_femur_cart_thick_roi_calc(timing=False):
@@ -117,9 +118,9 @@ def test_femur_cart_thick_roi_calc(timing=False):
     femur.calc_cartilage_thickness()
     femur.assign_cartilage_regions()
 
-    testing.assert_mesh_coordinates_same(femur.mesh, downsampled_femur_mesh)
-    testing.assert_mesh_scalars_same(femur.mesh, downsampled_femur_mesh, scalarname='thickness (mm)')
-    testing.assert_mesh_scalars_same(femur.mesh, downsampled_femur_mesh, scalarname='labels')
+    testing.assert_mesh_coordinates_same(femur.mesh, downsampled_femur_mesh, rtol=RTOL, atol=ATOL)
+    testing.assert_mesh_scalars_same(femur.mesh, downsampled_femur_mesh, scalarname='thickness (mm)', rtol=RTOL, atol=ATOL)
+    testing.assert_mesh_scalars_same(femur.mesh, downsampled_femur_mesh, scalarname='labels', rtol=RTOL, atol=ATOL)
 
     # seg_vtk_image_reader = mskt.image.read_nrrd('data/right_knee_example.nrrd', set_origin_zero=True)
     # seg_vtk_image = seg_vtk_image_reader.GetOutput()

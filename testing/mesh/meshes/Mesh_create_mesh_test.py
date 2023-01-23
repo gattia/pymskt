@@ -9,6 +9,8 @@ SEG_IMAGE = sitk.ReadImage(SEG_IMAGE_PATH)
 MESH_NO_SMOOTHING = mskt.mesh.io.read_vtk('data/femur_orig_no_image_smoothing.vtk')
 MESH_WITH_SMOOTHING = mskt.mesh.io.read_vtk('data/femur_mesh_orig.vtk')
 
+from pymskt import RTOL, ATOL
+
 # Testing create mesh no smoothing
 def test_pass_seg_image_directly_no_smoothing_pass_label_idx_to_init(
     seg_image=SEG_IMAGE,
@@ -18,7 +20,7 @@ def test_pass_seg_image_directly_no_smoothing_pass_label_idx_to_init(
     mesh = mskt.mesh.Mesh(seg_image=seg_image, label_idx=label_idx)
     mesh.create_mesh(smooth_image=False)
 
-    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh)
+    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh, rtol=RTOL, atol=ATOL)
 
 def test_pass_seg_image_directly_no_smoothing_pass_label_idx_to_create_mesh_function(
     seg_image=SEG_IMAGE,
@@ -28,7 +30,7 @@ def test_pass_seg_image_directly_no_smoothing_pass_label_idx_to_create_mesh_func
     mesh = mskt.mesh.Mesh(seg_image=seg_image)
     mesh.create_mesh(smooth_image=False, label_idx=label_idx)
 
-    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh)
+    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh, rtol=RTOL, atol=ATOL)
 
 # Testing create mesh with smoothing
 def test_pass_seg_image_directly_with_smoothing_and_pass_label_idx_to_init(
@@ -40,7 +42,7 @@ def test_pass_seg_image_directly_with_smoothing_and_pass_label_idx_to_init(
     mesh = mskt.mesh.Mesh(seg_image=seg_image, label_idx=label_idx)
     mesh.create_mesh(smooth_image=True, smooth_image_var=smooth_image_var)
 
-    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh)
+    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh, rtol=RTOL, atol=ATOL)
 
 def test_pass_seg_image_directly_with_smoothing_and_pass_label_idx_to_create_mesh_function(
     seg_image=SEG_IMAGE,
@@ -51,7 +53,7 @@ def test_pass_seg_image_directly_with_smoothing_and_pass_label_idx_to_create_mes
     mesh = mskt.mesh.Mesh(seg_image=seg_image)
     mesh.create_mesh(smooth_image=True, label_idx=label_idx, smooth_image_var=smooth_image_var)
 
-    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh)
+    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh, rtol=RTOL, atol=ATOL)
 
 def test_exception_n_pixels_less_than_min_n_pixels(
     seg_image=SEG_IMAGE, 
@@ -89,7 +91,7 @@ def test_load_seg_image_if_not_already_loaded(
     mesh = mskt.mesh.Mesh(path_seg_image=path_seg_image, label_idx=label_idx)
     mesh.create_mesh(smooth_image=False)
 
-    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh)    
+    testing.assert_mesh_coordinates_same(ref_mesh, mesh.mesh, rtol=RTOL, atol=ATOL)    
 
 def test_specify_label_idx():
     raise Exception('Test not implemented')

@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>pymskt.mesh.anatomical.femur_long_axis API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pymskt.mesh.anatomical.femur_long_axis</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import numpy as np
+from vtk.util.numpy_support import vtk_to_numpy
+import pyvista as pv
+from pymskt.statistics.pca import pca_svd
+
+class FitLongAxisFemur:
+    def __init__(
+        self,
+        femur,
+        labels_name=&#39;labels&#39;,
+        cart_label=1,
+        bone_label=0,
+        percent_epiph_higher=0.3,
+        n_pts=100,
+        buffer=1,
+        use_center_pts_only=True
+        
+    ):
+        self.femur = femur
+        self.labels_name = labels_name
+        self.cart_label = cart_label
+        self.bone_label = bone_label
+        self.percent_epiph_higher = percent_epiph_higher
+        self.n_pts = n_pts
+        self.buffer = buffer
+        self.use_center_pts_only = use_center_pts_only
+        
+        self._bone_pts = None
+        self._cart_pts = None
+        self.min_cart = None
+        self.min_bone = None
+        self.max_cart = None
+        self.max_bone = None
+        
+        self.long_axis = None
+        self.proximal = None
+        
+        self.origin = None
+        
+        self._diaph_points = None
+        self._epiph_points = None
+        
+        self._vector = None
+        
+    
+    def get_bone_cart_points(self):
+        labels = vtk_to_numpy(self.femur.mesh.GetPointData().GetArray(self.labels_name))
+        if (type(self.cart_label) == list) or (type(self.cart_label) == tuple):
+            cart_indices = None
+            for cart_label in self.cart_label:
+                if cart_indices is None:
+                    cart_indices = labels == cart_label
+                cart_indices += labels == cart_label
+        else:
+            cart_indices = labels == self.cart_label
+        cart_ids = np.where(cart_indices)
+        cart_pts = np.squeeze(self.femur.point_coords[cart_ids,:])
+        bone_ids = np.where(labels == self.bone_label)
+        bone_pts = np.squeeze(self.femur.point_coords[bone_ids,:])
+
+        self._bone_pts = bone_pts
+        self._cart_pts = cart_pts
+
+    def get_min_max_bone_cart(self):
+        if (self._bone_pts is None) or (self._cart_pts is None):
+            self.get_bone_cart_points()
+
+        self.max_cart = np.max(self._cart_pts, axis=0)
+        self.max_bone = np.max(self._bone_pts, axis=0)
+
+        self.min_cart = np.min(self._cart_pts, axis=0)
+        self.min_bone = np.min(self._bone_pts, axis=0)
+
+    def get_long_axis_and_proximal_direction(self):
+        if (self._bone_pts is None) or (self._cart_pts is None):
+            self.get_bone_cart_points()
+        if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+                self.get_min_max_bone_cart()
+
+        cart_range = self.max_cart - self.min_cart
+        bone_range = self.max_bone - self.min_bone
+        long_axis = np.argmax(np.abs(cart_range - bone_range))
+
+        if np.abs(self.max_cart[2] - self.max_bone[2]) &gt; np.abs(self.min_cart[2] - self.min_bone[2]):
+            proximal = int(1)
+        else:
+            proximal = int(-1)
+        
+        self.proximal = proximal
+        self.long_axis = long_axis
+
+    def guess_origin(self):
+        if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+                self.get_min_max_bone_cart()
+
+        epiphysis_height = self.max_cart[self.long_axis] - self.min_cart[self.long_axis]
+
+        origin = np.mean(self.femur.point_coords, axis=0)
+
+        if self.proximal == 1:
+            origin[self.long_axis] = self.max_cart[self.long_axis] + epiphysis_height * self.percent_epiph_higher # add 5mm buffer?    
+        if self.proximal == -1:
+            origin[self.long_axis] = self.min_cart[self.long_axis] - epiphysis_height * self.percent_epiph_higher # add 5mm buffer? 
+        
+        self.origin = origin
+
+    def get_diaph_epiph_points(self):
+        if (self.long_axis is None) or (self.proximal is None):
+            self.get_long_axis_and_proximal_direction()
+        if self.origin is None:
+            self.guess_origin()
+            
+        # NORMAL MUST HAVE MAGNITUDE OF 1
+        normal = np.zeros(3)
+        normal[self.long_axis] = 1
+
+        # create a random point on the plane we want to slice from. 
+        point_on_plane = np.random.random_sample(size=3) * 20 - 10 # make random sample in range [-10, 10]
+        point_on_plane[self.long_axis] = self.origin[self.long_axis]
+
+        side = normal @ (self.femur.point_coords - point_on_plane).T
+
+        diaph_points = self.femur.point_coords[side &gt; 0, :]
+        epiph_points = self.femur.point_coords[side &lt; 0, :]
+        
+        pv_femur = pv.PolyData(self.femur.mesh)
+        pv_diaph, _ = pv_femur.remove_points(side&lt;0)
+        
+        self.pv_diaph = pv_diaph
+        self._diaph_points = diaph_points
+        self._epiph_points = epiph_points
+        
+
+    def get_diaph_vector(self):
+        if (self._diaph_points is None) or (self._epiph_points is None) or (self.pv_diaph):
+            self.get_diaph_epiph_points()            
+        
+        min_long = np.min(self._diaph_points[:, self.long_axis])
+        max_long = np.max(self._diaph_points[:, self.long_axis])
+        if self.proximal == 1:
+            min_ = min_long + self.buffer
+            max_ = max_long - self.buffer
+        elif self.proximal == -1:
+            max_ = max_long - self.buffer
+            min_ = min_long + self.buffer
+
+        normal = [0, 0, 0]
+        normal[self.long_axis] = 1
+
+        centers = []
+
+        for idx, depth in enumerate(np.linspace(min_, max_, self.n_pts)):
+            # get slice
+            origin_ = [0, 0, 0]
+            origin_[self.long_axis] = depth
+            slice_ = self.pv_diaph.slice(normal=normal, origin=origin_)
+            # get points from slice
+            slice_pts = slice_.points
+
+            if self.use_center_pts_only is True:
+                ptp = np.ptp(slice_pts, axis=0)
+                min_ = np.min(slice_pts, axis=0)
+                middle = min_ + ptp/2
+                lower = middle - 0.05 * ptp
+                upper = middle + 0.05 * ptp
+
+                pts = None
+                for axis in range(3):
+                    if ptp[axis] == 0:
+                        pass
+                    else:
+                        indices = (slice_pts[:,axis] &lt; upper[axis]) * (slice_pts[:,axis] &gt; lower[axis])
+                        pts_ = slice_pts[indices, :]
+                        if pts is None:
+                            pts = pts_
+                        else:
+                            pts = np.append(pts, pts_, axis=0)
+            #             pts.append()
+            elif self.use_center_pts_only is False:
+                pts = slice_.points
+
+            centroid = np.mean(pts, axis=0)
+            # append Y-position of that point to the `Ys` list
+            centers.append(centroid)
+        centers = np.asarray(centers)
+
+        inertial_matrix, _ = pca_svd(centers.T)
+
+        vector = inertial_matrix[:,0]
+        
+        self._vector = vector
+    
+    def fit(self):
+        self.get_diaph_vector()
+    
+    @property
+    def vector(self):
+        return self._vector
+    
+    @property
+    def diaph_points(self):
+        return self._diaph_points
+    
+    @property
+    def epiph_points(self):
+        return self._epiph_points
+    
+    @property
+    def cart_pts(self):
+        return self._cart_pts
+    
+    @property
+    def bone_pts(self):
+        return self._bone_pts</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur"><code class="flex name class">
+<span>class <span class="ident">FitLongAxisFemur</span></span>
+<span>(</span><span>femur, labels_name='labels', cart_label=1, bone_label=0, percent_epiph_higher=0.3, n_pts=100, buffer=1, use_center_pts_only=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FitLongAxisFemur:
+    def __init__(
+        self,
+        femur,
+        labels_name=&#39;labels&#39;,
+        cart_label=1,
+        bone_label=0,
+        percent_epiph_higher=0.3,
+        n_pts=100,
+        buffer=1,
+        use_center_pts_only=True
+        
+    ):
+        self.femur = femur
+        self.labels_name = labels_name
+        self.cart_label = cart_label
+        self.bone_label = bone_label
+        self.percent_epiph_higher = percent_epiph_higher
+        self.n_pts = n_pts
+        self.buffer = buffer
+        self.use_center_pts_only = use_center_pts_only
+        
+        self._bone_pts = None
+        self._cart_pts = None
+        self.min_cart = None
+        self.min_bone = None
+        self.max_cart = None
+        self.max_bone = None
+        
+        self.long_axis = None
+        self.proximal = None
+        
+        self.origin = None
+        
+        self._diaph_points = None
+        self._epiph_points = None
+        
+        self._vector = None
+        
+    
+    def get_bone_cart_points(self):
+        labels = vtk_to_numpy(self.femur.mesh.GetPointData().GetArray(self.labels_name))
+        if (type(self.cart_label) == list) or (type(self.cart_label) == tuple):
+            cart_indices = None
+            for cart_label in self.cart_label:
+                if cart_indices is None:
+                    cart_indices = labels == cart_label
+                cart_indices += labels == cart_label
+        else:
+            cart_indices = labels == self.cart_label
+        cart_ids = np.where(cart_indices)
+        cart_pts = np.squeeze(self.femur.point_coords[cart_ids,:])
+        bone_ids = np.where(labels == self.bone_label)
+        bone_pts = np.squeeze(self.femur.point_coords[bone_ids,:])
+
+        self._bone_pts = bone_pts
+        self._cart_pts = cart_pts
+
+    def get_min_max_bone_cart(self):
+        if (self._bone_pts is None) or (self._cart_pts is None):
+            self.get_bone_cart_points()
+
+        self.max_cart = np.max(self._cart_pts, axis=0)
+        self.max_bone = np.max(self._bone_pts, axis=0)
+
+        self.min_cart = np.min(self._cart_pts, axis=0)
+        self.min_bone = np.min(self._bone_pts, axis=0)
+
+    def get_long_axis_and_proximal_direction(self):
+        if (self._bone_pts is None) or (self._cart_pts is None):
+            self.get_bone_cart_points()
+        if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+                self.get_min_max_bone_cart()
+
+        cart_range = self.max_cart - self.min_cart
+        bone_range = self.max_bone - self.min_bone
+        long_axis = np.argmax(np.abs(cart_range - bone_range))
+
+        if np.abs(self.max_cart[2] - self.max_bone[2]) &gt; np.abs(self.min_cart[2] - self.min_bone[2]):
+            proximal = int(1)
+        else:
+            proximal = int(-1)
+        
+        self.proximal = proximal
+        self.long_axis = long_axis
+
+    def guess_origin(self):
+        if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+                self.get_min_max_bone_cart()
+
+        epiphysis_height = self.max_cart[self.long_axis] - self.min_cart[self.long_axis]
+
+        origin = np.mean(self.femur.point_coords, axis=0)
+
+        if self.proximal == 1:
+            origin[self.long_axis] = self.max_cart[self.long_axis] + epiphysis_height * self.percent_epiph_higher # add 5mm buffer?    
+        if self.proximal == -1:
+            origin[self.long_axis] = self.min_cart[self.long_axis] - epiphysis_height * self.percent_epiph_higher # add 5mm buffer? 
+        
+        self.origin = origin
+
+    def get_diaph_epiph_points(self):
+        if (self.long_axis is None) or (self.proximal is None):
+            self.get_long_axis_and_proximal_direction()
+        if self.origin is None:
+            self.guess_origin()
+            
+        # NORMAL MUST HAVE MAGNITUDE OF 1
+        normal = np.zeros(3)
+        normal[self.long_axis] = 1
+
+        # create a random point on the plane we want to slice from. 
+        point_on_plane = np.random.random_sample(size=3) * 20 - 10 # make random sample in range [-10, 10]
+        point_on_plane[self.long_axis] = self.origin[self.long_axis]
+
+        side = normal @ (self.femur.point_coords - point_on_plane).T
+
+        diaph_points = self.femur.point_coords[side &gt; 0, :]
+        epiph_points = self.femur.point_coords[side &lt; 0, :]
+        
+        pv_femur = pv.PolyData(self.femur.mesh)
+        pv_diaph, _ = pv_femur.remove_points(side&lt;0)
+        
+        self.pv_diaph = pv_diaph
+        self._diaph_points = diaph_points
+        self._epiph_points = epiph_points
+        
+
+    def get_diaph_vector(self):
+        if (self._diaph_points is None) or (self._epiph_points is None) or (self.pv_diaph):
+            self.get_diaph_epiph_points()            
+        
+        min_long = np.min(self._diaph_points[:, self.long_axis])
+        max_long = np.max(self._diaph_points[:, self.long_axis])
+        if self.proximal == 1:
+            min_ = min_long + self.buffer
+            max_ = max_long - self.buffer
+        elif self.proximal == -1:
+            max_ = max_long - self.buffer
+            min_ = min_long + self.buffer
+
+        normal = [0, 0, 0]
+        normal[self.long_axis] = 1
+
+        centers = []
+
+        for idx, depth in enumerate(np.linspace(min_, max_, self.n_pts)):
+            # get slice
+            origin_ = [0, 0, 0]
+            origin_[self.long_axis] = depth
+            slice_ = self.pv_diaph.slice(normal=normal, origin=origin_)
+            # get points from slice
+            slice_pts = slice_.points
+
+            if self.use_center_pts_only is True:
+                ptp = np.ptp(slice_pts, axis=0)
+                min_ = np.min(slice_pts, axis=0)
+                middle = min_ + ptp/2
+                lower = middle - 0.05 * ptp
+                upper = middle + 0.05 * ptp
+
+                pts = None
+                for axis in range(3):
+                    if ptp[axis] == 0:
+                        pass
+                    else:
+                        indices = (slice_pts[:,axis] &lt; upper[axis]) * (slice_pts[:,axis] &gt; lower[axis])
+                        pts_ = slice_pts[indices, :]
+                        if pts is None:
+                            pts = pts_
+                        else:
+                            pts = np.append(pts, pts_, axis=0)
+            #             pts.append()
+            elif self.use_center_pts_only is False:
+                pts = slice_.points
+
+            centroid = np.mean(pts, axis=0)
+            # append Y-position of that point to the `Ys` list
+            centers.append(centroid)
+        centers = np.asarray(centers)
+
+        inertial_matrix, _ = pca_svd(centers.T)
+
+        vector = inertial_matrix[:,0]
+        
+        self._vector = vector
+    
+    def fit(self):
+        self.get_diaph_vector()
+    
+    @property
+    def vector(self):
+        return self._vector
+    
+    @property
+    def diaph_points(self):
+        return self._diaph_points
+    
+    @property
+    def epiph_points(self):
+        return self._epiph_points
+    
+    @property
+    def cart_pts(self):
+        return self._cart_pts
+    
+    @property
+    def bone_pts(self):
+        return self._bone_pts</code></pre>
+</details>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.bone_pts"><code class="name">var <span class="ident">bone_pts</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def bone_pts(self):
+    return self._bone_pts</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.cart_pts"><code class="name">var <span class="ident">cart_pts</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def cart_pts(self):
+    return self._cart_pts</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.diaph_points"><code class="name">var <span class="ident">diaph_points</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def diaph_points(self):
+    return self._diaph_points</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.epiph_points"><code class="name">var <span class="ident">epiph_points</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def epiph_points(self):
+    return self._epiph_points</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.vector"><code class="name">var <span class="ident">vector</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def vector(self):
+    return self._vector</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.fit"><code class="name flex">
+<span>def <span class="ident">fit</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def fit(self):
+    self.get_diaph_vector()</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_bone_cart_points"><code class="name flex">
+<span>def <span class="ident">get_bone_cart_points</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_bone_cart_points(self):
+    labels = vtk_to_numpy(self.femur.mesh.GetPointData().GetArray(self.labels_name))
+    if (type(self.cart_label) == list) or (type(self.cart_label) == tuple):
+        cart_indices = None
+        for cart_label in self.cart_label:
+            if cart_indices is None:
+                cart_indices = labels == cart_label
+            cart_indices += labels == cart_label
+    else:
+        cart_indices = labels == self.cart_label
+    cart_ids = np.where(cart_indices)
+    cart_pts = np.squeeze(self.femur.point_coords[cart_ids,:])
+    bone_ids = np.where(labels == self.bone_label)
+    bone_pts = np.squeeze(self.femur.point_coords[bone_ids,:])
+
+    self._bone_pts = bone_pts
+    self._cart_pts = cart_pts</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_epiph_points"><code class="name flex">
+<span>def <span class="ident">get_diaph_epiph_points</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_diaph_epiph_points(self):
+    if (self.long_axis is None) or (self.proximal is None):
+        self.get_long_axis_and_proximal_direction()
+    if self.origin is None:
+        self.guess_origin()
+        
+    # NORMAL MUST HAVE MAGNITUDE OF 1
+    normal = np.zeros(3)
+    normal[self.long_axis] = 1
+
+    # create a random point on the plane we want to slice from. 
+    point_on_plane = np.random.random_sample(size=3) * 20 - 10 # make random sample in range [-10, 10]
+    point_on_plane[self.long_axis] = self.origin[self.long_axis]
+
+    side = normal @ (self.femur.point_coords - point_on_plane).T
+
+    diaph_points = self.femur.point_coords[side &gt; 0, :]
+    epiph_points = self.femur.point_coords[side &lt; 0, :]
+    
+    pv_femur = pv.PolyData(self.femur.mesh)
+    pv_diaph, _ = pv_femur.remove_points(side&lt;0)
+    
+    self.pv_diaph = pv_diaph
+    self._diaph_points = diaph_points
+    self._epiph_points = epiph_points</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_vector"><code class="name flex">
+<span>def <span class="ident">get_diaph_vector</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_diaph_vector(self):
+    if (self._diaph_points is None) or (self._epiph_points is None) or (self.pv_diaph):
+        self.get_diaph_epiph_points()            
+    
+    min_long = np.min(self._diaph_points[:, self.long_axis])
+    max_long = np.max(self._diaph_points[:, self.long_axis])
+    if self.proximal == 1:
+        min_ = min_long + self.buffer
+        max_ = max_long - self.buffer
+    elif self.proximal == -1:
+        max_ = max_long - self.buffer
+        min_ = min_long + self.buffer
+
+    normal = [0, 0, 0]
+    normal[self.long_axis] = 1
+
+    centers = []
+
+    for idx, depth in enumerate(np.linspace(min_, max_, self.n_pts)):
+        # get slice
+        origin_ = [0, 0, 0]
+        origin_[self.long_axis] = depth
+        slice_ = self.pv_diaph.slice(normal=normal, origin=origin_)
+        # get points from slice
+        slice_pts = slice_.points
+
+        if self.use_center_pts_only is True:
+            ptp = np.ptp(slice_pts, axis=0)
+            min_ = np.min(slice_pts, axis=0)
+            middle = min_ + ptp/2
+            lower = middle - 0.05 * ptp
+            upper = middle + 0.05 * ptp
+
+            pts = None
+            for axis in range(3):
+                if ptp[axis] == 0:
+                    pass
+                else:
+                    indices = (slice_pts[:,axis] &lt; upper[axis]) * (slice_pts[:,axis] &gt; lower[axis])
+                    pts_ = slice_pts[indices, :]
+                    if pts is None:
+                        pts = pts_
+                    else:
+                        pts = np.append(pts, pts_, axis=0)
+        #             pts.append()
+        elif self.use_center_pts_only is False:
+            pts = slice_.points
+
+        centroid = np.mean(pts, axis=0)
+        # append Y-position of that point to the `Ys` list
+        centers.append(centroid)
+    centers = np.asarray(centers)
+
+    inertial_matrix, _ = pca_svd(centers.T)
+
+    vector = inertial_matrix[:,0]
+    
+    self._vector = vector</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_long_axis_and_proximal_direction"><code class="name flex">
+<span>def <span class="ident">get_long_axis_and_proximal_direction</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_long_axis_and_proximal_direction(self):
+    if (self._bone_pts is None) or (self._cart_pts is None):
+        self.get_bone_cart_points()
+    if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+            self.get_min_max_bone_cart()
+
+    cart_range = self.max_cart - self.min_cart
+    bone_range = self.max_bone - self.min_bone
+    long_axis = np.argmax(np.abs(cart_range - bone_range))
+
+    if np.abs(self.max_cart[2] - self.max_bone[2]) &gt; np.abs(self.min_cart[2] - self.min_bone[2]):
+        proximal = int(1)
+    else:
+        proximal = int(-1)
+    
+    self.proximal = proximal
+    self.long_axis = long_axis</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_min_max_bone_cart"><code class="name flex">
+<span>def <span class="ident">get_min_max_bone_cart</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_min_max_bone_cart(self):
+    if (self._bone_pts is None) or (self._cart_pts is None):
+        self.get_bone_cart_points()
+
+    self.max_cart = np.max(self._cart_pts, axis=0)
+    self.max_bone = np.max(self._bone_pts, axis=0)
+
+    self.min_cart = np.min(self._cart_pts, axis=0)
+    self.min_bone = np.min(self._bone_pts, axis=0)</code></pre>
+</details>
+</dd>
+<dt id="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.guess_origin"><code class="name flex">
+<span>def <span class="ident">guess_origin</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def guess_origin(self):
+    if (self.max_cart is None) or (self.max_bone is None) or (self.min_cart is None) or (self.min_bone is None):
+            self.get_min_max_bone_cart()
+
+    epiphysis_height = self.max_cart[self.long_axis] - self.min_cart[self.long_axis]
+
+    origin = np.mean(self.femur.point_coords, axis=0)
+
+    if self.proximal == 1:
+        origin[self.long_axis] = self.max_cart[self.long_axis] + epiphysis_height * self.percent_epiph_higher # add 5mm buffer?    
+    if self.proximal == -1:
+        origin[self.long_axis] = self.min_cart[self.long_axis] - epiphysis_height * self.percent_epiph_higher # add 5mm buffer? 
+    
+    self.origin = origin</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pymskt.mesh.anatomical" href="index.html">pymskt.mesh.anatomical</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur">FitLongAxisFemur</a></code></h4>
+<ul class="">
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.bone_pts" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.bone_pts">bone_pts</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.cart_pts" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.cart_pts">cart_pts</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.diaph_points" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.diaph_points">diaph_points</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.epiph_points" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.epiph_points">epiph_points</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.fit" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.fit">fit</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_bone_cart_points" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_bone_cart_points">get_bone_cart_points</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_epiph_points" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_epiph_points">get_diaph_epiph_points</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_vector" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_diaph_vector">get_diaph_vector</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_long_axis_and_proximal_direction" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_long_axis_and_proximal_direction">get_long_axis_and_proximal_direction</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_min_max_bone_cart" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.get_min_max_bone_cart">get_min_max_bone_cart</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.guess_origin" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.guess_origin">guess_origin</a></code></li>
+<li><code><a title="pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.vector" href="#pymskt.mesh.anatomical.femur_long_axis.FitLongAxisFemur.vector">vector</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

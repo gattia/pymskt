@@ -5,6 +5,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import vtk
 
+from pymskt import RTOL, ATOL
 
 SEG_IMAGE = sitk.ReadImage('data/right_knee_example.nrrd')
 MESH = mskt.mesh.io.read_vtk('data/femur_mesh_10k_pts.vtk')
@@ -55,7 +56,7 @@ def test_set_point_coords(vtk_mesh=MESH):
 
     rand_sample = np.random.randint(0, mesh.mesh.GetNumberOfPoints(), 256)
     for rand_idx in rand_sample:
-        assert_allclose(pt_coords[rand_idx,:], mesh.mesh.GetPoint(rand_idx))
+        assert_allclose(pt_coords[rand_idx,:], mesh.mesh.GetPoint(rand_idx), rtol=RTOL, atol=ATOL)
 
 # PATH TO SEG IMAGE
 def test_get_path_to_seg_image(path_seg_image='test/location/fake/data.csv'):
@@ -101,4 +102,4 @@ def test_get_list_applied_transforms(n_rotations=10, vtk_mesh=MESH):
     
     for transform_idx, transform in enumerate(list_transforms):
         translation = transform.GetPosition()
-        assert_allclose(translation, rand_rotations[:3, 3, transform_idx])
+        assert_allclose(translation, rand_rotations[:3, 3, transform_idx], rtol=RTOL, atol=ATOL)

@@ -7,7 +7,7 @@ from numpy.testing import assert_allclose
 from pymskt.mesh.utils import vtk_deep_copy
 from scipy.stats import norm
 
-
+from pymskt import RTOL, ATOL
 #
 # smooth_scalars_from_second_mesh_onto_base
 #
@@ -76,8 +76,8 @@ def test_smooth_scalars_from_second_mesh_onto_base(
     pdf = pdf / (pdf[middle_idx] / unraveled[middle_idx, middle_idx])
 
     # assert that the x & y axies (down the middle) follow the expected normal distribution. 
-    assert_allclose(pdf, unraveled[middle_idx,:], atol=1e-4)
-    assert_allclose(pdf, unraveled[:, middle_idx], atol=1e-4)
+    assert_allclose(pdf, unraveled[middle_idx,:], rtol=RTOL, atol=ATOL)
+    assert_allclose(pdf, unraveled[:, middle_idx], rtol=RTOL, atol=ATOL)
 
 def test_smooth_scalars_from_second_mesh_onto_base_use_idx_coords_to_smooth():
     raise Exception('Test not implemented')

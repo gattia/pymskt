@@ -28,8 +28,9 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
                                        get_versor_from_transform, 
-                                       break_versor_into_center_rotate_translate_transforms)
-from pymskt.mesh.meshRegistration import non_rigidly_register
+                                       break_versor_into_center_rotate_translate_transforms,
+                                       apply_transform)
+from pymskt.mesh.meshRegistration import non_rigidly_register, get_icp_transform
 import pymskt.mesh.io as io
 
 class Mesh:
@@ -101,8 +102,12 @@ class Mesh:
             Label of anatomy of interest, by default None
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
-        """        
-        self._mesh = mesh
+        """      
+        if type(mesh) in (str,): #accept path like objects?  
+            print('mesh string passed, loading mesh from disk')
+            self._mesh = io.read_vtk(mesh)
+        else:
+            self._mesh = mesh
         self._seg_image = seg_image
         self._path_seg_image = path_seg_image
         self._label_idx = label_idx
@@ -198,7 +203,8 @@ class Mesh:
                                tmp_filename)
     
     def save_mesh(self,
-                  filepath):
+                  filepath,
+                  write_binary=False):
         """
         Save the surface mesh from this class to disk. 
 
@@ -206,8 +212,10 @@ class Mesh:
         ----------
         filepath : str
             Location & filename to save the surface mesh (vtk.vtkPolyData) to. 
+        write_binary : bool, optional
+            Should the mesh be saved as a binary or ASCII format, by default False
         """        
-        io.write_vtk(self._mesh, filepath)
+        io.write_vtk(self._mesh, filepath, write_binary=write_binary)
 
     def resample_surface(self,
                          subdivisions=2,
@@ -337,6 +345,83 @@ class Mesh:
         if (as_source is False) or ((as_source is True) & (return_transformed_mesh is True)):
             return source_transformed_to_target
 
+    def rigidly_register(
+        self,
+        other_mesh,
+        as_source=True,
+        apply_transform_to_mesh=True,
+        return_transformed_mesh=False,
+        return_transform=False,
+        max_n_iter=100,
+        n_landmarks=1000,
+        reg_mode='similarity'
+
+    ):
+        """
+        Function to perform rigid registration between this mesh and another mesh. 
+
+        Parameters
+        ----------
+        other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
+            Other mesh to use in registration process
+        as_source : bool, optional
+            Should the current mesh (in this object) be the source or the target, by default True
+        apply_transform_to_mesh : bool, optional
+            If as_source is True should we apply transformation to internal mesh, by default True
+        return_transformed_mesh : bool, optional
+            Should we return the registered mesh, by default False
+        max_n_iter : int, optional
+            Maximum number of iterations to perform, by default 100
+        n_landmarks : int, optional
+            Number of landmarks to use in registration, by default 1000
+        reg_mode : str, optional
+            Mode of registration to use, by default 'similarity' (similarity, rigid, or affine)
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+
+        if (return_transform is True) & (return_transformed_mesh is True):
+            raise Exception('Cannot return both transformed mesh and transform')
+
+        if type(other_mesh) in (pymskt.mesh.meshes.BoneMesh, pymskt.mesh.meshes.Mesh):
+            other_mesh = other_mesh.mesh
+
+        # Setup the source & target meshes based on `as_source``
+        if as_source is True:
+            source = self._mesh
+            target = other_mesh
+        elif as_source is False:
+            source = other_mesh
+            target = self._mesh
+        
+        icp_transform = get_icp_transform(
+            source=source,
+            target=target,
+            max_n_iter=max_n_iter,
+            n_landmarks=n_landmarks,
+            reg_mode=reg_mode
+        )
+
+        # If current mesh is source & apply_transform_to_mesh is true then replace current mesh. 
+        if (as_source is True) & (apply_transform_to_mesh is True):
+            self.apply_transform_to_mesh(transform=icp_transform)
+
+            if return_transformed_mesh is True:
+                return self._mesh
+            
+            elif return_transform is True:
+                return icp_transform
+        
+        # curent mesh is target, or is source & want to return mesh, then return it.  
+        elif (as_source is False) & (return_transformed_mesh is True):
+            return apply_transform(source=source, transform=icp_transform)
+
+        else:
+            raise Exception('Nothing to return from rigid registration.')
+
     def copy_scalars_from_other_mesh_to_currect(
         self,
         other_mesh,
@@ -386,17 +471,27 @@ class Mesh:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
                 self._mesh,
                 other_mesh,
-                sigma=sigma,
-                idx_coords_to_smooth_base=idx_coords_to_smooth_base,
-                idx_coords_to_smooth_second=idx_coords_to_smooth_other,
-                set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
+                n=n_closest
             )
         else:
             transferred_scalars = smooth_scalars_from_second_mesh_onto_base(
                 self._mesh,
                 other_mesh,
-                n=n_closest
+                sigma=sigma,
+                idx_coords_to_smooth_base=idx_coords_to_smooth_base,
+                idx_coords_to_smooth_second=idx_coords_to_smooth_other,
+                set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
             )
+        if (new_scalars_name is None) & (weighted_avg is True):
+            if transferred_scalars.shape[1] > 1:
+                n_arrays = other_mesh.GetPointData().GetNumberOfArrays()
+                array_names = [other_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)]
+                for idx, array_name in enumerate(array_names):
+                    vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:,idx])
+                    vtk_transferred_scalars.SetName(array_name)
+                    self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+                return
+
         vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
         vtk_transferred_scalars.SetName(new_scalars_name)
         self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
@@ -703,7 +798,7 @@ class BoneMesh(Mesh):
                  min_n_pixels=5000,
                  list_cartilage_meshes=None,
                  list_cartilage_labels=None,
-                 crop_percent=1.0,
+                 crop_percent=None,
                  bone='femur',
                  ):
         """
@@ -805,7 +900,7 @@ class BoneMesh(Mesh):
         # So, adding this functionality to the processing steps before the bone mesh is created
         if crop_percent is not None:
             self._crop_percent = crop_percent
-        if self._crop_percent != 1.0:
+        if (self._crop_percent is not None) and (('femur' in self._bone) or ('tibia' in self._bone)):
             if 'femur' in self._bone:
                 bone_crop_distal = True
             elif 'tibia' in self._bone:
@@ -817,7 +912,11 @@ class BoneMesh(Mesh):
                                                        self._label_idx,
                                                        percent_width_to_crop_height=self._crop_percent,
                                                        bone_crop_distal=bone_crop_distal)
-           
+        elif self._crop_percent is not None:
+            warnings.warn(f'Trying to crop bone, but {self._bone} specified and only bones `femur`',
+                          'or `tibia` currently supported for cropping. If using another bone, consider',
+                          'making a pull request. If cropping not desired, set `crop_percent=None`.'
+                )
         super().create_mesh(smooth_image=smooth_image, smooth_image_var=smooth_image_var, marching_cubes_threshold=marching_cubes_threshold, label_idx=label_idx, min_n_pixels=min_n_pixels)
 
     def create_cartilage_meshes(self,
@@ -1099,11 +1198,14 @@ class BoneMesh(Mesh):
             Name of scalar array to smooth, default 'thickness (mm)'.
         scalar_array_idx : int, optional
             Index of the scalar array to smooth (alternative to using `scalar_array_name`) , by default None
-        """        
-        loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray('thickness (mm)')) > 0.01)[0]
+        """
+        if smooth_only_cartilage is True:
+            loc_cartilage = np.where(vtk_to_numpy(self._mesh.GetPointData().GetArray('thickness (mm)')) > 0.01)[0]
+        else:
+            loc_cartilage = None
         self._mesh = gaussian_smooth_surface_scalars(self._mesh,
                                                      sigma=scalar_sigma,
-                                                     idx_coords_to_smooth=loc_cartilage if smooth_only_cartilage is True else None,
+                                                     idx_coords_to_smooth=loc_cartilage,
                                                      array_name=scalar_array_name,
                                                      array_idx=scalar_array_idx)
 

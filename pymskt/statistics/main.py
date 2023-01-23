@@ -6,9 +6,16 @@ import os
 import pyvista as pv
 import pyacvd
 
+from vtk.util.numpy_support import vtk_to_numpy
 
 from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
-from pymskt.mesh.meshTools import get_mesh_physical_point_coords, set_mesh_physical_point_coords, resample_surface
+from pymskt.mesh.meshTools import (
+    get_mesh_physical_point_coords, 
+    set_mesh_physical_point_coords, 
+    resample_surface,
+    get_mesh_point_features,
+    transfer_mesh_scalars_get_weighted_average_n_closest
+)
 from pymskt.mesh.meshTransform import apply_transform
 from pymskt.mesh.utils import get_symmetric_surface_distance, vtk_deep_copy
 from pymskt.mesh import io 
@@ -142,6 +149,11 @@ class ProcrustesRegistration:
         verbose=True,
         remesh_each_step=False,
         patience=2,
+        ref_mesh_eigenmap_as_reference=True,
+        registering_secondary_bone=False,    # True if registering secondary bone of joint, after
+                                             # primary already used for initial registration. E.g., 
+                                             # already did femur for knee, now applying to tibia/patella
+        vertex_features=None,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -155,6 +167,7 @@ class ProcrustesRegistration:
 
         self._ref_mesh = io.read_vtk(self.path_ref_mesh)
         self.n_points = self._ref_mesh.GetNumberOfPoints()
+        self.ref_mesh_eigenmap_as_reference = ref_mesh_eigenmap_as_reference
 
         self.mean_mesh = None
 
@@ -163,14 +176,33 @@ class ProcrustesRegistration:
         self.max_n_registration_steps = max_n_registration_steps
 
         self.kwargs = kwargs
-        # Ensure that the source mesh (mean, or reference) is the bse mesh
+        # ORIGINALLY THIS WAS THE LOGIC:
+        # Ensure that the source mesh (mean, or reference) is the base mesh
         # We want all meshes aligned with this reference. Then we want
-        # to apply a "warp" of the ref/mean mesh to make it 
+        # to apply a "warp" of the ref/mean mesh to make it
+        # EXCETION - if we are registering a secondary bone in a joint model
+        # E.g., for registering tibia/patella in knee model. 
         self.kwargs['icp_register_first'] = True
-        self.kwargs['icp_reg_target_to_source'] = True
-
+        if registering_secondary_bone is False:
+            self.kwargs['icp_reg_target_to_source'] = True
+        elif registering_secondary_bone is True:
+            self.kwargs['icp_reg_target_to_source'] = False
+        
+        self.vertex_features = vertex_features
+        
         self._registered_pt_coords = np.zeros((len(list_mesh_paths), self.n_points, 3), dtype=float)
         self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
+        
+        if self.vertex_features is not None:
+            self._registered_vertex_features = np.zeros(
+                (   
+                    len(self.list_mesh_paths), 
+                    self.n_points, 
+                    len(self.vertex_features)
+                ), 
+                 dtype=float)
+        else:
+            self._registered_vertex_features = None
 
         self.sym_error = 100
         self.list_errors = []
@@ -193,14 +225,27 @@ class ProcrustesRegistration:
         registered_mesh = non_rigidly_register(
             target_mesh=target_mesh,
             source_mesh=ref_mesh_source,
+            target_eigenmap_as_reference=not self.ref_mesh_eigenmap_as_reference,
+            transfer_scalars=True if self.vertex_features is not None else False,
             **self.kwargs
         )
 
-        return get_mesh_physical_point_coords(registered_mesh)
+        coords = get_mesh_physical_point_coords(registered_mesh)
+
+        n_points = coords.shape[0]
+
+        if self.vertex_features is not None:
+            features = get_mesh_point_features(registered_mesh, self.vertex_features)           
+        else:
+            features = None
+
+        return coords, features 
     
     def execute(self):
         # create placeholder to store registered point clouds & update inherited one only if also storing 
         registered_pt_coords = np.zeros_like(self._registered_pt_coords)
+        if self.vertex_features is not None:
+            registered_vertex_features = np.zeros_like(self._registered_vertex_features)
 
         # keep doing registrations until max# is hit, or the minimum error between registrations is hit. 
         while (
@@ -230,9 +275,17 @@ class ProcrustesRegistration:
                 if (self.reg_idx == 0) & (idx == 0):
                     # first iteration & ref mesh, just use points as they are. 
                     registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
-                    continue
-                # register & save registered coordinates in the pre-allocated array
-                registered_pt_coords[idx, :, :] = self.register(self._ref_mesh, idx)
+                    if self.vertex_features is not None:
+                        registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[idx])
+                        # for i, feature in enumerate(self.vertex_features):
+                        #     feature_vec = vtk_to_numpy(self._ref_mesh.GetPointData().GetArray(feature))
+                        #     registered_vertex_features[idx, :, i] = feature_vec.copy()
+                else:
+                    # register & save registered coordinates in the pre-allocated array
+                    coords, features = self.register(self._ref_mesh, idx)
+                    registered_pt_coords[idx, :, :] = coords
+                    if self.vertex_features is not None:
+                        registered_vertex_features[idx, :, :] = features
             
             # Calculate the mean bone shape & create new mean bone shape mesh
             mean_shape = np.mean(registered_pt_coords, axis=0)
@@ -255,6 +308,8 @@ class ProcrustesRegistration:
                 # NOT SURE IF THIS IS A GOOD IDEA - MIGHT WANT A BETTER CRITERIA? 
                 self._ref_mesh = mean_mesh
                 self._registered_pt_coords = registered_pt_coords
+                if self.vertex_features is not None:
+                    self._registered_vertex_features = registered_vertex_features
             # Store the symmetric error values so they can be plotted later
             self.list_errors.append(self.sym_error)
             if self.verbose is True:
@@ -287,6 +342,7 @@ class ProcrustesRegistration:
             
             # Keep recycling the same base mesh, just move the x/y/z point coords around. 
             set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
+            set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
             # save mesh to disk
             io.write_vtk(mesh, path_to_save)
     
@@ -300,4 +356,8 @@ class ProcrustesRegistration:
     @property
     def registered_pt_coords(self):
         return self._registered_pt_coords
+    
+    @property
+    def registered_vertex_features(self):
+        return self._registered_vertex_features
     

@@ -21,8 +21,11 @@ This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and 
     # Best option for creating environment & installing dependencies:
     conda env create -n mskt
     conda activate mskt
-    conda install --file requirements.txt
-    # Alternatively - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
+    conda install --file requirements.txt. # pip (below) can alternatively be used to install dependencies in conda env
+    
+    # ALTERNATIVELY - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
+    python -m venv venv
+    source venv/bin/activate  # you will need to source the venv each time you want to use it
     pip install -r requirements.txt
     
     # Return to root dir
@@ -33,38 +36,25 @@ This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and 
     ```bash
     git clone https://github.com/gattia/cycpd.git
     cd cycpd
-    python setup.py install
+    pip install .
     cd ..
     ```
 3. Clone pyfocusr & install: <br>
     ```bash
     git clone https://github.com/gattia/pyfocusr.git
     cd pyfocusr
-    python setup.py install
+    pip install .
     cd ..
     ```
 4. Install pymskt: <br>
     ```bash
     cd pymskt
-    python setup.py install
+    pip install .
     ```
 
 
 ### To install itkwidgets (for visualization): 
-https://pypi.org/project/itkwidgets/
-
-```bash
-conda install -c conda-forge itkwidgets
-```
-
-### OR
-
-```bash
-pip install itkwidgets
-```
-
 If you are using jupyterlab instead of jupyter notebook, you also need to install an extension: 
-
 ```
 jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib jupyterlab-datawidgets itkwidgets
 ```
@@ -93,6 +83,37 @@ view(geometries=[femur.mesh])
 
 ![](/images/femur_itkwidgets.png)
 
+After creating the above mesh, creating cartilage subregions & an anatomical coordinate
+system is as simple as: 
+
+```python
+# Load in full seg image
+seg_image = sitk.ReadImage(location_seg)
+# break into sub regions. (weightbearing / trochlea / posterior condyles)
+seg_image = mskt.image.cartilage_processing.get_knee_segmentation_with_femur_subregions(seg_image)
+
+# assign femoral condyle cartilage sub regions to femur 
+femur.seg_image = seg_image
+femur.list_cartilage_labels=[11, 12, 13, 14, 15]
+femur.assign_cartilage_regions()
+
+# use cartilage regions to fit cylinder to condyles and create anatomic coordinate system 
+femur_acs = FemurACS(femur, cart_label=(11, 12, 13, 14, 15))
+femur_acs.fit()
+```
+
+The resulting anatomical coorindate system can be used to create arrows & visualize the result: 
+
+```python
+AP_arrow = get_arrow(femur_acs.ap_axis, origin=femur_acs.origin )
+IS_arrow = get_arrow(femur_acs.is_axis, origin=femur_acs.origin)
+ML_arrow = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin)
+
+view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow])
+```
+|*Anatomical Coordinate System - Cartilage Thickness* | *Anatomical Coordinate System - Cartilage Subregions* |
+|:---:       |:---:        |
+|![](/images/femur_acs.png)   | ![](/images/femur_subregions.png) |
 
 
 # Development / Contributing

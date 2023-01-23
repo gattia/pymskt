@@ -1,0 +1,96 @@
+#https://peps.python.org/pep-0621
+#pyproject.toml requirements: 
+#https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+# also some ideas from scikit:
+# https://scikit-hep.org/developer/pep621
+
+#Specify the requirements needed to build the package.
+[build-system]
+requires = ["setuptools", "setuptools-scm", "numpy==1.21.*", "Cython>=0.29"]
+build-backend = "setuptools.build_meta"
+
+#Specify the requirements needed to build the project itself. 
+#Instructions for defining the project info
+[project]
+name = "pymskt"
+description = "vtk helper tools/functions for musculoskeletal analyses"
+readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["python"]
+license = {text = "MIT"}
+authors = [
+  { name = "Anthony Gatti", email = "anthony.a.gatti@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+]
+dependencies = []
+dynamic = ["version"]
+
+
+[project.urls]
+Homepage = "https://github.com/gattia/pymskt/" 
+# build the documentation using github pages, for others will go to github.io, I have redirected to: 
+Documentation = "https://anthonygattiphd.com/pymskt/"   
+
+# Dynamic metadata - E.g., version here. 
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata
+[tool.setuptools.dynamic]
+version = {attr = "pymskt.__version__"}
+
+# setuptools specific items
+[tool.setuptools]
+packages = ['pymskt',
+            'pymskt.image',
+            'pymskt.mesh',
+            'pymskt.mesh.anatomical',
+            'pymskt.utils',
+            'pymskt.statistics']
+
+# information about "tools" 
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 100
+include_trailing_comma = true
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+known_first_party = ["cython_functions"]
+
+[tool.black]
+line-length = 100
+exclude = '''
+
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+)
+'''
+
+# Information needed for cibuildwheel
+[tool.cibuildwheel]
+# build options: https://cibuildwheel.readthedocs.io/en/stable/options/#build-selection
+build = ["cp37-*", "cp38-*", "cp39-*", "cp310-*"]
+skip = ["*-win32", "*i686", "*aarch64", "*ppc64le", "*s390x", "*musllinux*"]
+
+# testing info: https://cibuildwheel.readthedocs.io/en/stable/options/#testing
+test-command = "pytest {project}"
+test-requires = ["pytest"]
+
+# https://github.com/pypa/setuptools_scm/
+# [tool.setuptools_scm]
+
+[tool.coverage]
+run.omit = ["testing/*", "*/*_test.py"]
