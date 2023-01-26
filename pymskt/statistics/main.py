@@ -8,15 +8,19 @@ import pyacvd
 
 from vtk.util.numpy_support import vtk_to_numpy
 
-from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
+from pymskt.mesh.meshRegistration import (
+    get_icp_transform, 
+    non_rigidly_register
+)
 from pymskt.mesh.meshTools import (
     get_mesh_physical_point_coords, 
     set_mesh_physical_point_coords, 
+    set_mesh_point_features,
     resample_surface,
     get_mesh_point_features,
     transfer_mesh_scalars_get_weighted_average_n_closest
 )
-from pymskt.mesh.meshTransform import apply_transform
+from pymskt.mesh.meshTransform import apply_transform, write_linear_transform
 from pymskt.mesh.utils import get_symmetric_surface_distance, vtk_deep_copy
 from pymskt.mesh import io 
 
@@ -154,6 +158,7 @@ class ProcrustesRegistration:
                                              # primary already used for initial registration. E.g., 
                                              # already did femur for knee, now applying to tibia/patella
         vertex_features=None,
+        include_ref_in_sample=True,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -162,7 +167,9 @@ class ProcrustesRegistration:
         if self.path_ref_mesh in self.list_mesh_paths:
             path_ref_idx = self.list_mesh_paths.index(self.path_ref_mesh)
             self.list_mesh_paths.pop(path_ref_idx)
-        self.list_mesh_paths.insert(0, self.path_ref_mesh)
+        self.include_ref_in_sample = include_ref_in_sample
+        if self.include_ref_in_sample is True:
+            self.list_mesh_paths.insert(0, self.path_ref_mesh)
 
 
         self._ref_mesh = io.read_vtk(self.path_ref_mesh)
@@ -191,7 +198,8 @@ class ProcrustesRegistration:
         self.vertex_features = vertex_features
         
         self._registered_pt_coords = np.zeros((len(list_mesh_paths), self.n_points, 3), dtype=float)
-        self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
+        if self.include_ref_in_sample is True:
+            self._registered_pt_coords[0, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
         
         if self.vertex_features is not None:
             self._registered_vertex_features = np.zeros(
@@ -222,11 +230,12 @@ class ProcrustesRegistration:
     def register(self, ref_mesh_source, other_mesh_idx):
         target_mesh = io.read_vtk(self.list_mesh_paths[other_mesh_idx])
 
-        registered_mesh = non_rigidly_register(
+        registered_mesh, icp_transform = non_rigidly_register(
             target_mesh=target_mesh,
             source_mesh=ref_mesh_source,
             target_eigenmap_as_reference=not self.ref_mesh_eigenmap_as_reference,
             transfer_scalars=True if self.vertex_features is not None else False,
+            return_icp_transform=True,
             **self.kwargs
         )
 
@@ -239,13 +248,14 @@ class ProcrustesRegistration:
         else:
             features = None
 
-        return coords, features 
+        return coords, features, icp_transform
     
     def execute(self):
         # create placeholder to store registered point clouds & update inherited one only if also storing 
         registered_pt_coords = np.zeros_like(self._registered_pt_coords)
         if self.vertex_features is not None:
             registered_vertex_features = np.zeros_like(self._registered_vertex_features)
+        registered_icp_transforms = []
 
         # keep doing registrations until max# is hit, or the minimum error between registrations is hit. 
         while (
@@ -272,7 +282,7 @@ class ProcrustesRegistration:
                 if self.verbose is True:
                     print(f'\tRegistering to mesh # {idx}')
                 # skip the first mesh in the list if its the first round (its the reference)
-                if (self.reg_idx == 0) & (idx == 0):
+                if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
                     # first iteration & ref mesh, just use points as they are. 
                     registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
                     if self.vertex_features is not None:
@@ -280,17 +290,23 @@ class ProcrustesRegistration:
                         # for i, feature in enumerate(self.vertex_features):
                         #     feature_vec = vtk_to_numpy(self._ref_mesh.GetPointData().GetArray(feature))
                         #     registered_vertex_features[idx, :, i] = feature_vec.copy()
+                    registered_icp_transforms.append(None)
                 else:
                     # register & save registered coordinates in the pre-allocated array
-                    coords, features = self.register(self._ref_mesh, idx)
+                    coords, features, icp_transform = self.register(self._ref_mesh, idx)
                     registered_pt_coords[idx, :, :] = coords
                     if self.vertex_features is not None:
                         registered_vertex_features[idx, :, :] = features
+                    registered_icp_transforms.append(icp_transform)
             
             # Calculate the mean bone shape & create new mean bone shape mesh
             mean_shape = np.mean(registered_pt_coords, axis=0)
             mean_mesh = vtk_deep_copy(self._ref_mesh)
             set_mesh_physical_point_coords(mean_mesh, mean_shape)
+            if self.vertex_features is not None:
+                mean_features = np.mean(registered_vertex_features, axis=0)
+                set_mesh_point_features(mesh=mean_mesh, features=mean_features, feature_names=self.vertex_features)
+
             # store in list of reference meshes
             self.list_ref_meshes.append(mean_mesh)
 
@@ -310,6 +326,7 @@ class ProcrustesRegistration:
                 self._registered_pt_coords = registered_pt_coords
                 if self.vertex_features is not None:
                     self._registered_vertex_features = registered_vertex_features
+                self._registered_icp_transforms = registered_icp_transforms
             # Store the symmetric error values so they can be plotted later
             self.list_errors.append(self.sym_error)
             if self.verbose is True:
@@ -342,9 +359,40 @@ class ProcrustesRegistration:
             
             # Keep recycling the same base mesh, just move the x/y/z point coords around. 
             set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
-            set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
+            if self.vertex_features is not None:
+                set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
             # save mesh to disk
             io.write_vtk(mesh, path_to_save)
+    
+    def save_icp_transforms(
+        self,
+        transform_suffix=f'icp_transforms_{today.strftime("%b")}_{today.day}_{today.year}',
+        folder=None
+        ):
+        if folder is not None:
+            os.makedirs(folder, exist_ok=True)
+
+        for idx, path in enumerate(self.list_mesh_paths):
+            # parse folder / filename for saving
+            orig_folder = os.path.dirname(path)
+            orig_filename = os.path.basename(path)
+            base_filename = orig_filename[: orig_filename.rfind(".")]
+            filename = f'{base_filename}_{transform_suffix}_{idx}.txt'
+            if folder is None:
+                path_to_save = os.path.join(orig_folder, filename)
+            else:
+                path_to_save = os.path.join(os.path.abspath(folder), filename)        
+            
+            if self._registered_icp_transforms[idx] is None:
+                # if there was no ICP transform, then just save an empty file
+                with open(path_to_save, 'w') as f:
+                    f.write('NO ICP TRANSFORM - THIS WAS THE REFERENCE MESH')
+            else:
+                write_linear_transform(
+                    self._registered_icp_transforms[idx],
+                    path_to_save
+                )
+            
     
     def save_ref_mesh(self, path):
         io.write_vtk(self._ref_mesh, path)
@@ -360,4 +408,8 @@ class ProcrustesRegistration:
     @property
     def registered_vertex_features(self):
         return self._registered_vertex_features
+    
+    @property
+    def registered_icp_transforms(self):
+        return self._registered_icp_transforms
     

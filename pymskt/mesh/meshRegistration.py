@@ -82,7 +82,8 @@ def non_rigidly_register(
     n_coords_spectral_registration=1000,    # How many points to use for spectral registrtaion (usually random subsample)
     initial_correspondence_type='kd',       # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
     final_correspondence_type='kd',          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
-    transfer_scalars=False
+    transfer_scalars=False,
+    return_icp_transform=False,
 ):
     
     if 'pyfocusr' not in sys.modules:
@@ -153,5 +154,7 @@ def non_rigidly_register(
             n=3,
             return_mesh=True,
             create_new_mesh=False)
-        
+    
+    if return_icp_transform is True:
+        return mesh_transformed_to_target, reg.icp_transform
     return mesh_transformed_to_target    
