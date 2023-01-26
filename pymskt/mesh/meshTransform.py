@@ -66,6 +66,41 @@ def separate_scale_and_transform(transform, tolerance=1e-5):
     
     return scale, unit_transform
 
+# def create_linear_transform(transform_matrix):
+#     matrix = vtk.vtkMatrix4x4()
+#     for row in range(4):
+#         for col in range(4):
+#             matrix.SetElement(row, col, transform_matrix[row, col])
+    
+#     transform = vtk.vtkTransform()
+#     transform.SetMatrix(matrix)
+#     return transform
+
+
+def get_linear_transform_matrix(transform):
+    """
+    Get the 4x4 matrix of a linear transform.
+
+    Parameters
+    ----------
+    transform : vtk.vtkTransform (or subclass)
+        The transform to get the matrix of.
+
+    Returns
+    -------
+    np.ndarray
+        The 4x4 matrix of the transform.
+    """
+
+    four_by_four = np.eye(4)
+    transform_matrix = transform.GetMatrix()
+    for row in range(4):
+        for col in range(4):
+            four_by_four[row, col] = transform_matrix.GetElement(row, col)
+    
+    return four_by_four
+
+
 def write_linear_transform(transform, filepath):
     """
     Write a linear transform to a file. 
@@ -81,11 +116,8 @@ def write_linear_transform(transform, filepath):
     -------
     None
     """    
-    four_by_four = np.eye(4)
-    transform_matrix = transform.GetMatrix()
-    for row in range(4):
-        for col in range(4):
-            four_by_four[row, col] = transform_matrix.GetElement(row, col)
+    
+    four_by_four = get_linear_transform_matrix(transform)
     
     scale, unit_transform = separate_scale_and_transform(four_by_four)
 
@@ -127,8 +159,8 @@ def read_linear_transform(filepath, return_scale=False, return_unit_transform=Fa
     matrix = vtk.vtkMatrix4x4()
     for row in range(4):
         for col in range(4):
-            idx = row * 4 + col
-            matrix.SetElement(row, col, transform_dict['transform_matrix'][idx])
+            # idx = row * 4 + col
+            matrix.SetElement(row, col, transform_dict['transform_matrix'][row][col])
     
     transform = vtk.vtkTransform()
     transform.SetMatrix(matrix)
