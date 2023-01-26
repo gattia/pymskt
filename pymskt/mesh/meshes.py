@@ -29,7 +29,8 @@ from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
                                        get_versor_from_transform, 
                                        break_versor_into_center_rotate_translate_transforms,
-                                       apply_transform)
+                                       apply_transform,
+                                       create_transform)
 from pymskt.mesh.meshRegistration import non_rigidly_register, get_icp_transform
 import pymskt.mesh.io as io
 
@@ -112,6 +113,10 @@ class Mesh:
         self._path_seg_image = path_seg_image
         self._label_idx = label_idx
         self._min_n_pixels = min_n_pixels
+        self._mesh_scalars = []
+        self._n_scalars = 0
+        if self._mesh is not None:
+            self.load_mesh_scalars()
 
         self._list_applied_transforms = []
 
@@ -199,6 +204,7 @@ class Mesh:
                                          mc_threshold=marching_cubes_threshold,
                                          filter_binary_image=smooth_image
                                          )
+        self.load_mesh_scalars()
         safely_delete_tmp_file('/tmp',
                                tmp_filename)
     
@@ -216,6 +222,42 @@ class Mesh:
             Should the mesh be saved as a binary or ASCII format, by default False
         """        
         io.write_vtk(self._mesh, filepath, write_binary=write_binary)
+    
+    def load_mesh_scalars(self):
+        """
+        Retrieve scalar names from mesh & store as Mesh attribute. 
+        """
+        n_scalars = self._mesh.GetPointData().GetNumberOfArrays()
+        array_names = [self._mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_scalars)]
+        self._scalar_names = array_names
+        self._n_scalars = n_scalars
+
+    # def add_mesh_scalars(self, scalar_name, scalar_array):
+    #     """
+    #     Add a scalar array to the mesh. 
+
+    #     Parameters
+    #     ----------
+    #     scalar_name : str
+    #         Name of scalar array
+    #     scalar_array : numpy.ndarray
+    #         Array of scalars to add to mesh. 
+    #     """
+    #     array = numpy_to_vtk(scalar_array)
+    #     array.SetName(scalar_name)
+    #     self._mesh.GetPointData().AddArray(array)
+    #     self.load_mesh_scalars() # Do this because it also updates the number of scalars.
+    
+    def set_active_scalars(self, scalar_name):
+        """
+        Set the active scalar array of the mesh. 
+
+        Parameters
+        ----------
+        scalar_name : str
+            Name of scalar array to set as active. 
+        """
+        self._mesh.GetPointData().SetActiveScalars(scalar_name)
 
     def resample_surface(self,
                          subdivisions=2,
@@ -261,7 +303,9 @@ class Mesh:
         Exception
             No `transform` or `transformer` supplied - have not transformation
             to apply. 
-        """        
+        """
+        if type(transform) is np.ndarray:
+            transform = create_transform(transform)
         if (transform is not None) & (transformer is None):
             transformer = vtk.vtkTransformPolyDataFilter()
             transformer.SetTransform(transform)
@@ -425,7 +469,7 @@ class Mesh:
     def copy_scalars_from_other_mesh_to_currect(
         self,
         other_mesh,
-        new_scalars_name='scalars_from_other_mesh',
+        new_scalars_name=None,              # Defaule None - therefore will copy all scalars from other mesh
         weighted_avg=True,                  # Use weighted average, otherwise guassian smooth transfer
         n_closest=3,
         sigma=1.,
@@ -439,7 +483,7 @@ class Mesh:
 
         ** This function requires that the `other_mesh` is non-rigidly registered to the surface
             of the mesh inside of this class. Or rigidly registered but using the same anatomy that
-            VERY closely matches. Otherwise, the transfered scalars will be bad.  
+            VERY closely matches. Otherwise, the transfered scalars will be bad (really bad!).  
 
         Parameters
         ----------
@@ -460,6 +504,8 @@ class Mesh:
         set_non_smoothed_scalars_to_zero : bool, optional
             Should all other indices (not included in idx_coords_to_smooth_other) be set to 0, by default True
         """
+        n_scalars_at_start = self._n_scalars
+
         if type(other_mesh) is Mesh:
             other_mesh = other_mesh.mesh
         elif type(other_mesh) is vtk.vtkPolyData:
@@ -490,6 +536,7 @@ class Mesh:
                     vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:,idx])
                     vtk_transferred_scalars.SetName(array_name)
                     self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+                self.load_mesh_scalars()
                 return
 
         vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
@@ -574,6 +621,63 @@ class Mesh:
         if new_point_coords.shape == orig_point_coords.shape:
             self._mesh.GetPoints().SetData(numpy_to_vtk(new_point_coords))
 
+    @property
+    def scalar_names(self):
+        """
+        Convenience function to return the names of the scalars in the mesh
+
+        Returns
+        -------
+        list
+            List of strings containing the names of the scalars in the mesh
+        """        
+        return self._scalar_names
+    
+    @property
+    def n_scalars(self):
+        """
+        Convenience function to return the number of scalars in the mesh
+
+        Returns
+        -------
+        int
+            Number of scalars in the mesh
+        """        
+        return self._n_scalars
+    
+    @property
+    def scalar(self, scalar_name):
+        """
+        Convenience function to return the array of a scalar in the mesh
+
+        Parameters
+        ----------
+        scalar_name : str
+            Name of the scalar to return
+
+        Returns
+        -------
+        numpy.ndarray
+            Numpy array containing the scalars in the mesh
+        """        
+        return vtk_to_numpy(self._mesh.GetPointData().GetArray(scalar_name))
+    
+    @scalar.setter
+    def scalar(self, scalar_name, new_scalar):
+        """
+        Add a scalar array to the mesh. 
+
+        Parameters
+        ----------
+        scalar_name : str
+            Name of scalar array
+        scalar_array : numpy.ndarray
+            Array of scalars to add to mesh. 
+        """
+        array = numpy_to_vtk(scalar_array)
+        array.SetName(scalar_name)
+        self._mesh.GetPointData().AddArray(array)
+        self.load_mesh_scalars() # Do this because it also updates the number of scalars.
     
     @property
     def path_seg_image(self):
