@@ -413,6 +413,80 @@ def get_cartilage_properties_at_points(surface_bone,
                 np.asarray(seg_data_probe.most_common_data, dtype=np.int)
                 )
 
+def get_distance_other_surface_at_points(surface,
+                                         other_surface,
+                                         ray_cast_length=20.,
+                                         percent_ray_length_opposite_direction=0.25,
+                                         no_distance_filler=0.
+                                         ):  # Could be nan??
+    """
+    Extract cartilage outcomes (T2 & thickness) at all points on bone surface. 
+
+    Parameters
+    ----------
+    surface_bone : BoneMesh
+        Bone mesh containing vtk.vtkPolyData - get outcomes for nodes (vertices) on
+        this mesh
+    surface_cartilage : CartilageMesh
+        Cartilage mesh containing vtk.vtkPolyData - for obtaining cartilage outcomes.
+    t2_vtk_image : vtk.vtkImageData, optional
+        vtk object that contains our Cartilage T2 data, by default None
+    seg_vtk_image : vtk.vtkImageData, optional
+        vtk object that contains the segmentation mask(s) to help assign
+        labels to bone surface (e.g., most common), by default None
+    ray_cast_length : float, optional
+        Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+        outter shell), by default 20.0
+    percent_ray_length_opposite_direction : float, optional
+        How far to project ray inside of the bone. This is done just in case the cartilage
+        surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+    no_thickness_filler : float, optional
+        Value to use instead of thickness (if no cartilage), by default 0.
+    no_t2_filler : float, optional
+        Value to use instead of T2 (if no cartilage), by default 0.
+    no_seg_filler : int, optional
+        Value to use if no segmentation label available (because no cartilage?), by default 0
+    line_resolution : int, optional
+        Number of points to have along line, by default 100
+
+    Returns
+    -------
+    list
+        Will return list of data for:
+            Cartilage thickness
+            Mean T2 at each point on bone
+            Most common cartilage label at each point on bone (normal to surface).
+    """    
+
+    normals = get_surface_normals(surface)
+    points = surface.GetPoints()
+    obb_other_surface = get_obb_surface(other_surface)
+    point_normals = normals.GetOutput().GetPointData().GetNormals()
+
+    distance_data = []
+    # Loop through all points
+    for idx in range(points.GetNumberOfPoints()):
+        point = points.GetPoint(idx)
+        normal = point_normals.GetTuple(idx)
+
+        end_point_ray = n2l(l2n(point) + ray_cast_length*l2n(normal))
+        start_point_ray = n2l(l2n(point) + ray_cast_length*percent_ray_length_opposite_direction*(-l2n(normal)))
+
+        # Check if there are any intersections for the given ray
+        if is_hit(obb_other_surface, start_point_ray, end_point_ray):  # intersections were found
+            # Retrieve coordinates of intersection points and intersected cell ids
+            points_intersect, cell_ids_intersect = get_intersect(obb_other_surface, start_point_ray, end_point_ray)
+    #         points
+            # if len(points_intersect) == 1:
+            distance_data.append(np.sqrt(np.sum(np.square(l2n(point) - l2n(points_intersect[0])))))
+            # else:
+                # distance_data.append(no_distance_filler)
+
+        else:
+            distance_data.append(no_distance_filler)
+
+    return np.asarray(distance_data, dtype=np.float)
+
 def set_mesh_physical_point_coords(mesh, new_points):
     """
     Convenience function to update the x/y/z point coords of a mesh
