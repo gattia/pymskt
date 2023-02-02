@@ -23,7 +23,8 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    get_cartilage_properties_at_points,
                                    smooth_scalars_from_second_mesh_onto_base,
                                    transfer_mesh_scalars_get_weighted_average_n_closest,
-                                   resample_surface
+                                   resample_surface,
+                                   get_distance_other_surface_at_points
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -119,6 +120,28 @@ class Mesh:
             self.load_mesh_scalars()
 
         self._list_applied_transforms = []
+    
+    def copy(self):
+        """
+        Create a copy of the mesh object.
+
+        Returns
+        -------
+        Mesh
+            A copy of the mesh object
+        """
+
+        mesh = Mesh(
+            mesh=vtk_deep_copy(self._mesh),
+            seg_image=self._seg_image,
+            path_seg_image=self._path_seg_image,
+            label_idx=self._label_idx,
+            min_n_pixels=self.min_n_pixels,
+        )
+
+        mesh._list_applied_transforms = self._list_applied_transforms
+
+        return mesh
 
     def read_seg_image(self,
                        path_seg_image=None):
@@ -542,6 +565,67 @@ class Mesh:
         vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
         vtk_transferred_scalars.SetName(new_scalars_name)
         self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+    
+    def calc_distance_to_other_mesh(self,
+                                    list_other_meshes=[],
+                                    ray_cast_length=10.0,
+                                    percent_ray_length_opposite_direction=0.25,
+                                    name='thickness (mm)'
+                                    ):
+        """
+        Using bone mesh (`_mesh`) and the list of cartilage meshes (`list_cartilage_meshes`)
+        calcualte the cartilage thickness for each node on the bone surface. 
+
+        Parameters
+        ----------
+        list_cartilage_labels : list, optional
+            Cartilag labels to be used to create cartilage meshes (if they dont
+            exist), by default None
+        list_cartilage_meshes : list, optional
+            Cartilage meshes to be used for calculating cart thickness, by default None
+        image_smooth_var_cart : float, optional
+            Variance of gaussian filter to be applied to binary cartilage masks, 
+            by default 0.3125/2
+        marching_cubes_threshold : float, optional
+            Threshold to create bone surface at, by default 0.5
+        ray_cast_length : float, optional
+            Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
+            outter shell), by default 10.0
+        percent_ray_length_opposite_direction : float, optional
+            How far to project ray inside of the bone. This is done just in case the cartilage
+            surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+
+        Raises
+        ------
+        Exception
+            No cartilage available (either `list_cartilage_meshes` or `list_cartilage_labels`)
+        """
+        if not isinstance(list_other_meshes, (list, tuple)):
+            list_other_meshes = [list_other_meshes,]
+        
+        # pre-allocate empty thicknesses so that as labels are iterated over, they can all be appended to the same bone. 
+        distances = np.zeros(self._mesh.GetNumberOfPoints())
+        
+        # iterate over meshes and add their thicknesses to the thicknesses list. 
+        for other_mesh in list_other_meshes:
+            if issubclass(type(other_mesh), Mesh):
+                other_mesh = other_mesh.mesh
+
+            node_data = get_distance_other_surface_at_points(
+                self._mesh,
+                other_mesh,
+                ray_cast_length=ray_cast_length,
+                percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
+            )
+
+            distances += node_data
+        
+        # Assign the thickness scalars to the bone mesh surface. 
+        distance_scalars = numpy_to_vtk(distances)
+        distance_scalars.SetName(name)
+        self._mesh.GetPointData().AddArray(distance_scalars)
+        self.set_active_scalars(name)
+        self.load_mesh_scalars() # Re load mesh scalars to include the newly calculated distances. 
 
     @property
     def seg_image(self):
@@ -645,8 +729,9 @@ class Mesh:
         """        
         return self._n_scalars
     
-    @property
-    def scalar(self, scalar_name):
+    # @property
+    # def scalar(self, scalar_name):
+    def get_scalar(self, scalar_name):
         """
         Convenience function to return the array of a scalar in the mesh
 
@@ -662,8 +747,8 @@ class Mesh:
         """        
         return vtk_to_numpy(self._mesh.GetPointData().GetArray(scalar_name))
     
-    @scalar.setter
-    def scalar(self, scalar_name, new_scalar):
+    # @scalar.setter
+    def set_scalar(self, scalar_name, scalar_array):
         """
         Add a scalar array to the mesh. 
 
