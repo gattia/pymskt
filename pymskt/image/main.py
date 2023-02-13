@@ -364,7 +364,8 @@ def get_largest_connected_components(
         result[seg_array == label_idx] = label_idx
 
     for label in labels:
-        largest_connected = get_largest_component_binary(seg_array == label)
+        binary_seg_array = (seg_array == label).astype(np.int)
+        largest_connected = get_largest_component_binary(binary_seg_array)
         result[largest_connected == 1] = label
     
     if input_type == 'sitk':
