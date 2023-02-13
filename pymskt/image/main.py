@@ -323,3 +323,52 @@ def create_vtk_image(
 
 # 
     return vtk_image
+
+def get_largest_component_binary(
+    seg,
+):
+    if isinstance(seg, np.ndarray):
+        input_type = 'array'
+        seg = sitk.GetImageFromArray(seg)
+    else:
+        input_type = 'sitk'
+
+    labelled_regions_image = sitk.RelabelComponent(sitk.ConnectedComponent(seg == 1), sortByObjectSize=True)
+    # labelled_regions = sitk.GetArrayFromImage(labelled_regions_image)
+    largest_component = labelled_regions_image == 1
+
+    if input_type == 'array':
+        largest_component = sitk.GetArrayFromImage(largest_component)
+    
+    return largest_component
+
+def get_largest_connected_components(
+    seg,
+    labels
+):
+    if isinstance(labels, int):
+        labels = [labels]
+    
+    if isinstance(seg, np.ndarray):
+        input_type = 'array'
+        seg_array = seg
+        seg = sitk.GetImageFromArray(seg)
+    else:
+        seg_array = sitk.GetArrayFromImage(seg)
+        input_type = 'sitk'
+        
+
+    result = np.zeros_like(seg_array)
+    other_labels = [label_idx for label_idx in np.unique(seg_array) if label_idx not in labels]
+    for label_idx in other_labels:
+        result[seg_array == label_idx] = label_idx
+
+    for label in labels:
+        largest_connected = get_largest_component_binary(seg_array == label)
+        result[largest_connected == 1] = label
+    
+    if input_type == 'sitk':
+        result = sitk.GetImageFromArray(result)
+        result.CopyInformation(seg)
+    
+    return result
