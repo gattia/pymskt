@@ -281,6 +281,18 @@ class Mesh:
             Name of scalar array to set as active. 
         """
         self._mesh.GetPointData().SetActiveScalars(scalar_name)
+    
+    def fill_holes(self, max_size=100):
+        """
+        Fill holes in the mesh. 
+        """
+        filler = vtk.vtkFillHolesFilter()
+        filler.SetInputData(self._mesh)
+        filler.SetHoleSize(max_size)
+        filler.Update()
+
+        self._mesh = filler.GetOutput()
+        
 
     def resample_surface(self,
                          subdivisions=2,
@@ -478,14 +490,13 @@ class Mesh:
 
             if return_transformed_mesh is True:
                 return self._mesh
-            
-            elif return_transform is True:
-                return icp_transform
         
         # curent mesh is target, or is source & want to return mesh, then return it.  
         elif (as_source is False) & (return_transformed_mesh is True):
             return apply_transform(source=source, transform=icp_transform)
-
+        
+        if return_transform is True:
+            return icp_transform
         else:
             raise Exception('Nothing to return from rigid registration.')
 
