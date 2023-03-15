@@ -2,7 +2,7 @@ from pymskt.statistics import ProcrustesRegistration
 from pymskt.mesh import io
 from pymskt.mesh.meshTools import get_mesh_physical_point_coords, get_mesh_point_features
 from pymskt.mesh.meshRegistration import non_rigidly_register
-from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif
+from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif, save_gif_vec_2_vec
 import numpy as np
 import os
 import json
@@ -318,7 +318,8 @@ class SSM:
             step_size=0.25, 
             camera_position='xz',
             scalar_bar_range=[0, 4],
-            background_color='white'
+            background_color='white',
+            cmap=None
         ):
 
         """Save gif"""
@@ -340,7 +341,40 @@ class SSM:
             window_size=[3000, 4000],
             background_color=background_color,
             scalar_bar_range=scalar_bar_range,
+            cmap=cmap,
             verbose=False,
+        )
+    def save_gif_vector(
+        self,
+        path_save,
+        vec_start,
+        vec_end,
+        n_steps=24,
+        camera_position='xz',
+        window_size=[900, 1200],
+        background_color='white',
+        scalar_bar_range=[0, 4],
+        cmap=None
+    ):
+        save_gif_vec_2_vec(
+            path_save,
+            PCs=self._PCs,
+            Vs=self._Vs,
+            mean_coords=self._mean,  # mean_coords could be extracted from mean mesh...?
+            mean_mesh=self._ref_mesh,
+            vec_1=vec_start,
+            vec_2=vec_end,
+            n_steps=n_steps,
+            features=None,
+            color='orange' if self.vertex_features is None else None, 
+            show_edges=True, 
+            edge_color='black',
+            camera_position=camera_position,
+            window_size=window_size, #[3000, 4000],
+            background_color=background_color,
+            scalar_bar_range=scalar_bar_range,
+            cmap=cmap,
+            # verbose=False,
         )
     
     def register_ref_to_mesh(self, mesh):
