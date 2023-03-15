@@ -10,6 +10,28 @@ pyMSKT is an open-source library for performing quantitative analyses of the mus
 
 This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and [`cycpd`](https://github.com/gattia/cycpd) for registration. All dependencies for these other libraries are included in the requirements for this repository - instructions for installing are included below. 
 
+### Conda / pip (Recommended)
+```bash
+    # clone repository
+    git clone https://github.com/gattia/pymskt.git
+    
+    # move into directory
+    cd pymskt
+    
+    # CREATE ENVIRONMENT:
+    conda env create -n mskt
+    conda activate mskt
+
+    # INSTALLING DEPENDENCIES
+    # Recommend pip becuase cycpd and pyfocusr are available on pypi (but not conda)
+    pip install -r requirements.txt
+
+    # IF USING PIP
+    pip install .
+```
+
+### Conda only install (not-recommended)
+
 1. Clone this repository & install dependencies: <br>
     ```bash
     # clone repository
@@ -18,35 +40,33 @@ This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and 
     # move into directory
     cd pymskt
     
-    # Best option for creating environment & installing dependencies:
+    # CREATE ENVIRONMENT:
     conda env create -n mskt
     conda activate mskt
-    conda install --file requirements.txt. # pip (below) can alternatively be used to install dependencies in conda env
-    
-    # ALTERNATIVELY - create a virtual environment w/ solution of choice (venv, conda, etc.) first & then run:
-    python -m venv venv
-    source venv/bin/activate  # you will need to source the venv each time you want to use it
-    pip install -r requirements.txt
+
+    # Install all available requirements
+    conda install --file requirements-conda.txt # pip (below) can alternatively be used to install dependencies in conda env
     
     # Return to root dir
     cd ..
+    
     ```
 
-2. Clone cycpd & install: <br>
+2. Clone cycpd & install: (ONLY NEEDED FOR CONDA INSTALL)<br>
     ```bash
     git clone https://github.com/gattia/cycpd.git
     cd cycpd
     pip install .
     cd ..
     ```
-3. Clone pyfocusr & install: <br>
+3. Clone pyfocusr & install: (ONLY NEEDED FOR CONDA INSTALL)<br>
     ```bash
     git clone https://github.com/gattia/pyfocusr.git
     cd pyfocusr
     pip install .
     cd ..
     ```
-4. Install pymskt: <br>
+4. Install pymskt: (ONLY NEEDED FOR CONDA INSTALL)<br>
     ```bash
     cd pymskt
     pip install .
