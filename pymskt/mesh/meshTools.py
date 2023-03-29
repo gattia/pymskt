@@ -14,10 +14,10 @@ import numpy as np
 from pymskt.utils import n2l, l2n, safely_delete_tmp_file
 from pymskt.mesh.utils import is_hit, get_intersect, get_surface_normals, get_obb_surface, vtk_deep_copy
 import pymskt.image as pybtimage
-import pymskt.mesh.createMesh as createMesh 
+import pymskt.mesh.createMesh as createMesh
 import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
-
+import pymeshfix as mf
 
 epsilon = 1e-7
 
@@ -881,6 +881,114 @@ def resample_surface(mesh, subdivisions=2, clusters=10000):
     mesh = clus.create_mesh()
 
     return mesh
+
+def check_mesh_types(mesh, return_type='pyvista'):
+    """
+    Check the type of the input mesh and return the appropriate mesh type.
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData or pyvista.PolyData or Mesh or BoneMesh or CartilageMesh
+        The mesh to be checked.
+    return_type : str, optional
+        The type of mesh to return. Options are 'pyvista' or 'vtk', by default 'pyvista'
+    
+    Returns
+    -------
+    pyvista.PolyData or vtk.vtkPolyData
+        The mesh in the appropriate type.
+    """
+    from pymskt.mesh import Mesh, BoneMesh, CartilageMesh
+
+    if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
+        mesh_ = mesh.mesh
+    elif isinstance(mesh, vtk.vtkPolyData):
+        mesh_ = pv.wrap(mesh)
+    elif isinstance(mesh, pv.PolyData):
+        mesh_ = mesh
+    else:
+        raise Exception(f"Mesh type not recognized: {type(mesh)}")
+    
+    return mesh_
+
+def fix_mesh(mesh, verbose=True):
+    """
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData or pyvista.PolyData or Mesh or BoneMesh or CartilageMesh
+        The mesh to be fixed. 
+    verbose : bool, optional
+        Print out the status of the mesh repair, by default True
+    
+    Returns
+    -------
+    pyvista.PolyData or Mesh or BoneMesh or CartilageMesh 
+        The fixed mesh. If the input mesh is a Mesh, BoneMesh, or CartilageMesh, then
+        the mesh attribute of the input mesh will be updated and returned. The updated
+        mesh will be of type pyvista.PolyData. Otherwise, the fixed mesh will be 
+        returned as type pyvista.PolyData.
+
+    Raises
+    ------
+    Exception
+        If the mesh type is not recognized, raise an exception.
+
+    Notes
+    -----
+    This function is a wrapper for the meshfix package. 
+             
+    """
+    mesh_ = check_mesh_types(mesh)
+
+    meshfix = mf.MeshFix(mesh_)
+    if verbose is True:
+        print('Repairing mesh...')
+        meshfix.repair(verbose=True)
+    
+    if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
+        mesh.mesh = meshfix.mesh
+        return mesh
+    else:
+        return meshfix.mesh
+
+
+
+def get_mesh_edge_lengths(mesh):
+    """
+    Get the edge lengths of a mesh.
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData or pyvista.PolyData or Mesh or BoneMesh or CartilageMesh
+        The mesh to extract edge lengths from.
+    
+    Returns
+    -------
+    numpy.ndarray
+        The edge lengths of the mesh.
+    """
+    
+    mesh_ = check_mesh_types(mesh)
+    
+    faces = mesh_.faces.reshape(-1, 4)
+
+    # extract all edges (triangle is ABC)
+    edges0 = faces[:, 1:3]  # edges AB
+    edges1 = faces[:, (1, 3)]  # edges AC
+    edges2 = faces[:, 2:]  # edges BC
+
+    edges = np.vstack((edges0, edges1, edges2))
+
+    points = mesh_.points
+    
+    edge_lengths = np.sqrt(np.sum(np.square(points[edges[:,0],:] - points[edges[:,1], :]), axis=1))
+
+    return edge_lengths
+    
+
+
+
 ### THE FOLLOWING IS AN OLD/ORIGINAL VERSION OF THIS THAT SMOOTHED ALL ARRAYS ATTACHED TO MESH
 # def gaussian_smooth_surface_scalars(mesh, sigma=(1,), idx_coords_to_smooth=None):
 #     """

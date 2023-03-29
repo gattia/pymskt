@@ -10,9 +10,12 @@ param
 jupyter
 notebook
 traittypes
+pymeshfix
 
-pyfocusr
-itkwidgets # dependency needed for pyfocusr
+pyfocusr #>= 0.0.9
+itkwidgets # == 0.32.5
+ipydatawidgets < 4.3.3
+#itkwidgets[all]>=1.0a16 # dependency needed for pyfocusr
 
 cycpd
 

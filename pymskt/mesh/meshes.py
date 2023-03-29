@@ -24,7 +24,9 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    smooth_scalars_from_second_mesh_onto_base,
                                    transfer_mesh_scalars_get_weighted_average_n_closest,
                                    resample_surface,
-                                   get_distance_other_surface_at_points
+                                   get_distance_other_surface_at_points,
+                                   fix_mesh,
+                                   get_mesh_edge_lengths
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -245,6 +247,18 @@ class Mesh:
             Should the mesh be saved as a binary or ASCII format, by default False
         """        
         io.write_vtk(self._mesh, filepath, write_binary=write_binary)
+    
+    def fix_mesh(self, verbose=True):
+        """
+        Fix the surface mesh by removing duplicate points and cells.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Should the function print out information about the mesh fixing
+            process, by default True
+        """        
+        self._mesh = fix_mesh(self._mesh, verbose=verbose)
     
     def load_mesh_scalars(self):
         """
@@ -858,6 +872,18 @@ class Mesh:
             List of vtk.vtkTransform objects that have been applied to the current mesh. 
         """        
         return self._list_applied_transforms
+    
+    @property
+    def edge_lengths(self):
+        """
+        Convenience function to get the edge lengths of the mesh
+
+        Returns
+        -------
+        numpy.ndarray
+            Numpy array containing the edge lengths of the mesh
+        """
+        return get_mesh_edge_lengths(self._mesh)
 
 
 class CartilageMesh(Mesh):
