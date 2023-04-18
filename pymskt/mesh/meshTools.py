@@ -398,19 +398,19 @@ def get_cartilage_properties_at_points(surface_bone,
                 seg_data_probe.append_filler()
 
     if (t2_vtk_image is None) & (seg_vtk_image is None):
-        return np.asarray(thickness_data, dtype=np.float)
+        return np.asarray(thickness_data, dtype=float)
     elif (t2_vtk_image is not None) & (seg_vtk_image is not None):
-        return (np.asarray(thickness_data, dtype=np.float),
-                np.asarray(t2_data_probe.mean_data, dtype=np.float),
-                np.asarray(seg_data_probe.most_common_data, dtype=np.int)
+        return (np.asarray(thickness_data, dtype=float),
+                np.asarray(t2_data_probe.mean_data, dtype=float),
+                np.asarray(seg_data_probe.most_common_data, dtype=int)
                 )
     elif t2_vtk_image is not None:
-        return (np.asarray(thickness_data, dtype=np.float),
-                np.asarray(t2_data_probe.mean_data, dtype=np.float)
+        return (np.asarray(thickness_data, dtype=float),
+                np.asarray(t2_data_probe.mean_data, dtype=float)
                 )
     elif seg_vtk_image is not None:
-        return (np.asarray(thickness_data, dtype=np.float),
-                np.asarray(seg_data_probe.most_common_data, dtype=np.int)
+        return (np.asarray(thickness_data, dtype=float),
+                np.asarray(seg_data_probe.most_common_data, dtype=int)
                 )
 
 def get_distance_other_surface_at_points(surface,
@@ -485,7 +485,7 @@ def get_distance_other_surface_at_points(surface,
         else:
             distance_data.append(no_distance_filler)
 
-    return np.asarray(distance_data, dtype=np.float)
+    return np.asarray(distance_data, dtype=float)
 
 def set_mesh_physical_point_coords(mesh, new_points):
     """
@@ -1191,9 +1191,9 @@ def get_mesh_edge_lengths(mesh):
 #         if assign_seg_label_to_bone is True:
 #             ns_bone_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
 
-#             labels = np.zeros(n_bone_points, dtype=np.int)
+#             labels = np.zeros(n_bone_points, dtype=int)
 
-#     thicknesses = np.zeros(n_bone_points, dtype=np.float)
+#     thicknesses = np.zeros(n_bone_points, dtype=float)
 #     if verbose is True:
 #        print('Number bone mesh points: {}'.format(n_bone_points))
 
