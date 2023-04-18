@@ -364,7 +364,7 @@ def get_largest_connected_components(
         result[seg_array == label_idx] = label_idx
 
     for label in labels:
-        binary_seg_array = (seg_array == label).astype(np.int)
+        binary_seg_array = (seg_array == label).astype(int)
         largest_connected = get_largest_component_binary(binary_seg_array)
         result[largest_connected == 1] = label
     

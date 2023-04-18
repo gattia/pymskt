@@ -1295,7 +1295,7 @@ class BoneMesh(Mesh):
                                tmp_filename)
         
         self.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
-        labels = np.zeros(self._mesh.GetNumberOfPoints(), dtype=np.int)
+        labels = np.zeros(self._mesh.GetNumberOfPoints(), dtype=int)
 
         # if cartilage meshes don't exist yet, then make them. 
         if self._list_cartilage_meshes is None:
