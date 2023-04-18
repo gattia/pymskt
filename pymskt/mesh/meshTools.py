@@ -939,18 +939,32 @@ def fix_mesh(mesh, verbose=True):
     This function is a wrapper for the meshfix package. 
              
     """
+    from pymskt.mesh import Mesh, BoneMesh, CartilageMesh
+    
     mesh_ = check_mesh_types(mesh)
 
-    meshfix = mf.MeshFix(mesh_)
-    if verbose is True:
-        print('Repairing mesh...')
-        meshfix.repair(verbose=True)
-    
+    connected = mesh_.connectivity(largest=False)
+
+    cell_ids = np.unique(connected['RegionId'])
+    fixed_objects = []
+    for idx in cell_ids:
+        obj = connected.threshold([idx-0.5, idx+0.5])
+        obj = obj.extract_surface()
+
+        meshfix = mf.MeshFix(obj)
+        meshfix.repair(verbose=verbose)
+        if idx == 0:
+            #if first iteration create new object
+            new_object = meshfix.mesh
+        else:
+            #if not first iteration append to new object
+            new_object += meshfix.mesh
+
     if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
-        mesh.mesh = meshfix.mesh
+        mesh.mesh = new_object
         return mesh
     else:
-        return meshfix.mesh
+        return new_object
 
 
 
