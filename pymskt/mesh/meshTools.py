@@ -402,7 +402,7 @@ def get_cartilage_properties_at_points(surface_bone,
     elif (t2_vtk_image is not None) & (seg_vtk_image is not None):
         return (np.asarray(thickness_data, dtype=np.float),
                 np.asarray(t2_data_probe.mean_data, dtype=np.float),
-                np.asarray(seg_data_probe.most_common_data, dtype=np.int)
+                np.asarray(seg_data_probe.most_common_data, dtype=int)
                 )
     elif t2_vtk_image is not None:
         return (np.asarray(thickness_data, dtype=np.float),
@@ -410,7 +410,7 @@ def get_cartilage_properties_at_points(surface_bone,
                 )
     elif seg_vtk_image is not None:
         return (np.asarray(thickness_data, dtype=np.float),
-                np.asarray(seg_data_probe.most_common_data, dtype=np.int)
+                np.asarray(seg_data_probe.most_common_data, dtype=int)
                 )
 
 def get_distance_other_surface_at_points(surface,
@@ -1177,7 +1177,7 @@ def get_mesh_edge_lengths(mesh):
 #         if assign_seg_label_to_bone is True:
 #             ns_bone_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
 
-#             labels = np.zeros(n_bone_points, dtype=np.int)
+#             labels = np.zeros(n_bone_points, dtype=int)
 
 #     thicknesses = np.zeros(n_bone_points, dtype=np.float)
 #     if verbose is True:
