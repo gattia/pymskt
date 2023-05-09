@@ -7,6 +7,7 @@ from pymskt.image.main import apply_transform_retain_array
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 import pyacvd
 import pyvista as pv
+from pyvista import PolyData
 import SimpleITK as sitk
 import os
 import random
@@ -37,7 +38,7 @@ from pymskt.mesh.meshTransform import (SitkVtkTransformer,
 from pymskt.mesh.meshRegistration import non_rigidly_register, get_icp_transform
 import pymskt.mesh.io as io
 
-class Mesh:
+class Mesh(PolyData):
     """
     An object to contain surface meshes for musculoskeletal anatomy. Includes helper
     functions to build surface meshes, to process them, and to save them. 
@@ -107,18 +108,22 @@ class Mesh:
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
         """      
-        if type(mesh) in (str,): #accept path like objects?  
-            print('mesh string passed, loading mesh from disk')
-            self._mesh = io.read_vtk(mesh)
-        else:
-            self._mesh = mesh
+        # if type(mesh) in (str,): #accept path like objects?  
+        #     print('mesh string passed, loading mesh from disk')
+        #     self._mesh = io.read_vtk(mesh)
+        # else:
+        #     self._mesh = mesh
+        if mesh is not None:
+            # If not None, then pass mesh (vtk.vtkPolyData, or pv.PolyData) to parent class
+            # to initialize. Otherwise, don't initialize as we use segmentation to start off..
+            super().__init__(mesh, deep=True)
         self._seg_image = seg_image
         self._path_seg_image = path_seg_image
         self._label_idx = label_idx
         self._min_n_pixels = min_n_pixels
         self._mesh_scalars = []
         self._n_scalars = 0
-        if self._mesh is not None:
+        if mesh is not None:
             self.load_mesh_scalars()
 
         self._list_applied_transforms = []
@@ -131,19 +136,32 @@ class Mesh:
         -------
         Mesh
             A copy of the mesh object
+        
+        Notes
+        -----
+        Based on syntax from pyvist: 
+            https://github.com/pyvista/pyvista/blob/984cddbda5ecc93395e7eb3e58daff2241b9e8c8/pyvista/core/dataobject.py#L270-L305
         """
 
-        mesh = Mesh(
-            mesh=vtk_deep_copy(self._mesh),
-            seg_image=self._seg_image,
-            path_seg_image=self._path_seg_image,
-            label_idx=self._label_idx,
-            min_n_pixels=self.min_n_pixels,
-        )
+        thistype = type(self)
+        newobject = thistype()
 
-        mesh._list_applied_transforms = self._list_applied_transforms
+        newobject.deep_copy(self)
 
-        return mesh
+        # Cant copy meta right now, throws error `no attribute '_textures'`
+        # code is from here... 
+        # https://github.com/pyvista/pyvista/blob/984cddbda5ecc93395e7eb3e58daff2241b9e8c8/pyvista/core/dataset.py#L1392-L1420
+        # newobject.copy_meta_from(self, True)
+
+        newobject.seg_image = self._seg_image
+        newobject.path_seg_image = self._path_seg_image
+        newobject.label_idx = self._label_idx
+        newobject.min_n_pixels = self._min_n_pixels
+        newobject._mesh_scalars = self._mesh_scalars
+        newobject.load_mesh_scalars()
+        newobject._list_applied_transforms = self._list_applied_transforms        
+
+        return newobject
 
     def read_seg_image(self,
                        path_seg_image=None):
@@ -221,7 +239,7 @@ class Mesh:
             raise Exception('The mesh does not exist in this segmentation!, only {} pixels detected, threshold # is {}'.format(n_pixels_labelled, 
                                                                                                                                marching_cubes_threshold))
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
-        self._mesh = create_surface_mesh(self._seg_image,
+        new_mesh = create_surface_mesh(self._seg_image,
                                          self._label_idx,
                                          smooth_image_var,
                                          loc_tmp_save='/tmp',
@@ -229,6 +247,7 @@ class Mesh:
                                          mc_threshold=marching_cubes_threshold,
                                          filter_binary_image=smooth_image
                                          )
+        self.deep_copy(new_mesh)
         self.load_mesh_scalars()
         safely_delete_tmp_file('/tmp',
                                tmp_filename)
@@ -246,7 +265,7 @@ class Mesh:
         write_binary : bool, optional
             Should the mesh be saved as a binary or ASCII format, by default False
         """        
-        io.write_vtk(self._mesh, filepath, write_binary=write_binary)
+        io.write_vtk(self, filepath, write_binary=write_binary)
     
     def fix_mesh(self, verbose=True):
         """
@@ -264,8 +283,8 @@ class Mesh:
         """
         Retrieve scalar names from mesh & store as Mesh attribute. 
         """
-        n_scalars = self._mesh.GetPointData().GetNumberOfArrays()
-        array_names = [self._mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_scalars)]
+        n_scalars = self.GetPointData().GetNumberOfArrays()
+        array_names = [self.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_scalars)]
         self._scalar_names = array_names
         self._n_scalars = n_scalars
 
