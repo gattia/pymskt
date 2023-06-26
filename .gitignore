@@ -174,3 +174,4 @@ pymskt/cython/cython_functions.c
 .vscode/settings.json
 wheelhouse/pymskt-0.0.1.tar.gz
 wheelhouse/pymskt-0.0.1-cp38-cp38-macosx_10_9_x86_64.whl
+pymskt/*.so
