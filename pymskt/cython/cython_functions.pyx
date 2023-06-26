@@ -8,6 +8,7 @@ from libc.math cimport pow as c_pow
 
 ctypedef fused my_type:
     cython.double
+    cython.float
 
 @cython.boundscheck(False)  # Deactivate bounds checking
 @cython.wraparound(False)   # Deactivate negative indexing.
@@ -51,6 +52,8 @@ def gaussian_kernel(
 
     if my_type is double:
         dtype = np.double
+    elif my_type is float:
+        dtype = np.float32
     # elif my_type is int:
     #     dtype = np.intc
     # elif my_type is cython.longlong:
