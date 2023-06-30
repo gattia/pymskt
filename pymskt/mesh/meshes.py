@@ -11,6 +11,8 @@ import SimpleITK as sitk
 import os
 import random
 import string
+import warnings
+
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
 
 import pymskt
@@ -517,7 +519,8 @@ class Mesh:
     def copy_scalars_from_other_mesh_to_currect(
         self,
         other_mesh,
-        new_scalars_name=None,              # Defaule None - therefore will copy all scalars from other mesh
+        orig_scalars_name=None,             # Default None - therefore will use all scalars from other mesh
+        new_scalars_name=None,              # Defaule None - therefore will use the original scalar names
         weighted_avg=True,                  # Use weighted average, otherwise guassian smooth transfer
         n_closest=3,
         sigma=1.,
@@ -537,8 +540,10 @@ class Mesh:
         ----------
         other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
             Mesh we want to copy 
-        new_scalars_name : str, optional
-           What to name the scalars being transfered to this current mesh, by default 'scalars_from_other_mesh'
+        orig_scalars_name : str or list of str, optional
+            Name(s) of the scalar(s) to copy from `other_mesh`, by default None (copy all scalars)
+        new_scalars_name : str or list of str, optional
+            Name(s) to give to the copied scalar(s), by default None (use original scalar names)
         weighted_avg : bool, optional
             Should we use `weighted average` or `gaussian smooth` methods for transfer, by default True
         n_closest : int, optional
@@ -561,6 +566,20 @@ class Mesh:
         else:
             raise TypeError(f'other_mesh must be type `pymskt.mesh.Mesh` or `vtk.vtkPolyData` and received: {type(other_mesh)}')
 
+        if orig_scalars_name is None:
+            orig_scalars_name = [other_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(other_mesh.GetPointData().GetNumberOfArrays())]
+        elif isinstance(orig_scalars_name, str):
+            orig_scalars_name = [orig_scalars_name]
+        if new_scalars_name is None:
+            new_scalars_name = orig_scalars_name
+        elif isinstance(new_scalars_name, str):
+            new_scalars_name = [new_scalars_name]
+        
+        array_names = [other_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(other_mesh.GetPointData().GetNumberOfArrays())]
+        
+        if len(orig_scalars_name) != len(new_scalars_name):
+            raise ValueError("orig_scalars_name and new_scalars_name must have the same length")
+
         if weighted_avg is True:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
                 self._mesh,
@@ -568,6 +587,7 @@ class Mesh:
                 n=n_closest
             )
         else:
+            raise Exception('Gaussian smoothing only implemented for active scalars')
             transferred_scalars = smooth_scalars_from_second_mesh_onto_base(
                 self._mesh,
                 other_mesh,
@@ -576,20 +596,16 @@ class Mesh:
                 idx_coords_to_smooth_second=idx_coords_to_smooth_other,
                 set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
             )
-        if (new_scalars_name is None) & (weighted_avg is True):
-            if transferred_scalars.shape[1] > 1:
-                n_arrays = other_mesh.GetPointData().GetNumberOfArrays()
-                array_names = [other_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)]
-                for idx, array_name in enumerate(array_names):
-                    vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:,idx])
-                    vtk_transferred_scalars.SetName(array_name)
-                    self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
-                self.load_mesh_scalars()
-                return
-
-        vtk_transferred_scalars = numpy_to_vtk(transferred_scalars)
-        vtk_transferred_scalars.SetName(new_scalars_name)
-        self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+        
+        for array_name in array_names:
+            if array_name in orig_scalars_name:
+                idx = orig_scalars_name.index(array_name)
+                vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:, idx])
+                vtk_transferred_scalars.SetName(new_scalars_name[idx])
+                self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+                
+        self.load_mesh_scalars()
+        return
     
     def calc_distance_to_other_mesh(self,
                                     list_other_meshes=[],
@@ -788,6 +804,18 @@ class Mesh:
         array.SetName(scalar_name)
         self._mesh.GetPointData().AddArray(array)
         self.load_mesh_scalars() # Do this because it also updates the number of scalars.
+    
+    def remove_scalar(self, scalar_name):
+        """
+        Remove a scalar array from the mesh. 
+
+        Parameters
+        ----------
+        scalar_name : str
+            Name of scalar array
+        """
+        self._mesh.GetPointData().RemoveArray(scalar_name)
+        self.load_mesh_scalars()
     
     @property
     def path_seg_image(self):
@@ -1321,6 +1349,77 @@ class BoneMesh(Mesh):
         self._mesh.GetPointData().AddArray(label_scalars)
 
         self.reverse_all_transforms()
+    
+    def get_cart_thickness_mean(self,
+                                region_idx):
+        """
+        Calculate the mean thickness of a given cartilage region.
+
+        Parameters
+        ----------
+        region_idx : int
+            The index of the cartilage region to calculate the mean thickness for.
+
+        Returns
+        -------
+        float
+            The mean thickness of the specified cartilage region.
+        """
+        region_array = self.get_scalar('labels')
+        thickness_array = self.get_scalar('thickness (mm)')
+
+        mean = np.nanmean(thickness_array[region_array==region_idx])
+        return mean
+
+    def get_cart_thickness_std(self,
+                               region_idx):
+        """
+        Calculate the standard deviation of the thickness of a given cartilage region.
+
+        Parameters
+        ----------
+        region_idx : int
+            The index of the cartilage region to calculate the standard deviation for.
+
+        Returns
+        -------
+        float
+            The standard deviation of the thickness of the specified cartilage region.
+        """
+        region_array = self.get_scalar('labels')
+        thickness_array = self.get_scalar('thickness (mm)')
+
+        std = np.nanstd(thickness_array[region_array==region_idx])
+        return std
+
+    def get_cart_thickness_percentile(self,
+                                      region_idx,
+                                      percentile):
+        """
+        Calculate the thickness percentile of a given cartilage region.
+
+        Parameters
+        ----------
+        region_idx : int
+            The index of the cartilage region to calculate the thickness percentile for.
+        percentile : float
+            The percentile to calculate the thickness for. Should be between 0-100.
+
+        Returns
+        -------
+        float
+            The thickness percentile of the specified cartilage region.
+        """
+        region_array = self.get_scalar('labels')
+        thickness_array = self.get_scalar('thickness (mm)')
+
+        if percentile < 1:
+            warnings.warn("Percentiles should be between 0-100 and not 0-1", UserWarning)
+            
+        data = thickness_array[region_array==region_idx]
+        percentile = np.percentile(data, percentile)
+        
+        return percentile
 
     def calc_cartilage_t2(self,
                           path_t2_nrrd,
