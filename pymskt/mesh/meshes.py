@@ -516,7 +516,7 @@ class Mesh:
         else:
             raise Exception('Nothing to return from rigid registration.')
 
-    def copy_scalars_from_other_mesh_to_currect(
+    def copy_scalars_from_other_mesh_to_current(
         self,
         other_mesh,
         orig_scalars_name=None,             # Default None - therefore will use all scalars from other mesh
