@@ -69,13 +69,22 @@ def write_vtk(
         writer = vtk.vtkPolyDataWriter()
     elif extension == '.stl':
         writer = vtk.vtkSTLWriter()
+    elif extension == '.obj':
+        writer = vtk.vtkOBJWriter()
+    else:
+        raise ValueError(f'File extension {extension} not supported. Please use .vtk, .stl or .obj')
+
     writer.SetFileName(filepath)
     writer.SetInputData(mesh)
+    
     if scalar_name is not None:
         writer.SetScalarsName(scalar_name)
     
-    if write_binary is True:
-        writer.SetFileTypeToBinary()
-    elif write is False:
-        writer.SetFileTypeToASCII()
+    if extension != '.obj':
+        if write_binary is True:
+            writer.SetFileTypeToBinary()
+
+        elif write_binary is False:
+            writer.SetFileTypeToASCII()
+        
     writer.Write()
