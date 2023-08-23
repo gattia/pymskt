@@ -1013,7 +1013,7 @@ def get_faces_vertices(mesh):
 
     return faces, points
 
-def meshfix_pcu(obj, resolution=50000):
+def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
     """
     this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
     """
@@ -1023,6 +1023,12 @@ def meshfix_pcu(obj, resolution=50000):
 
     # add a column of 3s to faces_wt (vtk uses this to know how many points to use for each face)
     faces_wt = np.hstack((np.ones((faces_wt.shape[0], 1), dtype=int)*3, faces_wt))
+
+    if project_onto_surface is True:
+        # project points onto original mesh
+        dists, fid, bc = pcu.closest_points_on_mesh(points_wt, points, faces)
+        closest_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
+        points_wt = closest_pts
 
     # create new mesh
     new_mesh = pv.PolyData(points_wt, faces_wt)
@@ -1043,6 +1049,70 @@ def consistent_normals(mesh):
     new_mesh = pv.PolyData(points, faces_consitent.astype(int))
 
     return new_mesh
+
+def rand_sample_pts_mesh(mesh, n_pts, method='bluenoise'):
+    """
+    Randomly sample points from a mesh
+    """
+    # get faces and points
+    faces, points = get_faces_vertices(mesh)
+    
+    if method =='random':
+        fid, bc = pcu.sample_mesh_random(points, faces, n_pts)
+    elif method =='bluenoise':
+        fid, bc = pcu.sample_mesh_poisson_disk(points, faces, num_samples=n_pts)
+    
+    rand_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
+
+    return rand_pts
+
+def vtk_sdf(pts, mesh):
+    """
+    Calculates the signed distance functions (SDFs) for a set of points
+    given a mesh using VTK.
+
+    Args:
+        pts (np.ndarray): (n_pts, 3) array of points
+        mesh (vtkPolyData or mskt.mesh.Mesh): VTK mesh
+    
+    Returns:
+        np.ndarray: (n_pts, ) array of SDFs
+    """
+    implicit_distance = vtk.vtkImplicitPolyDataDistance()
+    implicit_distance.SetInput(mesh)
+    
+    # Convert the numpy array to a vtkPoints object
+    vtk_pts = numpy_to_vtk(pts)
+    # Pre allocate (vtk) where store SDFs
+    sdfs = numpy_to_vtk(np.zeros(pts.shape[0]))
+    # calculate SDFs
+    implicit_distance.FunctionValue(vtk_pts, sdfs)
+    # Convert back to numpy array
+    sdfs = vtk_to_numpy(sdfs)
+    
+    return sdfs
+
+def pcu_sdf(pts, mesh):
+    """
+    Calculates the signed distance functions (SDFs) for a set of points
+    given a mesh using Point Cloud Utils (PCU).
+    
+    Args:
+        pts (np.ndarray): (n_pts, 3) array of points
+        mesh (vtkPolyData or mskt.mesh.Mesh): VTK mesh
+    
+    Returns:
+        np.ndarray: (n_pts, ) array of SDFs
+    """
+
+    faces = vtk_to_numpy(mesh.GetPolys().GetData())
+    faces = faces.reshape(-1, 4)
+    faces = np.delete(faces, 0, 1)
+    points = vtk_to_numpy(mesh.GetPoints().GetData())
+    sdfs, face_ids, barycentric_coords = pcu.signed_distance_to_mesh(pts, points, faces)
+
+    return sdfs
+
 
 
 def get_mesh_edge_lengths(mesh):

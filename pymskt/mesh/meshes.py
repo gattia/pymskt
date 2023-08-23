@@ -29,7 +29,10 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    get_distance_other_surface_at_points,
                                    fix_mesh,
                                    consistent_normals,
-                                   get_mesh_edge_lengths
+                                   get_mesh_edge_lengths,
+                                   rand_sample_pts_mesh,
+                                   vtk_sdf,
+                                   pcu_sdf
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -251,7 +254,7 @@ class Mesh:
         """        
         io.write_vtk(self._mesh, filepath, write_binary=write_binary)
     
-    def fix_mesh(self, method='meshfix', treat_as_single_component=False, resolution=50000, verbose=True):
+    def fix_mesh(self, method='meshfix', treat_as_single_component=False, resolution=50_000, verbose=True):
         """
         Fix the surface mesh by removing duplicate points and cells.
 
@@ -272,6 +275,53 @@ class Mesh:
         Make the faces of the mesh consistent. 
         """
         self._mesh = consistent_normals(self._mesh)
+    
+    def rand_surface_pts(self, n_pts=100_000, method='bluenoise'):
+        """
+        Sample points from the surface of the mesh. 
+        """
+        return rand_sample_pts_mesh(self._mesh, n_pts=n_pts, method=method)
+
+    def rand_pts_around_surface(self, n_pts=100_000, surface_method='bluenoise', distribution='normal', sigma=1.0):
+        """
+        Sample points around the surface of the mesh. For SDF sampling & neural implicit representation models.
+        """
+        if distribution == 'normal':
+            rand_gen = np.random.default_rng().multivariate_normal
+        elif distribution =='laplace':
+            rand_gen = np.random.default_rng().laplace
+        
+        base_pts = self.rand_surface_pts(n_pts=n_pts, method=surface_method)
+        mean = [0, 0, 0]
+
+        if (distribution == 'normal') and (sigma is not None):
+            cov = np.identity(len(mean)) * sigma**2
+            rand_pts = rand_gen(mean, cov, n_pts)
+        elif distribution == 'laplace':
+            rand_pts = np.tile(mean, [n_pts, 1])
+            rand_pts = rand_gen(rand_pts, sigma, n_pts)
+        
+        samples = base_pts + rand_pts
+
+        return samples
+
+    def get_sdf_pts(self, pts, method='pcu'):
+        """
+        Calculates the signed distances (SDFs) for a set of points.
+
+        Args:
+            pts (np.ndarray): (n_pts, 3) array of points
+            method (str, optional): Method to use. Defaults to 'pcu' as its faster
+        
+        Returns:
+            np.ndarray: (n_pts, ) array of SDFs
+        """
+        if method == 'pcu':
+            sdfs = pcu_sdf(pts, self._mesh)
+        elif method == 'vtk':
+            sdfs = vtk_sdf(pts, self._mesh)
+        
+        return sdfs
     
     def load_mesh_scalars(self):
         """
