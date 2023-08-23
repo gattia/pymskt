@@ -19,6 +19,9 @@ import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
 import pymeshfix as mf
 
+import point_cloud_utils as pcu
+
+
 epsilon = 1e-7
 
 class ProbeVtkImageDataAlongLine:
@@ -299,7 +302,8 @@ def get_cartilage_properties_at_points(surface_bone,
                                        no_thickness_filler=0.,
                                        no_t2_filler=0.,
                                        no_seg_filler=0,
-                                       line_resolution=100):  # Could be nan??
+                                       line_resolution=100,
+                                       n_intersections=2):  # Could be nan??
     """
     Extract cartilage outcomes (T2 & thickness) at all points on bone surface. 
 
@@ -329,6 +333,8 @@ def get_cartilage_properties_at_points(surface_bone,
         Value to use if no segmentation label available (because no cartilage?), by default 0
     line_resolution : int, optional
         Number of points to have along line, by default 100
+    n_intersections : int, optional
+        Number of intersections to expect when casting ray from bone surface to cartilage
 
     Returns
     -------
@@ -362,6 +368,9 @@ def get_cartilage_properties_at_points(surface_bone,
                                                    save_most_common=True,
                                                    filler=no_seg_filler,
                                                    data_categorical=True)
+    
+    print('INTERSECTION IS: ', n_intersections)
+
     # Loop through all points
     for idx in range(points.GetNumberOfPoints()):
         point = points.GetPoint(idx)
@@ -375,8 +384,13 @@ def get_cartilage_properties_at_points(surface_bone,
             # Retrieve coordinates of intersection points and intersected cell ids
             points_intersect, cell_ids_intersect = get_intersect(obb_cartilage, start_point_ray, end_point_ray)
     #         points
-            if len(points_intersect) == 2:
-                thickness_data.append(np.sqrt(np.sum(np.square(l2n(points_intersect[0]) - l2n(points_intersect[1])))))
+            if len(points_intersect) == n_intersections:
+                if n_intersections == 2:
+                    thickness_data.append(np.sqrt(np.sum(np.square(l2n(points_intersect[0]) - l2n(points_intersect[1])))))
+                elif n_intersections == 1:
+                    thickness_data.append(no_thickness_filler)
+                    points_intersect = [start_point_ray, end_point_ray]
+
                 if t2_vtk_image is not None:
                     t2_data_probe.save_data_along_line(start_pt=points_intersect[0],
                                                        end_pt=points_intersect[1])
@@ -911,16 +925,23 @@ def check_mesh_types(mesh, return_type='pyvista'):
     
     return mesh_
 
-def fix_mesh(mesh, verbose=True):
+def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution=50000, verbose=True):
     """
 
     Parameters
     ----------
     mesh : vtk.vtkPolyData or pyvista.PolyData or Mesh or BoneMesh or CartilageMesh
         The mesh to be fixed. 
+    method : str, optional
+        The method to use for mesh repair. Options are 'meshfix' or 'pcu', by default 'meshfix'.
+    treat_as_single_component : bool, optional
+        If True, then treat the mesh as a single component for use with meshfix. Otherwise, 
+        treat each connected component as a separate mesh, by default False
+    resolution : int, optional
+        The resolution to use for the pcu method, by default 50000
     verbose : bool, optional
         Print out the status of the mesh repair, by default True
-    
+        
     Returns
     -------
     pyvista.PolyData or Mesh or BoneMesh or CartilageMesh 
@@ -943,22 +964,31 @@ def fix_mesh(mesh, verbose=True):
     
     mesh_ = check_mesh_types(mesh)
 
-    connected = mesh_.connectivity(largest=False)
-
-    cell_ids = np.unique(connected['RegionId'])
-    fixed_objects = []
-    for idx in cell_ids:
-        obj = connected.threshold([idx-0.5, idx+0.5])
-        obj = obj.extract_surface()
-
-        meshfix = mf.MeshFix(obj)
-        meshfix.repair(verbose=verbose)
-        if idx == 0:
-            #if first iteration create new object
-            new_object = meshfix.mesh
+    if method == 'pcu':
+        new_object = meshfix_pcu(mesh_, resolution=resolution)
+        
+    elif method == 'meshfix':
+        if treat_as_single_component is True:
+            new_object = meshfix_pymeshfix(mesh_, joincomp=True, remove_smallest_components=False, verbose=verbose)
         else:
-            #if not first iteration append to new object
-            new_object += meshfix.mesh
+            connected = mesh_.connectivity(largest=False)
+
+            cell_ids = np.unique(connected['RegionId'])
+            for idx in cell_ids:
+                obj = connected.threshold([idx-0.5, idx+0.5])
+                obj = obj.extract_surface()
+
+                if method == 'meshfix':
+                    obj = meshfix_pymeshfix(obj, verbose=verbose)
+                elif method == 'pcu':
+                    obj = meshfix_pcu(obj, resolution=resolution)
+                
+                if idx == 0:
+                    #if first iteration create new object
+                    new_object = obj
+                else:
+                    #if not first iteration append to new object
+                    new_object += obj
 
     if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
         mesh.mesh = new_object
@@ -966,6 +996,53 @@ def fix_mesh(mesh, verbose=True):
     else:
         return new_object
 
+def meshfix_pymeshfix(obj, joincomp=False, remove_smallest_components=True, verbose=True):
+    meshfix = mf.MeshFix(obj)
+    meshfix.repair(joincomp=joincomp, remove_smallest_components=remove_smallest_components, verbose=verbose)
+    return meshfix.mesh
+
+def get_faces_vertices(mesh):
+    """
+    Get the faces and vertices of a mesh.
+    """
+
+    faces = vtk_to_numpy(mesh.GetPolys().GetData())
+    faces = faces.reshape(-1, 4)
+    faces = np.delete(faces, 0, 1)
+    points = vtk_to_numpy(mesh.GetPoints().GetData())
+
+    return faces, points
+
+def meshfix_pcu(obj, resolution=50000):
+    """
+    this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
+    """
+    # get faces and points
+    faces, points = get_faces_vertices(obj)
+    points_wt, faces_wt = pcu.make_mesh_watertight(points, faces, resolution)
+
+    # add a column of 3s to faces_wt (vtk uses this to know how many points to use for each face)
+    faces_wt = np.hstack((np.ones((faces_wt.shape[0], 1), dtype=int)*3, faces_wt))
+
+    # create new mesh
+    new_mesh = pv.PolyData(points_wt, faces_wt)
+
+    return new_mesh
+
+def consistent_normals(mesh):
+    """
+    update faces of mesh to be consistently oriented using pcu
+    """
+    # get faces and points
+    faces, points = get_faces_vertices(mesh)
+    # get consistent normals
+    faces_consitent, _ = pcu.orient_mesh_faces(faces)
+    # add a column of 3s to faces_consitent (vtk uses this to know how many points to use for each face)
+    faces_consitent = np.hstack((np.ones((faces_consitent.shape[0], 1))*3, faces_consitent))
+    # create new mesh
+    new_mesh = pv.PolyData(points, faces_consitent.astype(int))
+
+    return new_mesh
 
 
 def get_mesh_edge_lengths(mesh):
