@@ -316,27 +316,7 @@ class ProcrustesRegistration:
             # register the reference mesh to all other meshes
             for idx, path in enumerate(self.list_mesh_paths):
                 registered_pt_coords_, registered_vertex_features_, registered_icp_transform = self.registration_step(idx, path)
-                # if self.verbose is True:
-                #     print(f'\tRegistering to mesh # {idx}')
-                # # skip the first mesh in the list if its the first round (its the reference)
-                # if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
-                #     # first iteration & ref mesh, just use points as they are. 
-                #     registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
-                #     if self.vertex_features is not None:
-                #         registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[idx])
-                #     registered_icp_transforms.append(None)
-                # else:
-                #     # register & save registered coordinates in the pre-allocated array
-                #     coords, features, icp_transform = self.register(self._ref_mesh, idx)
-                #     registered_pt_coords[idx, :, :] = coords
-                #     if self.vertex_features is not None:
-                #         registered_vertex_features[idx, :, :] = features
-                #     registered_icp_transforms.append(icp_transform)
                 
-                # # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
-                # if self.save_meshes_during_registration is True:
-                #     path_to_save = self.get_path_save_mesh(path, idx=None, mesh_suffix=None)  # use global suffix, and no idx
-                #     self.save_mesh(self._ref_mesh, registered_pt_coords[idx, :, :], registered_vertex_features[idx, :, :], path_to_save)
                 registered_pt_coords[idx, :, :] = registered_pt_coords_
                 if self.vertex_features is not None:
                     registered_vertex_features[idx, :, :] = registered_vertex_features_
@@ -426,25 +406,7 @@ class ProcrustesRegistration:
 
         mesh = vtk_deep_copy(self._ref_mesh)
         for idx, path in enumerate(self.list_mesh_paths):
-            # parse folder / filename for saving
-            # orig_folder = os.path.dirname(path)
-            # orig_filename = os.path.basename(path)
-            # base_filename = orig_filename[: orig_filename.rfind(".")]
-            # filename = f'{base_filename}_{mesh_suffix}_{idx}.vtk'
-            # if self.folder_save is None:
-            #     path_to_save = os.path.join(orig_folder, filename)
-            # else:
-            #     path_to_save = os.path.join(os.path.abspath(self.folder_save), filename)
-
             path_to_save = self.get_path_save_mesh(path, idx=idx, mesh_suffix=mesh_suffix)     
-            
-            # # Keep recycling the same base mesh, just move the x/y/z point coords around. 
-            # set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
-            # if self.vertex_features is not None:
-            #     set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
-            # # save mesh to disk
-            # io.write_vtk(mesh, path_to_save)
-
             self.save_mesh(mesh, self._registered_pt_coords[idx, :, :], self._registered_vertex_features[idx, :, :], path_to_save)
     
     def save_icp_transforms(
