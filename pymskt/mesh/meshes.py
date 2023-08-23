@@ -28,6 +28,7 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    resample_surface,
                                    get_distance_other_surface_at_points,
                                    fix_mesh,
+                                   consistent_normals,
                                    get_mesh_edge_lengths
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
@@ -250,17 +251,27 @@ class Mesh:
         """        
         io.write_vtk(self._mesh, filepath, write_binary=write_binary)
     
-    def fix_mesh(self, verbose=True):
+    def fix_mesh(self, method='meshfix', treat_as_single_component=False, resolution=50000, verbose=True):
         """
         Fix the surface mesh by removing duplicate points and cells.
 
         Parameters
         ----------
+        method : str, optional
+            Method to use to fix the mesh, by default 'meshfix'
+        resolution : int, optional
+            Resolution to use if pcu watertight method is used, by default 50000
         verbose : bool, optional
             Should the function print out information about the mesh fixing
             process, by default True
         """        
-        self._mesh = fix_mesh(self._mesh, verbose=verbose)
+        self._mesh = fix_mesh(self._mesh, method=method, treat_as_single_component=treat_as_single_component, resolution=resolution, verbose=verbose)
+    
+    def consistent_faces(self):
+        """
+        Make the faces of the mesh consistent. 
+        """
+        self._mesh = consistent_normals(self._mesh)
     
     def load_mesh_scalars(self):
         """
@@ -1284,7 +1295,8 @@ class BoneMesh(Mesh):
                                  image_smooth_var_cart=0.3125 / 2,
                                  marching_cubes_threshold=0.5,
                                  ray_cast_length=10.0,
-                                 percent_ray_length_opposite_direction=0.25):
+                                 percent_ray_length_opposite_direction=0.25,
+                                 n_intersections=2):
         """
         Assign cartilage regions to the bone surface (e.g. medial/lateral tibial cartilage)
         - Can also be used for femur sub-regions (anterior, medial weight-bearing, etc.)
@@ -1302,6 +1314,9 @@ class BoneMesh(Mesh):
         percent_ray_length_opposite_direction : float, optional
             How far to project ray inside of the bone. This is done just in case the cartilage
             surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
+        n_intersections : int, optional
+            Number of intersections to use when ray casting to find cartilage regions, by default 2
+            Only use 1 if not using for cartilage and just want to see what object is closest to the bone.
         """        
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
         path_save_tmp_file = os.path.join('/tmp', tmp_filename)
@@ -1338,7 +1353,8 @@ class BoneMesh(Mesh):
                                                            t2_vtk_image=None,
                                                            seg_vtk_image=vtk_seg,
                                                            ray_cast_length=ray_cast_length,
-                                                           percent_ray_length_opposite_direction=percent_ray_length_opposite_direction
+                                                           percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
+                                                           n_intersections=n_intersections
                                                            )
             labels += node_data[1]
             cart_mesh.reverse_all_transforms()
