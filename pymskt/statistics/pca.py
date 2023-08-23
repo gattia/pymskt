@@ -7,6 +7,7 @@ from vtk.util.numpy_support import numpy_to_vtk
 from pymskt.mesh.utils import GIF
 import os
 from pymskt.mesh.io import write_vtk
+from pymskt.mesh import io
 
 def pca_svd(data):
     """
@@ -459,3 +460,87 @@ def save_gif_vec_2_vec(
         gif.add_mesh_frame(mesh)
 
     gif.done()
+
+
+def save_mesh_vec_2_vec(
+    path_save,
+    PCs,
+    Vs,
+    mean_coords,  # mean_coords could be extracted from mean mesh...?
+    mean_mesh,
+    vec_1,
+    vec_2,
+    n_steps=24,
+    features=None,
+    verbose=False,
+):
+    """
+    Function to save a gif of the SSM from vec_1 to vec_2. All PCs that are not defined
+    are assumed to not be included in the midel. 
+
+    Parameters
+    ----------
+    path_save : str
+        Path to save the meshes to.
+    PCs : numpy.ndarray
+        SSM Principal Components.
+    Vs : numpy.ndarray
+        SSM Variances.
+    mean_coords : numpy.ndarray
+        NxM ndarray; N = number of meshes, M = number of points x n_dimensions
+    mean_mesh : vtk.PolyData
+        vtk polydata of the mean mesh
+    vec_1 : np.ndarray
+        Starting point for mesh deformation
+    vec_2 : np.ndarray
+        Ending point for mesh deformation
+    n_steps : int, optional
+        The number of steps to take between the two vectors, by default 24
+    features : list, optional
+        List of feature names, by default None
+    verbose : bool, optional
+        Whether to print progress to console, by default False
+
+
+    """
+    if os.path.exists(path_save) == False:
+        os.makedirs(path_save, exist_ok=True)
+
+    if PCs.shape[0] == np.product(mean_coords.shape):
+        PCs = PCs.T
+    elif PCs.shape[1] == np.product(mean_coords.shape):
+        pass
+    else:
+        raise Exception('PCs should be the same length as the mean vector')
+    
+    # convert vec_1 and vec_2 to unnormalized scale
+    # currently they are expected to be put in as "standard deviations" along each PC
+    SDs = np.sqrt(Vs[:len(vec_1)])
+    vec_1 = SDs * vec_1
+    vec_2 = SDs * vec_2       
+    
+    if len(vec_1) != len(vec_2):
+        raise Exception('Two vectors must be equal sized. ')
+
+    # calculated the vector between point 1 and point 2. 
+    # and then determine what step vector we must take for each
+    # step to end up at vec_2.  
+    vec_diff = vec_2 - vec_1
+    vec_step = vec_diff/n_steps
+    
+    for step in range(n_steps + 1):
+        if verbose is True:
+            print(f'Deforming step = {step}')
+        
+        # calcualte the vector we are plotting for the current step. 
+        vec_ = vec_1 + (step * vec_step)
+        
+        # calculated the coordinate deformation. & deformed points
+        coords_deformation = vec_ @ PCs[:len(vec_), :]
+        deformed_coords = (mean_coords.flatten() + coords_deformation).reshape(mean_coords.shape)
+        
+        # create new mesh(es) from deformed points
+        mesh = create_vtk_mesh_from_deformed_points(mean_mesh, deformed_coords, features=features)
+
+        io.write_vtk(mesh, os.path.join(path_save, f'mesh_{step}.vtk'))
+
