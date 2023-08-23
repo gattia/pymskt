@@ -159,6 +159,10 @@ class ProcrustesRegistration:
                                              # already did femur for knee, now applying to tibia/patella
         vertex_features=None,
         include_ref_in_sample=True,
+
+        save_meshes_during_registration=False,
+        folder_save=None,
+        save_mesh_suffix=f'procrustes_registered_{today.strftime("%b")}_{today.day}_{today.year}',
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -227,6 +231,10 @@ class ProcrustesRegistration:
 
         self.error_2_error_change = 100
 
+        self.save_meshes_during_registration = save_meshes_during_registration
+        self.folder_save = folder_save
+        self.save_mesh_suffix = save_mesh_suffix
+
     def register(self, ref_mesh_source, other_mesh_idx):
         target_mesh = io.read_vtk(self.list_mesh_paths[other_mesh_idx])
 
@@ -250,6 +258,34 @@ class ProcrustesRegistration:
 
         return coords, features, icp_transform
     
+    def registration_step(
+        self,
+        idx,
+        path,
+    ):
+        if self.verbose is True:
+            print(f'\tRegistering to mesh # {idx}')
+        # skip the first mesh in the list if its the first round (its the reference)
+        if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
+            # first iteration & ref mesh, just use points as they are. 
+            registered_pt_coords = get_mesh_physical_point_coords(self._ref_mesh)
+            if self.vertex_features is not None:
+                registered_vertex_features = get_mesh_point_features(self._ref_mesh, self.vertex_features)
+            registered_icp_transform = None
+        else:
+            # register & save registered coordinates in the pre-allocated array
+            registered_pt_coords, features, icp_transform = self.register(vtk_deep_copy(self._ref_mesh), idx)
+            if self.vertex_features is not None:
+                registered_vertex_features = features
+            registered_icp_transform = icp_transform
+        
+        # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
+        if self.save_meshes_during_registration is True:
+            path_to_save = self.get_path_save_mesh(path, idx=None, mesh_suffix=None)  # use global suffix, and no idx
+            self.save_mesh(self._ref_mesh, registered_pt_coords, registered_vertex_features, path_to_save)
+        
+        return registered_pt_coords, registered_vertex_features, registered_icp_transform
+
     def execute(self):
         # create placeholder to store registered point clouds & update inherited one only if also storing 
         registered_pt_coords = np.zeros_like(self._registered_pt_coords)
@@ -279,25 +315,32 @@ class ProcrustesRegistration:
 
             # register the reference mesh to all other meshes
             for idx, path in enumerate(self.list_mesh_paths):
-                if self.verbose is True:
-                    print(f'\tRegistering to mesh # {idx}')
-                # skip the first mesh in the list if its the first round (its the reference)
-                if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
-                    # first iteration & ref mesh, just use points as they are. 
-                    registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
-                    if self.vertex_features is not None:
-                        registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[idx])
-                        # for i, feature in enumerate(self.vertex_features):
-                        #     feature_vec = vtk_to_numpy(self._ref_mesh.GetPointData().GetArray(feature))
-                        #     registered_vertex_features[idx, :, i] = feature_vec.copy()
-                    registered_icp_transforms.append(None)
-                else:
-                    # register & save registered coordinates in the pre-allocated array
-                    coords, features, icp_transform = self.register(self._ref_mesh, idx)
-                    registered_pt_coords[idx, :, :] = coords
-                    if self.vertex_features is not None:
-                        registered_vertex_features[idx, :, :] = features
-                    registered_icp_transforms.append(icp_transform)
+                registered_pt_coords_, registered_vertex_features_, registered_icp_transform = self.registration_step(idx, path)
+                # if self.verbose is True:
+                #     print(f'\tRegistering to mesh # {idx}')
+                # # skip the first mesh in the list if its the first round (its the reference)
+                # if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
+                #     # first iteration & ref mesh, just use points as they are. 
+                #     registered_pt_coords[idx, :, :] = get_mesh_physical_point_coords(self._ref_mesh)
+                #     if self.vertex_features is not None:
+                #         registered_vertex_features[idx, :, :] = get_mesh_point_features(self._ref_mesh, self.vertex_features[idx])
+                #     registered_icp_transforms.append(None)
+                # else:
+                #     # register & save registered coordinates in the pre-allocated array
+                #     coords, features, icp_transform = self.register(self._ref_mesh, idx)
+                #     registered_pt_coords[idx, :, :] = coords
+                #     if self.vertex_features is not None:
+                #         registered_vertex_features[idx, :, :] = features
+                #     registered_icp_transforms.append(icp_transform)
+                
+                # # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
+                # if self.save_meshes_during_registration is True:
+                #     path_to_save = self.get_path_save_mesh(path, idx=None, mesh_suffix=None)  # use global suffix, and no idx
+                #     self.save_mesh(self._ref_mesh, registered_pt_coords[idx, :, :], registered_vertex_features[idx, :, :], path_to_save)
+                registered_pt_coords[idx, :, :] = registered_pt_coords_
+                if self.vertex_features is not None:
+                    registered_vertex_features[idx, :, :] = registered_vertex_features_
+                registered_icp_transforms.append(registered_icp_transform)
             
             # Calculate the mean bone shape & create new mean bone shape mesh
             mean_shape = np.mean(registered_pt_coords, axis=0)
@@ -337,6 +380,38 @@ class ProcrustesRegistration:
                 break           
                 
             self.reg_idx += 1
+    
+    def get_path_save_mesh(
+        self, 
+        path,
+        idx=None,
+        mesh_suffix=None,
+    ):
+        if mesh_suffix is not None:
+            self.save_mesh_suffix = mesh_suffix
+        orig_folder = os.path.dirname(path)
+        orig_filename = os.path.basename(path)
+        base_filename = orig_filename[: orig_filename.rfind(".")]
+        if idx is not None:
+            filename = f'{base_filename}_{self.save_mesh_suffix}_{idx}.vtk'
+        else:
+            filename = f'{base_filename}_{self.save_mesh_suffix}.vtk'
+            
+        if self.folder_save is None:
+            path_to_save = os.path.join(orig_folder, filename)
+        else:
+            path_to_save = os.path.join(os.path.abspath(self.folder_save), filename)
+
+        return path_to_save 
+    
+    def save_mesh(self, mesh, registered_pts, registered_features, path_to_save):
+        mesh_ = vtk_deep_copy(mesh)
+        # Keep recycling the same base mesh, just move the x/y/z point coords around. 
+        set_mesh_physical_point_coords(mesh_, registered_pts)
+        if self.vertex_features is not None:
+            set_mesh_point_features(mesh=mesh_, features=registered_features, feature_names=self.vertex_features)
+        # save mesh to disk
+        io.write_vtk(mesh_, path_to_save)
 
     def save_meshes(
         self, 
@@ -344,25 +419,33 @@ class ProcrustesRegistration:
         folder=None
     ):  
         if folder is not None:
-            os.makedirs(folder, exist_ok=True)
+            self.folder_save = folder
+
+        if self.folder_save is not None:
+            os.makedirs(self.folder_save, exist_ok=True)
+
         mesh = vtk_deep_copy(self._ref_mesh)
         for idx, path in enumerate(self.list_mesh_paths):
             # parse folder / filename for saving
-            orig_folder = os.path.dirname(path)
-            orig_filename = os.path.basename(path)
-            base_filename = orig_filename[: orig_filename.rfind(".")]
-            filename = f'{base_filename}_{mesh_suffix}_{idx}.vtk'
-            if folder is None:
-                path_to_save = os.path.join(orig_folder, filename)
-            else:
-                path_to_save = os.path.join(os.path.abspath(folder), filename)        
+            # orig_folder = os.path.dirname(path)
+            # orig_filename = os.path.basename(path)
+            # base_filename = orig_filename[: orig_filename.rfind(".")]
+            # filename = f'{base_filename}_{mesh_suffix}_{idx}.vtk'
+            # if self.folder_save is None:
+            #     path_to_save = os.path.join(orig_folder, filename)
+            # else:
+            #     path_to_save = os.path.join(os.path.abspath(self.folder_save), filename)
+
+            path_to_save = self.get_path_save_mesh(path, idx=idx, mesh_suffix=mesh_suffix)     
             
-            # Keep recycling the same base mesh, just move the x/y/z point coords around. 
-            set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
-            if self.vertex_features is not None:
-                set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
-            # save mesh to disk
-            io.write_vtk(mesh, path_to_save)
+            # # Keep recycling the same base mesh, just move the x/y/z point coords around. 
+            # set_mesh_physical_point_coords(mesh, self._registered_pt_coords[idx, :, :])
+            # if self.vertex_features is not None:
+            #     set_mesh_point_features(mesh=mesh, features=self._registered_vertex_features[idx, :, :], feature_names=self.vertex_features)
+            # # save mesh to disk
+            # io.write_vtk(mesh, path_to_save)
+
+            self.save_mesh(mesh, self._registered_pt_coords[idx, :, :], self._registered_vertex_features[idx, :, :], path_to_save)
     
     def save_icp_transforms(
         self,
