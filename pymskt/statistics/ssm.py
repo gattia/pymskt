@@ -3,10 +3,13 @@ from pymskt.mesh import io
 from pymskt.mesh.meshTools import get_mesh_physical_point_coords, get_mesh_point_features
 from pymskt.mesh.meshRegistration import non_rigidly_register
 from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif, save_gif_vec_2_vec
+from pymskt.mesh import Mesh
+from pymskt.mesh.utils import vtk_deep_copy
 import numpy as np
 import os
 import json
 from datetime import datetime
+
 
 class SSM:
     def __init__(self,
@@ -178,7 +181,7 @@ class SSM:
                 if self.verbose is True:
                     print(f'Feature {self.vertex_features[idx]} std: {self._std_features[idx]}')
         
-        self._centered = self.apply_normalization(self._centered)
+        self._centered = self.apply_normalization(self.points)
         # self._centered[:, :3*self.n_points] = self._centered[:, :3*self.n_points] / self._std_geometric
         # if self.vertex_features is not None:
         #     for idx in range(len(self.vertex_features)):
@@ -228,7 +231,7 @@ class SSM:
 
         return dict_dump
 
-    def save_model(self, folder=None, PCs_filename='PCs', Vs_filename='Vs'):
+    def save_model(self, folder=None, PCs_filename='PCs', Vs_filename='Vs', save_points=False):
         """
         Save PCA-based model
         Notes
@@ -245,12 +248,17 @@ class SSM:
         # Save mean mesh
         io.write_vtk(self._ref_mesh, os.path.join(folder, 'ref_mesh.vtk'))
 
+        io.write_vtk(self._mean_mesh().mesh, os.path.join(folder, 'mean_mesh.vtk'))
+
         # save mean features / everything? 
         np.save(os.path.join(folder, 'mean_features.npy'), self._mean)
         # save std of geometric points / features:
         with open(os.path.join(folder, 'ssm_model_information.json'), 'w') as f:
             dict_model_params = self.get_dict_model_params(PCs_filename, Vs_filename)
             json.dump(dict_model_params, f, indent=4)
+        
+        if save_points is True:
+            np.save(os.path.join(folder, 'points.npy'), self.points)
 
     def load_model(self, folder):
         """Load PCA-based model"""
@@ -278,6 +286,12 @@ class SSM:
         self.n_spectral_features = dict_model_params['n_spectral_features']
         self.n_extra_spectral = dict_model_params['n_extra_spectral']
         self.include_points_as_features = dict_model_params['include_points_as_features']
+
+        self._list_mesh_paths = dict_model_params['list_mesh_locations']
+
+        if os.path.exists(os.path.join(folder, 'points.npy')):
+            self.points = np.load(os.path.join(folder, 'points.npy'))
+            self._points_loaded = True
 
     def calculate_total_variance(self):
         """Calculate total variance"""
@@ -392,12 +406,15 @@ class SSM:
         return registered_mesh
 
     def apply_normalization(self, array):
+        array = array.copy()
         if len(array.shape) == 1:
             assert(array.shape[0] == self._mean.shape[0])
             array = np.expand_dims(array, axis=0)
         else:
             assert(array.shape[1] == self._mean.shape[0])
+
         array -= self._mean
+
         array[:, :3*self.n_points] = array[:, :3*self.n_points] / self._std_geometric
         
         if self.vertex_features is not None:
@@ -440,8 +457,18 @@ class SSM:
             scores = self.PCs[:,pc].T @ features.T
             scores /= (np.sqrt(self.Vs)[pc, None])
         return scores
-                        
-    
+
+    def _mean_mesh(self):
+        xyz = self._mean[: 3 * self.n_points].reshape(-1, 3)
+        mesh = Mesh(vtk_deep_copy(self._ref_mesh))
+        mesh.point_coords = xyz
+
+        if self.vertex_features is not None:
+            for idx, vertex_feature in enumerate(self.vertex_features):
+                mesh.set_scalar(vertex_feature, self._mean[(3+idx)*self.n_points:(3+idx+1)*self.n_points])
+        
+        return mesh
+
     # GETTERS
     @property
     def list_mesh_paths(self):
@@ -456,6 +483,10 @@ class SSM:
         return self._mean
     
     @property
+    def mean_mesh(self):
+        return self._mean_mesh()
+
+    @property
     def std(self):
         return self._std
     
@@ -469,6 +500,8 @@ class SSM:
     
     @property
     def centered(self):
+        if self._points_normalized is False:
+            self.normalize_points()
         return self._centered
     
     @property
