@@ -381,6 +381,9 @@ class GIF:
                     show_edges=self._show_edges,
                     cmap=self._cmap,
                     clim=self._scalar_bar_range,
+                    lighting=False,
+                    n_colors=1000,
+                    # pbr=True,
                 ))
         else:
             actor = self._plotter.add_mesh(
@@ -391,12 +394,14 @@ class GIF:
                 show_edges=self._show_edges,
                 cmap=self._cmap,
                 clim=self._scalar_bar_range,
-
+                lighting=False,
+                # n_colors=1000,
+                # pbr=True,
             )
 
         if self.counter == 0:
             self.update_view()
-        self._plotter.update_scalar_bar_range(clim=self._scalar_bar_range)
+        # self._plotter.update_scalar_bar_range(clim=self._scalar_bar_range)
         self._plotter.write_frame()
         
         if type(mesh) in (list, tuple):

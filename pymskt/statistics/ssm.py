@@ -349,13 +349,17 @@ class SSM:
         path_save,
         vec_start,
         vec_end,
-        n_steps=24,
-        camera_position='xz',
-        window_size=[900, 1200],
-        background_color='white',
-        scalar_bar_range=[0, 4],
-        cmap=None
+        # n_steps=24,
+        # camera_position='xz',
+        # window_size=[900, 1200],
+        # background_color='white',
+        # scalar_bar_range=[0, 4],
+        # cmap=None,
+        **kwargs
     ):
+        if (self.vertex_features is None) and ('color' not in kwargs):
+            kwargs['color'] = 'orange'
+
         save_gif_vec_2_vec(
             path_save,
             PCs=self._PCs,
@@ -364,16 +368,18 @@ class SSM:
             mean_mesh=self._ref_mesh,
             vec_1=vec_start,
             vec_2=vec_end,
-            n_steps=n_steps,
-            features=None,
-            color='orange' if self.vertex_features is None else None, 
-            show_edges=True, 
-            edge_color='black',
-            camera_position=camera_position,
-            window_size=window_size, #[3000, 4000],
-            background_color=background_color,
-            scalar_bar_range=scalar_bar_range,
-            cmap=cmap,
+            # color='orange' if self.vertex_features is None else None, 
+            # show_edges=True, 
+            # edge_color='black',
+
+            # n_steps=n_steps,
+            # camera_position=camera_position,
+            # window_size=window_size, #[3000, 4000],
+            # background_color=background_color,
+            # scalar_bar_range=scalar_bar_range,
+            # cmap=cmap,
+            **kwargs
+            # features=None,
             # verbose=False,
         )
     
