@@ -2,6 +2,7 @@ from re import sub
 import numpy as np
 from datetime import date
 import os
+from multiprocessing import Pool
 
 import pyvista as pv
 import pyacvd
@@ -20,7 +21,7 @@ from pymskt.mesh.meshTools import (
     get_mesh_point_features,
     transfer_mesh_scalars_get_weighted_average_n_closest
 )
-from pymskt.mesh.meshTransform import apply_transform, write_linear_transform
+from pymskt.mesh.meshTransform import apply_transform, write_linear_transform, read_linear_transform
 from pymskt.mesh.utils import get_symmetric_surface_distance, vtk_deep_copy
 from pymskt.mesh import io 
 
@@ -163,6 +164,7 @@ class ProcrustesRegistration:
         save_meshes_during_registration=False,
         folder_save=None,
         save_mesh_suffix=f'procrustes_registered_{today.strftime("%b")}_{today.day}_{today.year}',
+        multiprocessing=True,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -234,6 +236,7 @@ class ProcrustesRegistration:
         self.save_meshes_during_registration = save_meshes_during_registration
         self.folder_save = folder_save
         self.save_mesh_suffix = save_mesh_suffix
+        self.multiprocessing = multiprocessing
 
     def register(self, ref_mesh_source, other_mesh_idx):
         target_mesh = io.read_vtk(self.list_mesh_paths[other_mesh_idx])
@@ -262,19 +265,25 @@ class ProcrustesRegistration:
         self,
         idx,
         path,
+        ref_mesh
     ):
+        # This is a helper function to allow for multiprocessing to work
+        # becuase cant pickle vtk objects, instead we read them from disk. 
+        if type(ref_mesh) is str:
+            ref_mesh = io.read_vtk(ref_mesh)
+
         if self.verbose is True:
             print(f'\tRegistering to mesh # {idx}')
         # skip the first mesh in the list if its the first round (its the reference)
         if (self.reg_idx == 0) & (idx == 0) & (self.include_ref_in_sample is True):
             # first iteration & ref mesh, just use points as they are. 
-            registered_pt_coords = get_mesh_physical_point_coords(self._ref_mesh)
+            registered_pt_coords = get_mesh_physical_point_coords(ref_mesh)
             if self.vertex_features is not None:
-                registered_vertex_features = get_mesh_point_features(self._ref_mesh, self.vertex_features)
+                registered_vertex_features = get_mesh_point_features(ref_mesh, self.vertex_features)
             registered_icp_transform = None
         else:
             # register & save registered coordinates in the pre-allocated array
-            registered_pt_coords, features, icp_transform = self.register(vtk_deep_copy(self._ref_mesh), idx)
+            registered_pt_coords, features, icp_transform = self.register(vtk_deep_copy(ref_mesh), idx)
             if self.vertex_features is not None:
                 registered_vertex_features = features
             registered_icp_transform = icp_transform
@@ -282,7 +291,7 @@ class ProcrustesRegistration:
         # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
         if self.save_meshes_during_registration is True:
             path_to_save = self.get_path_save_mesh(path, idx=None, mesh_suffix=None)  # use global suffix, and no idx
-            self.save_mesh(self._ref_mesh, registered_pt_coords, registered_vertex_features, path_to_save)
+            self.save_mesh(self.ref_mesh, registered_pt_coords, registered_vertex_features, path_to_save)
         
         return registered_pt_coords, registered_vertex_features, registered_icp_transform
 
@@ -314,9 +323,34 @@ class ProcrustesRegistration:
                     registered_pt_coords = np.zeros((len(self.list_mesh_paths), self.n_points, 3), dtype=float)
 
             # register the reference mesh to all other meshes
-            for idx, path in enumerate(self.list_mesh_paths):
-                registered_pt_coords_, registered_vertex_features_, registered_icp_transform = self.registration_step(idx, path)
-                
+            if self.multiprocessing is True:
+                # get temp folder to save reference mesh
+                temp_folder = os.path.join(os.path.dirname(self.list_mesh_paths[0]), 'temp')
+                os.makedirs(temp_folder, exist_ok=True)
+                temp_path = os.path.join(temp_folder, 'temp_ref_mesh.vtk')
+                io.write_vtk(self._ref_mesh, temp_path)
+
+                args_list = [(idx, temp_path, self.reg_idx, self.include_ref_in_sample, self.vertex_features, self.list_mesh_paths, self.ref_mesh_eigenmap_as_reference, self.kwargs, self.verbose) for idx, path in enumerate(self.list_mesh_paths)]
+
+                with Pool(processes=5) as pool:
+                    results = pool.starmap(registration_step, args_list)
+
+                # Close the pool and wait for worker processes to finish
+            else:
+                results = [registration_step(idx, self._ref_mesh, self.reg_idx, self.include_ref_in_sample, self.vertex_features, self.list_mesh_paths, self.ref_mesh_eigenmap_as_reference, self.kwargs, self.verbose) for idx, path in enumerate(self.list_mesh_paths)]
+
+            # for idx, path in enumerate(self.list_mesh_paths):
+            for idx, (registered_pt_coords_, registered_vertex_features_, registered_icp_transform_) in enumerate(results):
+                # registered_pt_coords_, registered_vertex_features_, registered_icp_transform = self.registration_step(idx, path)
+                if type(registered_icp_transform_) is str:
+                    # if the registered_icp_transform is a string, then it is a path to a temp file
+                    # that was created to save the transform. 
+                    # read the transform from disk & delete the temp file. 
+                    registered_icp_transform = read_linear_transform(registered_icp_transform_)
+                    os.remove(registered_icp_transform_)
+                else:
+                    registered_icp_transform = registered_icp_transform_
+
                 registered_pt_coords[idx, :, :] = registered_pt_coords_
                 if self.vertex_features is not None:
                     registered_vertex_features[idx, :, :] = registered_vertex_features_
@@ -458,3 +492,92 @@ class ProcrustesRegistration:
     def registered_icp_transforms(self):
         return self._registered_icp_transforms
     
+
+def register(
+    ref_mesh_source,
+    path_other_mesh,
+    ref_mesh_eigenmap_as_reference,
+    vertex_features,
+    kwargs
+):
+    target_mesh = io.read_vtk(path_other_mesh)
+
+    registered_mesh, icp_transform = non_rigidly_register(
+        target_mesh=target_mesh,
+        source_mesh=ref_mesh_source,
+        target_eigenmap_as_reference=not ref_mesh_eigenmap_as_reference,
+        transfer_scalars=True if vertex_features is not None else False,
+        return_icp_transform=True,
+        **kwargs
+    )
+
+    coords = get_mesh_physical_point_coords(registered_mesh)
+
+    n_points = coords.shape[0]
+
+    if vertex_features is not None:
+        features = get_mesh_point_features(registered_mesh, vertex_features)           
+    else:
+        features = None
+
+    return coords, features, icp_transform
+
+def registration_step(
+    idx,
+    # path,
+    ref_mesh,
+    reg_idx,
+    include_ref_in_sample,
+    vertex_features,
+    # save_meshes_during_registration,
+    list_mesh_paths,
+    ref_mesh_eigenmap_as_reference,
+    kwargs,
+    verbose
+    
+):
+    # This is a helper function to allow for multiprocessing to work
+    # becuase cant pickle vtk objects, instead we read them from disk. 
+    if type(ref_mesh) is str:
+        mp = True
+        ref_mesh = io.read_vtk(ref_mesh)
+    else:
+        mp = False
+
+    if verbose is True:
+        print(f'\tRegistering to mesh # {idx}')
+    # skip the first mesh in the list if its the first round (its the reference)
+    if (reg_idx == 0) & (idx == 0) & (include_ref_in_sample is True):
+        # first iteration & ref mesh, just use points as they are. 
+        registered_pt_coords = get_mesh_physical_point_coords(ref_mesh)
+        if vertex_features is not None:
+            registered_vertex_features = get_mesh_point_features(ref_mesh, vertex_features)
+        registered_icp_transform = None
+    else:
+        # register & save registered coordinates in the pre-allocated array
+        registered_pt_coords, features, icp_transform = register(
+            vtk_deep_copy(ref_mesh),
+            path_other_mesh=list_mesh_paths[idx],
+            vertex_features=vertex_features,
+            ref_mesh_eigenmap_as_reference=ref_mesh_eigenmap_as_reference,
+            kwargs=kwargs
+        )
+        if vertex_features is not None:
+            registered_vertex_features = features
+        registered_icp_transform = icp_transform
+    
+    # # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
+    # if save_meshes_during_registration is True:
+    #     path_to_save = self.get_path_save_mesh(path, idx=None, mesh_suffix=None)  # use global suffix, and no idx
+    #     self.save_mesh(self.ref_mesh, registered_pt_coords, registered_vertex_features, path_to_save)
+    
+    if (mp is True) and (registered_icp_transform is not None):
+        # write the registered_icp_transform to disk & return the path
+        # get temp path to save the transform
+        filename = os.path.basename(list_mesh_paths[idx]).split('.vtk')[0]
+        temp_filename = filename + '_temp_icp_transform.json'
+        temp_path = os.path.join(os.path.dirname(list_mesh_paths[idx]), temp_filename)
+        write_linear_transform(registered_icp_transform, temp_path)
+        registered_icp_transform = temp_path
+
+    return registered_pt_coords, registered_vertex_features, registered_icp_transform
