@@ -36,6 +36,11 @@ class SSM:
                  feature_norm_include_pt_if_any_mesh_has_value=True,
 
                  include_ref_mesh=True,
+                 
+                 # Multiprocessing
+                 multiprocessing=True,
+                 num_processes=None,
+
                  verbose=False,
                 ):
         # Pre-process list(s) of meshes & related info. 
@@ -73,6 +78,11 @@ class SSM:
 
         self._points_loaded = False
         self._points_normalized = False
+        
+        # Multiprocessing
+        self.multiprocessing = multiprocessing
+        self.num_processes = num_processes
+
         self.verbose = verbose
     
     def parse_list_mesh_paths(self):
@@ -120,7 +130,9 @@ class SSM:
             n_coords_spectral_registration=self.n_coords_spectral_registration,
             n_extra_spectral=self.n_extra_spectral,
             include_points_as_features=self.include_points_as_features,
-            vertex_features=self.vertex_features,    
+            vertex_features=self.vertex_features,
+            multiprocessing=self.multiprocessing,
+            num_processes=self.num_processes,
         )
 
         procrustes_reg.execute()
