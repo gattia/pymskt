@@ -84,6 +84,7 @@ def non_rigidly_register(
     final_correspondence_type='kd',          # kd = nearest neightbor, hungarian = minimum cost of assigning between graphs (more compute heavy)
     transfer_scalars=False,
     return_icp_transform=False,
+    verbose=False
 ):
     
     if 'pyfocusr' not in sys.modules:
@@ -136,7 +137,8 @@ def non_rigidly_register(
         n_coords_spectral_ordering=n_coords_spectral_ordering,
         n_coords_spectral_registration=n_coords_spectral_registration,
         initial_correspondence_type=initial_correspondence_type,
-        final_correspondence_type=final_correspondence_type
+        final_correspondence_type=final_correspondence_type,
+        verbose=verbose
     ) 
     reg.align_maps()
 

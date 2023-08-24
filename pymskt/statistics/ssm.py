@@ -9,6 +9,7 @@ import numpy as np
 import os
 import json
 from datetime import datetime
+# import multiprocessing
 
 
 class SSM:
@@ -432,6 +433,7 @@ class SSM:
             n_extra_spectral=self.n_extra_spectral,
             include_points_as_features=self.include_points_as_features,
             transfer_scalars=True if self.vertex_features is not None else False,
+            verbose=self.verbose
         )
         return registered_mesh
 
@@ -569,6 +571,32 @@ class SSM:
     def ref_mesh(self, value):
         self._ref_mesh = value
 
-    
-        
+
+
+# def register_meshes(args):
+#     idx, path_ref_mesh, list_mesh_paths, max_n_procrustes_steps, n_coords_spectral_ordering, n_coords_spectral_registration, n_extra_spectral, include_points_as_features, vertex_features = args
+#     procrustes_reg = ProcrustesRegistration(
+#         path_ref_mesh=path_ref_mesh,
+#         list_mesh_paths=[list_mesh_paths[idx]],
+#         max_n_registration_steps=max_n_procrustes_steps,
+#         n_coords_spectral_ordering=n_coords_spectral_ordering,
+#         n_coords_spectral_registration=n_coords_spectral_registration,
+#         n_extra_spectral=n_extra_spectral,
+#         include_points_as_features=include_points_as_features,
+#         vertex_features=vertex_features,
+#     )
+#     procrustes_reg.execute()
+#     return procrustes_reg.registered_pt_coords[idx,:,:], procrustes_reg.registered_vertex_features[idx,:,:]
+
+# def find_point_correspondence(self):
+#     # ...
+#     pool = multiprocessing.Pool()
+#     args_list = [(idx, self._path_ref_mesh, self._list_mesh_paths, self.max_n_procrustes_steps, self.n_coords_spectral_ordering, self.n_coords_spectral_registration, self.n_extra_spectral, self.include_points_as_features, self.vertex_features) for idx in range(self.n_meshes)]
+#     results = pool.map(register_meshes, args_list)
+#     pool.close()
+#     pool.join()
+#     for idx, (pt_coords, vertex_features) in enumerate(results):
+#         self.registered_pt_coords[idx,:,:] = pt_coords
+#         self.registered_vertex_features[idx,:,:] = vertex_features
+#     # ...
         
