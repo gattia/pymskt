@@ -247,6 +247,7 @@ class ProcrustesRegistration:
             target_eigenmap_as_reference=not self.ref_mesh_eigenmap_as_reference,
             transfer_scalars=True if self.vertex_features is not None else False,
             return_icp_transform=True,
+            verbose=self.verbose,
             **self.kwargs
         )
 
@@ -498,6 +499,7 @@ def register(
     path_other_mesh,
     ref_mesh_eigenmap_as_reference,
     vertex_features,
+    verbose,
     kwargs
 ):
     target_mesh = io.read_vtk(path_other_mesh)
@@ -508,6 +510,7 @@ def register(
         target_eigenmap_as_reference=not ref_mesh_eigenmap_as_reference,
         transfer_scalars=True if vertex_features is not None else False,
         return_icp_transform=True,
+        verbose=verbose,
         **kwargs
     )
 
@@ -560,6 +563,7 @@ def registration_step(
             path_other_mesh=list_mesh_paths[idx],
             vertex_features=vertex_features,
             ref_mesh_eigenmap_as_reference=ref_mesh_eigenmap_as_reference,
+            verbose=verbose,
             kwargs=kwargs
         )
         if vertex_features is not None:
