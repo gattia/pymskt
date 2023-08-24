@@ -15,6 +15,8 @@ for path in LIST_MESH_PATHS:
     print(os.path.exists(path))
 
 def test_ProcrustesRegistration_runs():
+    folder_save = os.path.join(package_dir, 'data', 'femur_meshes_registration', 'registered_meshes')
+
     procrustes_reg = ProcrustesRegistration(
         path_ref_mesh=REF_MESH_PATH, # using the idx of the best mesh from the previous step
         list_mesh_paths=LIST_MESH_PATHS, # This will automatically remove the ref_mesh path if it is in the list.
@@ -25,7 +27,9 @@ def test_ProcrustesRegistration_runs():
         include_points_as_features=True,
         vertex_features=['thickness (mm)'],
         multiprocessing=True,
-        verbose=True
+        verbose=False,
+        save_meshes_during_registration=True,
+        folder_save=folder_save,
     )
 
     tic = time.time()
@@ -34,8 +38,8 @@ def test_ProcrustesRegistration_runs():
 
     print(f'Time taken for ProcrustesRegistration: {toc - tic} seconds')
 
-    folder_save = os.path.join(package_dir, 'data', 'femur_meshes_registration', 'registered_meshes')
-    procrustes_reg.save_meshes(folder=folder_save)
+    
+    # procrustes_reg.save_meshes(folder=folder_save)
 
     list_meshes = glob.glob(os.path.join(folder_save, '*.vtk'))
     assert len(list_meshes) == len(LIST_MESH_PATHS)
