@@ -2,13 +2,15 @@ from pymskt.statistics import ProcrustesRegistration
 from pymskt.mesh import io
 from pymskt.mesh.meshTools import get_mesh_physical_point_coords, get_mesh_point_features
 from pymskt.mesh.meshRegistration import non_rigidly_register
-from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif, save_gif_vec_2_vec, save_mesh_vec_2_vec
+from pymskt.statistics.pca import pca_svd, save_meshes_across_pc, save_gif, save_gif_vec_2_vec, save_mesh_vec_2_vec, create_vtk_mesh_from_deformed_points
 from pymskt.mesh import Mesh
 from pymskt.mesh.utils import vtk_deep_copy
 import numpy as np
 import os
 import json
 from datetime import datetime
+import matplotlib.pyplot as plt
+import vtk
 # import multiprocessing
 
 
@@ -47,6 +49,8 @@ class SSM:
         self._list_mesh_paths = list_mesh_paths
         self._path_ref_mesh = path_ref_mesh
 
+        self.include_ref_mesh = include_ref_mesh
+
         if self._list_mesh_paths is not None:
            self.parse_list_mesh_paths()
 
@@ -84,6 +88,12 @@ class SSM:
         self.num_processes = num_processes
 
         self.verbose = verbose
+
+        self.scores = None
+        self.scores_raw = None
+        self.dict_threshold_n_pcs = None
+        self.absolute_variance_explained = None
+        self.percent_variance_explained = None
     
     def parse_list_mesh_paths(self):
         """Parse list of mesh paths"""
@@ -97,7 +107,11 @@ class SSM:
         if self._path_ref_mesh in self._list_mesh_paths:
             path_ref_idx = self._list_mesh_paths.index(self._path_ref_mesh)
             self._list_mesh_paths.pop(path_ref_idx)
-        self._list_mesh_paths.insert(0, self._path_ref_mesh)
+        
+        if self.include_ref_mesh is True:
+            self._list_mesh_paths.insert(0, self._path_ref_mesh)
+        else:
+            pass
     
     def parse_ref_mesh_and_params(self):
         """Get reference mesh parameters"""
@@ -205,6 +219,8 @@ class SSM:
 
     def fit_model(self):
         """Fit PCA based SSM model"""
+        self.n_pcs = min(self.points.shape) # MAX N "relevant" PCs is the smaller of the number of points/examples. 
+
         if self._points_loaded is False:
             self.prepare_points()
         if self._points_normalized is False:
@@ -217,6 +233,7 @@ class SSM:
         # Add generic model information
         dict_dump = {
             'date': datetime.now().strftime("%b-%d-%Y"),
+            'n_pcs': self.n_pcs,
             'n_points': self.n_points,
             'n_meshes': self.n_meshes,
             'PCs_filename': f'{PCs_filename}.npy',
@@ -225,6 +242,9 @@ class SSM:
             'list_vertex_features': self.vertex_features,
             'list_vertex_features_stds': self._std_features,
             'feature_norm_ignore_zero': self.feature_norm_ignore_zero,
+            'dict_threshold_n_pcs': self.dict_threshold_n_pcs,
+            'absolute_variance_explained': self.absolute_variance_explained,
+            'percent_variance_explained': self.percent_variance_explained,
         }
 
         # add feature specific stds for normalization
@@ -280,12 +300,13 @@ class SSM:
         
         PCs_path = os.path.join(folder, dict_model_params['PCs_filename'])
         Vs_path = os.path.join(folder, dict_model_params['Vs_filename'])
-
+        
         self._PCs = np.load(PCs_path)
         self._Vs = np.load(Vs_path)
         self._ref_mesh = io.read_vtk(os.path.join(folder, 'ref_mesh.vtk'))
         self._mean = np.load(os.path.join(folder, 'mean_features.npy'))
 
+        self.n_pcs = dict_model_params.get('n_pcs', self._PCs.shape[1])
         self.n_points = dict_model_params['n_points']
         self.n_meshes = None #TODO: Parse this from self._list_mesh_paths?
         self._std_geometric = dict_model_params['geometric_std']
@@ -302,21 +323,97 @@ class SSM:
 
         self._list_mesh_paths = dict_model_params['list_mesh_locations']
 
+
+        self.dict_threshold_n_pcs = dict_model_params.get('dict_threshold_n_pcs', None)
+        if self.dict_threshold_n_pcs is not None:
+            # convert keys back to integers
+            self.dict_threshold_n_pcs = {int(key): value for key, value in self.dict_threshold_n_pcs.items()}
+        self.absolute_variance_explained = dict_model_params.get('absolute_variance_explained', None)
+        self.percent_variance_explained = dict_model_params.get('percent_variance_explained', None)
+        
         if os.path.exists(os.path.join(folder, 'points.npy')):
             self.points = np.load(os.path.join(folder, 'points.npy'))
             self._points_loaded = True
 
+    def perform_variance_analysis(self):
+        """Perform variance analysis"""
+        self.calculate_total_variance()
+        self.calculate_variance_explained_per_pc()
+        self.calculate_n_pcs_explain_variance()
+
     def calculate_total_variance(self):
         """Calculate total variance"""
-        pass
-    
+        self.total_variance = np.sum(np.square(self.points - self.mean)) / self.points.shape[0]
+
+    def calc_pc_scores_internal(self):
+        """Calculate PC scores"""
+        self.scores_raw = (self.PCs.T @ self.centered.T)
+        self.scores = self.scores_raw / (np.sqrt(self.Vs)[:,None])
+
     def calculate_variance_explained_per_pc(self):
         """Calculate variance explained per PC"""
-        pass
+
+        if self.scores_raw is None:
+            self.calc_pc_scores_internal()
+        
+        self.absolute_variance_explained = []
+        self.percent_variance_explained = []
+        for pc in range(self.PCs.shape[1]):
+            pred_ = self.scores_raw[pc,:][None,:].T @ self.PCs[:,pc][None,:]
+            pred_[:,:3*self.n_points] *= self.std_geometric
+            pred_[:,3*self.n_points:] *= self.std_features[0]
+            pred_ = self.mean + pred_
+            variance = np.sum(np.square(pred_ - self.points))/self.points.shape[0]
+            explained_var = self.total_variance - variance
+            self.absolute_variance_explained.append(explained_var)
+            self.percent_variance_explained.append(explained_var/self.total_variance * 100)
+        
+        self.cumulative_explained_variance = np.cumsum(self.percent_variance_explained)
     
-    def deform_model(self, pc=0, std=3):
-        """Deform model"""
-        pass
+    def calculate_n_pcs_explain_variance(self, thresholds=None):
+        if thresholds is None:
+            thresholds = [10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 98, 99]
+        
+        self.dict_threshold_n_pcs = {}
+        for threshold in thresholds:
+            self.dict_threshold_n_pcs[threshold] = int(np.where(self.cumulative_explained_variance  > threshold)[0][0] + 1)
+    
+    def plot_variance_explained(self, save_path=None):
+        plt.figure()
+        plt.title('SSM - Explained Variance')
+        plt.plot(self.percent_variance_explained, label='PC Percent Variance Explained')
+        plt.plot(np.cumsum(self.percent_variance_explained), label='Cumulative Variance Explained')
+        plt.plot((0, self.n_pcs), (90,90), label=f'90% Explained Variance (N={self.dict_threshold_n_pcs[90]})')
+        plt.plot((0, self.n_pcs), (95,95), label=f'95% Explained Variance (N={self.dict_threshold_n_pcs[95]})')
+
+        # Set x and y axis titles
+        plt.xlabel('Principal Component', fontsize=14)
+        plt.ylabel('Explained Variance (%)', fontsize=14)
+
+        # Increase font size on x and y axis
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+
+        # Plot the legend
+        plt.legend(fontsize=12)
+    
+    def plot_hists_pc_scores(self, pc,):
+        """Plot histograms of PC scores"""
+        if self.scores is None:
+            self.calc_pc_scores_internal()
+        plt.figure()
+        plt.title(f'PC {pc} Scores')
+        plt.hist(self.scores[pc,:])
+        plt.xlabel('PC Score', fontsize=14)
+        plt.ylabel('Count', fontsize=14)
+        # Increase font size on x and y axis
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+
+    def plot_hists_n_pc_scores(self, n_pcs=5):
+        """Plot histograms of PC scores"""
+        for pc in range(n_pcs):
+            self.plot_hists_pc_scores(pc)
     
     def save_meshes_across_pc(self, folder_save, pc, std, step_size=1, mesh_name='bone'):
         """Save meshes across PC"""
@@ -447,6 +544,7 @@ class SSM:
             transfer_scalars=True if self.vertex_features is not None else False,
             verbose=self.verbose
         )
+
         return registered_mesh
 
     def apply_normalization(self, array):
@@ -468,11 +566,13 @@ class SSM:
         
         return array
 
-    def get_score(self, mesh=None, pc=None, max_pc=None, registered=False):
-        """Get score"""
+    def get_mesh_point_features(self, mesh, registered=False):
         if isinstance(mesh, str):
             # load mesh
             mesh = io.read_vtk(mesh)
+        elif isinstance(mesh, Mesh):
+            mesh = mesh.mesh
+            
         if registered is False:
             # get point correspondences
             mesh = self.register_ref_to_mesh(mesh)
@@ -488,19 +588,186 @@ class SSM:
         # normalize the features
         features = self.apply_normalization(features)
 
+        return features
+
+    def get_score(self, mesh=None, pc=None, max_pc=None, registered=False, normalize=True):
+        """Get score"""
+        
+        features = self.get_mesh_point_features(mesh, registered=registered)
+
         if max_pc is not None:
             # return all PCs upto a maximum
             scores = self.PCs[:,:max_pc].T @ features.T
-            scores /= (np.sqrt(self.Vs)[:max_pc, None])
+            if normalize is True:
+                scores /= (np.sqrt(self.Vs)[:max_pc, None])
         elif isinstance(pc, int):
             # return a single PC
             scores = self.PCs[:,pc:pc+1].T @ features.T
-            scores /= (np.sqrt(self.Vs)[pc, None])
+            if normalize is True:
+                scores /= (np.sqrt(self.Vs)[pc, None])
         elif isinstance(pc, list):
             # return a list of specific PCs
             scores = self.PCs[:,pc].T @ features.T
-            scores /= (np.sqrt(self.Vs)[pc, None])
+            if normalize is True:
+                scores /= (np.sqrt(self.Vs)[pc, None])
         return scores
+
+    def deform_model_using_pc_scores(self, scores, normalized=False):
+        """Deform model"""
+        scores = scores.squeeze()
+        n_pcs = scores.shape[0]
+        if normalized is True:
+            scores = scores * np.sqrt(self.Vs)[:n_pcs]
+
+        # get normalized deformation
+        deformation = scores @ self.PCs[:,:n_pcs].T
+        # unnormalize the deformation
+        deformation[:3*self.n_points] *= self._std_geometric
+        if self.vertex_features is not None:
+            for idx in range(len(self.vertex_features)):
+                deformation[(3+idx)*self.n_points:(3+idx+1)*self.n_points] *= self._std_features[idx]
+        
+        new_points = self.mean + deformation
+
+        return new_points
+
+
+    def reconstruct_mesh(self, mesh, n_pcs, corresponding_points=False):
+        # load mesh as Mesh
+        if isinstance(mesh, Mesh):
+            mesh = mesh
+        else:
+            mesh = Mesh(mesh)
+        
+        registered_mesh = mesh.copy()
+        
+        if corresponding_points is False:
+            # rigidly register mesh to ref mesh & save transform
+            icp_transform = registered_mesh.rigidly_register(
+                self.mean_mesh,
+                as_source=True,
+                apply_transform_to_mesh=True,
+                return_transformed_mesh=False,
+                return_transform=True,
+                max_n_iter=100,
+                n_landmarks=1000,
+                reg_mode='similarity'
+            )
+        
+        # get scores & new mesh coordinates
+        scores = self.get_score(mesh=registered_mesh, max_pc=n_pcs, registered=corresponding_points, normalize=False)[:,0]
+        
+        # get normalized deformation
+        # deformation = scores @ self.PCs[:,:n_pcs].T
+        # # unnormalize the deformation
+        # deformation[:3*self.n_points] *= self._std_geometric
+        # if self.vertex_features is not None:
+        #     for idx in range(len(self.vertex_features)):
+        #         deformation[(3+idx)*self.n_points:(3+idx+1)*self.n_points] *= self._std_features[idx]
+        # # add deformation to mean to get the new shape
+        # new_shape = self._mean + deformation
+
+        new_shape = self.deform_model_using_pc_scores(scores, normalized=False)
+
+        #TODO: Extend to multiple bones
+
+        # reconstruct mesh
+        reconstructed_mesh = Mesh(create_vtk_mesh_from_deformed_points(mean_mesh=self.mean_mesh.mesh, new_points=new_shape, features=self.vertex_features))
+
+        if corresponding_points is False:
+            # apply inverse of icp transform
+            icp_transform.Inverse()
+            reconstructed_mesh.apply_transform_to_mesh(icp_transform)
+
+        return reconstructed_mesh
+
+    def reconstruct_mesh_least_squares(self, mesh, n_pcs, registered=False):
+        raise NotImplementedError
+        # # load mesh as Mesh
+        # if isinstance(mesh, Mesh):
+        #     mesh = mesh
+        # else:
+        #     mesh = Mesh(mesh)
+        
+        # registered_mesh = mesh.copy()
+        
+        # # rigidly register mesh to ref mesh & save transform
+        # icp_transform = registered_mesh.rigidly_register(
+        #     self.mean_mesh,
+        #     as_source=True,
+        #     apply_transform_to_mesh=True,
+        #     return_transformed_mesh=False,
+        #     return_transform=True,
+        #     max_n_iter=100,
+        #     n_landmarks=1000,
+        #     reg_mode='similarity'
+        # )
+        
+        # # get features
+        # features = self.get_mesh_point_features(mesh, registered=registered)
+
+        # # use least squares to find the best fit between the SSM and these features. 
+
+        """
+        BELOW IS CODE BRIEFLY WRITTEN TO DO TIHS TPYE OF REGISRATION. 
+        NEED TO FIGURE OUT L1/L2 REGULARIZATION
+        DO YOU DO REGISTRATION IN RAW OR NORMALIZED SPACE?
+        DO YOU ADD WEIGHTING FACTORS TO PCS BASED ON VARIANCE EXPLAINED?
+        """
+        # from scipy.optimize import least_squares
+
+        # def model(PC_scores, PCs, Vs, mean):
+        #     n_pcs = PC_scores.shape[0]
+        #     PC_scores *= np.sqrt(Vs[:n_pcs])
+        #     deformation = PC_scores @ PCs[:,:n_pcs].T
+        #     recon = (mean + deformation).squeeze()    
+        #     return recon
+            
+        # def residuals(PC_scores, PCs, Vs, mean, Y, l1_penalty=0, l2_penalty=0.1):
+        #     # This function should compute the difference between your model's predictions and the actual data
+        #     # 'params' are the parameters of your model that you are trying to optimize
+        #     # 'X' is your input data
+        #     # 'Y' is your output data
+            
+        #     Y = Y.squeeze()
+        #     predicted_Y = model(PC_scores, PCs, Vs, mean)  # Replace this with your model
+            
+        #     n_pcs = PC_scores.shape[0]
+        # #     Vs = Vs[:n_pcs]
+        # #     PC_scores = PC_scores * 1/Vs
+            
+        #     l1_term = l1_penalty * np.abs(PC_scores).sum()
+        #     l2_term = l2_penalty * (PC_scores**2).sum()
+            
+        #     return predicted_Y - Y + l1_term + l2_term
+
+        # N_PCs = ssm.dict_threshold_n_pcs[95]
+
+        # PCs = ssm.PCs
+        # Vs = ssm.Vs
+        # mean = ssm.mean
+        # Y = features
+
+        # initial_params = initial_params = np.random.normal(0, 0.025, size=N_PCs)
+
+
+        # # Perform the optimization
+        # result = least_squares(residuals, initial_params, args=(PCs, Vs, mean, Y))
+
+        # from pymskt.statistics.pca import create_vtk_mesh_from_deformed_points
+        # deformation = result['x'] @ ssm.PCs[:,:len(result['x'])].T
+        # new_shape = ssm.mean + deformation
+
+        # #TODO: Extend to multiple bones
+
+        # # reconstruct mesh
+        # reconstructed_mesh_LS = Mesh(create_vtk_mesh_from_deformed_points(mean_mesh=ssm.mean_mesh.mesh, new_points=new_shape, features=ssm.vertex_features))
+
+        # # apply inverse of icp transform
+        # # icp_transform.Inverse()
+        # reconstructed_mesh_LS.apply_transform_to_mesh(icp_transform)
+
+
 
     def _mean_mesh(self):
         xyz = self._mean[: 3 * self.n_points].reshape(-1, 3)

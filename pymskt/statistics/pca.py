@@ -8,6 +8,9 @@ from pymskt.mesh.utils import GIF
 import os
 from pymskt.mesh.io import write_vtk
 from pymskt.mesh import io
+from pymskt.mesh import Mesh
+from scipy.optimize import least_squares
+
 
 def pca_svd(data):
     """
@@ -168,7 +171,51 @@ def create_vtk_mesh_from_deformed_points(mean_mesh, new_points, features=None):
             features=features
         )
     return mesh
-        
+
+def fit_ssm_to_mesh_least_squares(
+    ssm,
+    mesh,
+    pc_bounds=5,
+    least_squares_loss='soft_l1' # 'linear' is default by scipy, found this better
+):
+    def model(PC_scores, ssm):
+        recon = ssm.deform_model_using_pc_scores(PC_scores, normalized=True)
+        return recon
+
+    def residuals(
+        PC_scores, 
+        ssm,
+        mesh,
+    ):
+
+        list_features = [mesh.point_coords.flatten()]
+        for feature in ssm.vertex_features:
+            list_features.append(mesh.get_scalar(feature))
+
+        Y = np.concatenate(list_features)
+
+        predicted_Y = model(PC_scores, ssm)
+
+        residuals = Y - predicted_Y
+
+        return residuals
+    
+    # Perform the optimization
+    result = least_squares(
+        residuals, 
+        initial_params, 
+        bounds=(-pc_bounds, pc_bounds), 
+        args=(ssm, mesh),
+        loss='soft_l1',
+    )
+    
+    fitted_PCs = result['x']
+    
+    new_shape = model(fitted_PCs, ssm)
+    
+    reconstructed_mesh_LS = Mesh(create_vtk_mesh_from_deformed_points(mean_mesh=ssm.mean_mesh.mesh, new_points=new_shape, features=ssm.vertex_features))
+    
+    return fitted_PCs, reconstructed_mesh_LS
 
 def create_vtk_mesh_from_deformed_points_(mean_mesh, new_points, features=None, active_scalars=None):
     """
