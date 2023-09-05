@@ -20,6 +20,8 @@ from pymskt.cython_functions import gaussian_kernel
 import pymeshfix as mf
 
 import point_cloud_utils as pcu
+from scipy.spatial import cKDTree
+
 
 
 epsilon = 1e-7
@@ -925,7 +927,7 @@ def check_mesh_types(mesh, return_type='pyvista'):
     
     return mesh_
 
-def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution=50000, verbose=True):
+def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution=50000, project_onto_surface=True, verbose=True):
     """
 
     Parameters
@@ -965,7 +967,7 @@ def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution
     mesh_ = check_mesh_types(mesh)
 
     if method == 'pcu':
-        new_object = meshfix_pcu(mesh_, resolution=resolution)
+        new_object = meshfix_pcu(mesh_, resolution=resolution, project_onto_surface=project_onto_surface)
         
     elif method == 'meshfix':
         if treat_as_single_component is True:
@@ -980,9 +982,7 @@ def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution
 
                 if method == 'meshfix':
                     obj = meshfix_pymeshfix(obj, verbose=verbose)
-                elif method == 'pcu':
-                    obj = meshfix_pcu(obj, resolution=resolution)
-                
+
                 if idx == 0:
                     #if first iteration create new object
                     new_object = obj
@@ -1013,6 +1013,35 @@ def get_faces_vertices(mesh):
 
     return faces, points
 
+def project_point_onto_line(P0, P1, P2):
+    """
+    Project a 3D point onto a line defined by two 3D points.
+
+    Parameters:
+        P0 (array-like): The point to be projected. Should be a list or array of length 3.
+        P1 (array-like): A point on the line. Should be a list or array of length 3.
+        P2 (array-like): Another point on the line. Should be a list or array of length 3.
+
+    Returns:
+        numpy.ndarray: The projection of P0 onto the line through P1 and P2.
+    """
+
+    # Convert the input to numpy arrays
+    P0, P1, P2 = np.array(P0), np.array(P1), np.array(P2)
+
+    # Define the vectors
+    v = P2 - P1
+    w = P0 - P1
+
+    # Compute the projection of w onto v
+    proj_v_w = np.dot(w, v) / np.dot(v, v) * v
+
+    # The projection of P0 onto the line P1P2 is then P1 + proj_v_w
+    P_proj = P1 + proj_v_w
+
+    return P_proj
+
+
 def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
     """
     this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
@@ -1027,7 +1056,33 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
     if project_onto_surface is True:
         # project points onto original mesh
         dists, fid, bc = pcu.closest_points_on_mesh(points_wt, points, faces)
+
         closest_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
+
+        # Get nan bc/closest_pts & fix them
+        nans_rows = np.unique(np.where(np.isnan(bc))[0])
+        # if 2 points are identical, then interpolate between them
+        # if all 3 points are identical, then just use that point
+        for nan_row in nans_rows:
+            nan_pts = points[faces[fid[nan_row]]].squeeze()
+            # get unique points
+            unique_pts = np.unique(nan_pts, axis=0)
+            n_unique_pts = unique_pts.shape[0]
+
+            if n_unique_pts == 1:
+                new_pt = unique_pts[0, :]
+            elif n_unique_pts == 2:
+                new_pt = project_point_onto_line(
+                    points_wt[nan_row, :],
+                    unique_pts[0, :],
+                    unique_pts[1, :]
+                )
+            elif n_unique_pts == 3:
+                raise ValueError('Has 3 unique points but still nan error.... ')
+
+            closest_pts[nan_row, :] = new_pt
+
+        
         points_wt = closest_pts
 
     # create new mesh
@@ -1113,7 +1168,98 @@ def pcu_sdf(pts, mesh):
 
     return sdfs
 
+def get_rand_samples(pts1, pts2, num_samples):
+    """
+    Randomly sample points from two point clouds.
+    
+    Args:
+    - pts1 (numpy.ndarray): The first point cloud.
+    - pts2 (numpy.ndarray): The second point cloud.
+    - num_samples (int): The number of points to sample from each point cloud.
+    
+    Returns:
+    - pts1 (numpy.ndarray): The first point cloud with num_samples points randomly sampled.
+    - pts2 (numpy.ndarray): The second point cloud with num_samples points randomly sampled.
+    """
 
+    sample1 = np.random.choice(
+        pts1.shape[0],
+        size=num_samples,
+        replace=True if pts1.shape[0] < num_samples else False 
+    )
+    pts1 = pts1[sample1,:]
+    
+    sample2 = np.random.choice(
+        pts2.shape[0],
+        size=num_samples,
+        replace=True if pts2.shape[0] < num_samples else False 
+    )
+    pts2 = pts2[sample2,:]
+    
+    return pts1, pts2
+
+def get_pt_cloud_distances(pts1, pts2, num_samples=None):
+    """
+    Compute the distances between two point clouds.
+
+    Args:
+    - pts1 (numpy.ndarray): The first point cloud.
+    - pts2 (numpy.ndarray): The second point cloud.
+    - num_samples (int, optional): The number of points to randomly sample from each point cloud. If None, all points are used.
+    
+    Returns:
+    - d1 (numpy.ndarray): The distances from each point in pts1 to its nearest neighbor in pts2.
+    - d2 (numpy.ndarray): The distances from each point in pts2 to its nearest neighbor in pts1.
+    """
+    
+    if num_samples is not None:
+        pts1, pts2 = get_rand_samples(pts1, pts2, num_samples)
+        
+    kd1 = cKDTree(pts1)
+    kd2 = cKDTree(pts2)
+    
+    d1, _ = kd1.query(pts2)
+    d2, _ = kd2.query(pts1)
+    
+    return d1, d2
+
+def compute_assd_between_point_clouds(
+    pts1,
+    pts2,
+    num_samples=None,
+):
+    """
+    Compute the average symmetric surface distance (ASSD) between two point clouds.
+    
+    Args:
+    - pts1 (numpy.ndarray): The first point cloud.
+    - pts2 (numpy.ndarray): The second point cloud.
+    - num_samples (int, optional): The number of points to randomly sample from each point cloud. If None, all points are used.
+    
+    Returns:
+    - assd (float): The average symmetric surface distance between the two point clouds.
+    """
+    d1, d2 = get_pt_cloud_distances(pts1, pts2, num_samples)
+
+    return (np.sum(d1) + np.sum(d2)) / (pts1.shape[0] + pts2.shape[0])
+
+def decimate_mesh_pcu(mesh, percent_orig_faces=0.5):
+    # get faces and points
+    faces, points = get_faces_vertices(mesh)
+
+    print(type(points), points.shape)
+    print(type(faces), faces.shape)
+
+    points_, faces_, corr_qv, corr_qf = pcu.decimate_triangle_mesh(points, faces, max_faces=int(faces.shape[0]*percent_orig_faces))
+
+    print(type(points_), points_.shape)
+    print(type(faces_), faces_.shape)
+
+    faces_ = np.hstack((np.ones((faces_.shape[0], 1))*3, faces_))
+
+    new_mesh = pv.PolyData(points_, faces_.astype(int))
+
+    return new_mesh
 
 def get_mesh_edge_lengths(mesh):
     """

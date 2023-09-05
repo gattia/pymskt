@@ -32,7 +32,9 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    get_mesh_edge_lengths,
                                    rand_sample_pts_mesh,
                                    vtk_sdf,
-                                   pcu_sdf
+                                   pcu_sdf,
+                                   decimate_mesh_pcu,
+                                   compute_assd_between_point_clouds
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -254,7 +256,7 @@ class Mesh:
         """        
         io.write_vtk(self._mesh, filepath, write_binary=write_binary)
     
-    def fix_mesh(self, method='meshfix', treat_as_single_component=False, resolution=50_000, verbose=True):
+    def fix_mesh(self, method='meshfix', treat_as_single_component=False, resolution=50_000, project_onto_surface=True, verbose=True):
         """
         Fix the surface mesh by removing duplicate points and cells.
 
@@ -268,13 +270,19 @@ class Mesh:
             Should the function print out information about the mesh fixing
             process, by default True
         """        
-        self._mesh = fix_mesh(self._mesh, method=method, treat_as_single_component=treat_as_single_component, resolution=resolution, verbose=verbose)
+        self._mesh = fix_mesh(self._mesh, method=method, treat_as_single_component=treat_as_single_component, resolution=resolution, project_onto_surface=project_onto_surface, verbose=verbose)
     
     def consistent_faces(self):
         """
         Make the faces of the mesh consistent. 
         """
         self._mesh = consistent_normals(self._mesh)
+    
+    def decimate(self, percent_orig_faces=0.5):
+        """
+        Decimate the mesh to reduce the number of faces/points.
+        """
+        self._mesh = decimate_mesh_pcu(self._mesh, percent_orig_faces=percent_orig_faces)
     
     def rand_surface_pts(self, n_pts=100_000, method='bluenoise'):
         """
@@ -322,6 +330,34 @@ class Mesh:
             sdfs = vtk_sdf(pts, self._mesh)
         
         return sdfs
+    
+    def get_assd_mesh(self, other_mesh):
+        if isinstance(other_mesh, Mesh):
+            pass
+        elif isinstance(other_mesh, (vtk.vtkPolyData, pv.PolyData, str)):
+            other_mesh = Mesh(other_mesh)
+        else:
+            raise TypeError('other_mesh must be of type Mesh, vtk.vtkPolyData, pv.PolyData, or str, and received: {}'.format(type(other_mesh)))
+        
+        distances1 = np.abs(pcu_sdf(self.point_coords, other_mesh.mesh))
+        distances2 = np.abs(pcu_sdf(other_mesh.point_coords, self.mesh))
+
+        assd = (np.sum(distances1) + np.sum(distances2)) / (len(distances1) + len(distances2))
+
+        return assd
+
+
+    def get_assd(self, point_cloud):
+        if isinstance(point_cloud, Mesh):
+            point_cloud = point_cloud.point_coords
+        elif isinstance(point_cloud, vtk.vtkPolyData):
+            point_cloud = get_mesh_physical_point_coords(point_cloud)
+        elif isinstance(point_cloud, np.ndarray):
+            pass
+        else:
+            raise TypeError('point_cloud must be of type Mesh, vtk.vtkPolyData, or np.ndarray, and received: {}'.format(type(point_cloud)))
+
+        return compute_assd_between_point_clouds(self.point_coords, point_cloud)
     
     def load_mesh_scalars(self):
         """
@@ -728,6 +764,36 @@ class Mesh:
         self._mesh.GetPointData().AddArray(distance_scalars)
         self.set_active_scalars(name)
         self.load_mesh_scalars() # Re load mesh scalars to include the newly calculated distances. 
+    
+    def calc_surface_error(self, other_mesh, new_scalar_name='surface_error'):
+        """
+        Calculate the surface error between this mesh and another mesh.
+        Assign the surface error as a new scalar to this mesh.
+
+        Parameters
+        ----------
+        other_mesh : pymskt.mesh.Mesh or vtk.vtkPolyData
+            Other mesh to calculate surface error with. 
+
+        Returns
+        -------
+        None
+        """
+        # get point coordinates for other mesh
+        if isinstance(other_mesh, (vtk.vtkPolyData)):
+            other_mesh = Mesh(other_mesh)
+        elif isinstance(other_mesh, Mesh):
+            pass
+        else:
+            raise TypeError('other_mesh must be of type vtk.vtkPolyData or pymskt.mesh.Mesh and received: {}'.format(type(other_mesh)))
+
+        other_pts = other_mesh.point_coords
+
+        # get sdf for other_pts
+        sdf = self.get_sdf_pts(other_pts)
+        
+        # add sdf as new scalar to current mesh
+        self.set_scalar(new_scalar_name, sdf)
 
     @property
     def seg_image(self):
