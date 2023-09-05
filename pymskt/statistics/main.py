@@ -242,7 +242,7 @@ class ProcrustesRegistration:
         self.num_processes = num_processes
 
         if self.save_meshes_during_registration is True:
-            if os.path.exists(self.folder_save) is False:
+            if (self.folder_save is not None) and (os.path.exists(self.folder_save)):
                 os.makedirs(self.folder_save, exist_ok=True)
 
     # def register(self, ref_mesh_source, other_mesh_idx):
@@ -573,6 +573,8 @@ def registration_step(
         registered_pt_coords = get_mesh_physical_point_coords(ref_mesh)
         if vertex_features is not None:
             registered_vertex_features = get_mesh_point_features(ref_mesh, vertex_features)
+        else:
+            registered_vertex_features = None
         registered_icp_transform = None
     else:
         # register & save registered coordinates in the pre-allocated array
@@ -586,6 +588,8 @@ def registration_step(
         )
         if vertex_features is not None:
             registered_vertex_features = features
+        else:
+            registered_vertex_features = None
         registered_icp_transform = icp_transform
     
     # SAVE EACH ITERATION OF THE REGISTRATION PROCESS???
