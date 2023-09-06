@@ -787,10 +787,8 @@ class Mesh:
         else:
             raise TypeError('other_mesh must be of type vtk.vtkPolyData or pymskt.mesh.Mesh and received: {}'.format(type(other_mesh)))
 
-        other_pts = other_mesh.point_coords
-
         # get sdf for other_pts
-        sdf = self.get_sdf_pts(other_pts)
+        sdf = other_mesh.get_sdf_pts(self.point_coords)
         
         # add sdf as new scalar to current mesh
         self.set_scalar(new_scalar_name, sdf)
