@@ -115,7 +115,7 @@ class Mesh:
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
         """      
-        if type(mesh) in (str,): #accept path like objects?  
+        if isinstance(mesh, str): #accept path like objects?  
             print('mesh string passed, loading mesh from disk')
             self._mesh = io.read_vtk(mesh)
         else:
@@ -452,7 +452,7 @@ class Mesh:
             No `transform` or `transformer` supplied - have not transformation
             to apply. 
         """
-        if type(transform) is np.ndarray:
+        if isinstance(transform, np.ndarray):
             transform = create_transform(transform)
         if (transform is not None) & (transformer is None):
             transformer = vtk.vtkTransformPolyDataFilter()
@@ -656,9 +656,9 @@ class Mesh:
         """
         n_scalars_at_start = self._n_scalars
 
-        if type(other_mesh) is Mesh:
+        if isinstance(other_mesh, Mesh):
             other_mesh = other_mesh.mesh
-        elif type(other_mesh) is vtk.vtkPolyData:
+        elif isinstance(other_mesh, vtk.vtkPolyData):
             pass
         else:
             raise TypeError(f'other_mesh must be type `pymskt.mesh.Mesh` or `vtk.vtkPolyData` and received: {type(other_mesh)}')
@@ -746,7 +746,7 @@ class Mesh:
         
         # iterate over meshes and add their thicknesses to the thicknesses list. 
         for other_mesh in list_other_meshes:
-            if issubclass(type(other_mesh), Mesh):
+            if isinstance(other_mesh, Mesh):
                 other_mesh = other_mesh.mesh
 
             node_data = get_distance_other_surface_at_points(
@@ -1686,11 +1686,11 @@ class BoneMesh(Mesh):
         new_list_cartilage_meshes : list
             A list of `CartilageMesh` objects associated with this bone
         """
-        if type(new_list_cartilage_meshes) is list:
+        if isinstance(new_list_cartilage_meshes, list):
             for mesh in new_list_cartilage_meshes:
                 if type(mesh) != pymskt.mesh.meshes.CartilageMesh:
                     raise TypeError('Item in `list_cartilage_meshes` is not a `CartilageMesh`')
-        elif type(new_list_cartilage_meshes) is pymskt.mesh.meshes.CartilageMesh:
+        elif isinstance(new_list_cartilage_meshes, pymskt.mesh.meshes.CartilageMesh):
             new_list_cartilage_meshes = [new_list_cartilage_meshes,]
         self._list_cartilage_meshes = new_list_cartilage_meshes
     
@@ -1718,11 +1718,11 @@ class BoneMesh(Mesh):
         new_list_cartilage_labels : list
             list of `int`s for the cartilage tissues associated with this bone. 
         """
-        if type(new_list_cartilage_labels) == list:
+        if isinstance(new_list_cartilage_labels, list):
             for label in new_list_cartilage_labels:
-                if type(label) != int:
+                if not isinstance(label, int):
                     raise TypeError(f'Item in `list_cartilage_labels` is not a `int` - got {type(label)}')
-        elif type(new_list_cartilage_labels) == int:
+        elif isinstance(new_list_cartilage_labels, int):
             new_list_cartilage_labels = [new_list_cartilage_labels,]
         self._list_cartilage_labels = new_list_cartilage_labels
     
@@ -1750,7 +1750,7 @@ class BoneMesh(Mesh):
             Floating point > 0.0 indicating how much of the length of the bone should be included
             when cropping - expressed as a proportion of the width. 
         """
-        if type(new_crop_percent) != float:
+        if not isinstance(new_crop_percent, float):
             raise TypeError(f'New `crop_percent` provided is type {type(new_crop_percent)} - expected `float`')
         self._crop_percent = new_crop_percent
     
@@ -1776,7 +1776,7 @@ class BoneMesh(Mesh):
         new_bone : str
             Name of the bone in this object - used to help identify how to crop the bone. 
         """
-        if type(new_bone) != str:
+        if not isinstance(new_bone, str):
             raise TypeError(f'New bone provided is type {type(new_bone)} - expected `str`')   
         self._bone = new_bone   
         
