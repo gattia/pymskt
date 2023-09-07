@@ -694,15 +694,14 @@ class Mesh:
                 set_non_smoothed_scalars_to_zero=set_non_smoothed_scalars_to_zero
             )
         
-        for array_name in array_names:
-            if array_name in orig_scalars_name:
-                idx = orig_scalars_name.index(array_name)
-                vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[:, idx])
-                vtk_transferred_scalars.SetName(new_scalars_name[idx])
-                self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+        # for array_name in array_names:
+        for scalars_idx, scalars_name in enumerate(orig_scalars_name):
+            vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[scalars_name])
+            vtk_transferred_scalars.SetName(new_scalars_name[scalars_idx])
+            self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
                 
         self.load_mesh_scalars()
-        return
+        return transferred_scalars
     
     def calc_distance_to_other_mesh(self,
                                     list_other_meshes=[],

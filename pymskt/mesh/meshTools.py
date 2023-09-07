@@ -671,12 +671,13 @@ def smooth_scalars_from_second_mesh_onto_base(base_mesh,
         return smoothed_scalars_on_base
 
 
-def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh, 
-                                                         old_mesh, 
-                                                         n=3, 
-                                                         return_mesh=False, 
-                                                         create_new_mesh=False
-                                                        ):
+def transfer_mesh_scalars_get_weighted_average_n_closest(
+        new_mesh,
+        old_mesh,
+        n=3,
+        return_mesh=False,
+        create_new_mesh=False
+    ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
     nodes/points/vertices. Similar but not exactly the same as `smooth_scalars_from_second_mesh_onto_base`
@@ -698,9 +699,9 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh,
 
     Returns
     -------
-    numpy.ndarray
-        An array of the scalar values for each node on the `new_mesh` that includes the scalar values
-        transfered (smoothed) from the `old_mesh`. 
+    dict
+        A dict of the scalar values with keys = scalar names and the scalar value for
+        each node that includes the scalar values transfered (smoothed) from the `old_mesh`. 
     """    
 
     kDTree = vtk.vtkKdTreePointLocator()
@@ -709,7 +710,9 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh,
 
     n_arrays = old_mesh.GetPointData().GetNumberOfArrays()
     array_names = [old_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)]
-    new_scalars = np.zeros((new_mesh.GetNumberOfPoints(), n_arrays))
+    new_scalars = {}
+    for array_name in array_names:
+        new_scalars[array_name] = np.zeros(new_mesh.GetNumberOfPoints())
     scalars_old_mesh = [np.copy(vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))) for array_name in array_names]
     # print('len scalars_old_mesh', len(scalars_old_mesh))
     # scalars_old_mesh = np.copy(vtk_to_numpy(old_mesh.GetPointData().GetScalars()))
@@ -735,7 +738,8 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh,
         # print('new_mesh_pt_idx', new_mesh_pt_idx)
         # print('normalized_value', normalized_value)
         # print('new_scalars shape', new_scalars.shape)
-        new_scalars[new_mesh_pt_idx, :] = normalized_value
+        for array_idx, array_name in enumerate(array_names):
+            new_scalars[array_name][new_mesh_pt_idx] = normalized_value[array_idx]
     if return_mesh is False:
         return new_scalars
     else:
@@ -745,8 +749,8 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(new_mesh,
         else:
             # this just makes a reference to the existing new_mesh in memory. 
             new_mesh_ = new_mesh
-        for idx, array_name in enumerate(array_names):
-            new_array = numpy_to_vtk(new_scalars[:, idx])
+        for array_name, scalars in new_scalars.items():
+            new_array = numpy_to_vtk(scalars)
             new_array.SetName(array_name)
             new_mesh_.GetPointData().AddArray(new_array)
         return new_mesh_
