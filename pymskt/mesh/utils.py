@@ -315,6 +315,7 @@ class GIF:
         path_save='~/Downloads/ssm.gif',
         scalar_bar_range=[0, 4],
         cmap='viridis',
+        lighting=False,
 
     ):
         """
@@ -361,6 +362,7 @@ class GIF:
         self._path_save = path_save
         self._scalar_bar_range = scalar_bar_range
         self._cmap = plt.cm.get_cmap(cmap)
+        self._lighting = lighting
     
     def update_view(
         self
@@ -381,7 +383,7 @@ class GIF:
                     show_edges=self._show_edges,
                     cmap=self._cmap,
                     clim=self._scalar_bar_range,
-                    lighting=False,
+                    lighting=self._lighting,
                     n_colors=1000,
                     # pbr=True,
                 ))
