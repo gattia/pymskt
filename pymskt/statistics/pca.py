@@ -291,6 +291,7 @@ def save_gif(
     scalar_bar_range=[0, 4],
     cmap=None,
     verbose=False,
+    lighting=False,
 ):
     """
     Function to save a gif of the SSM deformation.
@@ -345,6 +346,7 @@ def save_gif(
         background_color=background_color,
         scalar_bar_range=scalar_bar_range,
         cmap=cmap,
+        lighting=lighting,
     )
 
     for idx, sd in enumerate(np.arange(min_sd, max_sd + step, step)):
@@ -415,6 +417,7 @@ def save_gif_vec_2_vec(
     scalar_bar_range=[0, 4],
     cmap=None,
     verbose=False,
+    lighting=False,
 ):
     """
     Function to save a gif of the SSM from vec_1 to vec_2. All PCs that are not defined
@@ -466,6 +469,7 @@ def save_gif_vec_2_vec(
         background_color=background_color,
         scalar_bar_range=scalar_bar_range,
         cmap=cmap,
+        lighting=lighting,
     )
     
     if PCs.shape[0] == np.product(mean_coords.shape):
