@@ -182,6 +182,9 @@ def create_surface_mesh(seg_image,
         # copy image transofrm to the image to the mesh so that when viewed (e.g. in 3D Slicer) it is aligned with image
         mesh = meshTransform.copy_image_transform_to_mesh(mesh, seg_image)
 
+    # Delete vtk reader - to ensure we can delete the tmp file
+    del nrrd_reader
+    
     # Delete tmp files
     safely_delete_tmp_file(loc_tmp_save,
                            tmp_filename)
