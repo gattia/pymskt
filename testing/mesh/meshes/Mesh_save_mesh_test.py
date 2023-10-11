@@ -1,6 +1,7 @@
 import os
 import pymskt as mskt
 from pymskt.utils import testing
+import tempfile
 
 MESH_WITH_SMOOTHING = mskt.mesh.io.read_vtk('data/femur_mesh_orig.vtk')
 
@@ -8,7 +9,7 @@ from pymskt import RTOL, ATOL
 
 def test_saving_image(
     mesh=MESH_WITH_SMOOTHING,
-    loc_save='/tmp',
+    loc_save=tempfile.gettempdir(),
     filename='test.vtk'
 ):
     mesh = mskt.mesh.Mesh(mesh=mesh)

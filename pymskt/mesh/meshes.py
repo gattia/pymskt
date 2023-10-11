@@ -12,6 +12,7 @@ import os
 import random
 import string
 import warnings
+import tempfile
 
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
 
@@ -183,7 +184,10 @@ class Mesh:
                     smooth_image_var=0.3125 / 2,
                     marching_cubes_threshold=0.5,
                     label_idx=None,
-                    min_n_pixels=None):
+                    min_n_pixels=None,
+                    set_seg_border_to_zeros=True,
+                    use_discrete_marching_cubes=False
+                    ):
         """
         Create a surface mesh from the classes `_seg_image`. If `_seg_image`
         does not exist, then read it in using `read_seg_image`. 
@@ -232,13 +236,16 @@ class Mesh:
         self._mesh = create_surface_mesh(self._seg_image,
                                          self._label_idx,
                                          smooth_image_var,
-                                         loc_tmp_save='/tmp',
+                                         loc_tmp_save=tempfile.gettempdir(),
                                          tmp_filename=tmp_filename,
                                          mc_threshold=marching_cubes_threshold,
-                                         filter_binary_image=smooth_image
+                                         filter_binary_image=smooth_image,
+                                         set_seg_border_to_zeros=set_seg_border_to_zeros,
+                                         use_discrete_marching_cubes=use_discrete_marching_cubes
                                          )
+
         self.load_mesh_scalars()
-        safely_delete_tmp_file('/tmp',
+        safely_delete_tmp_file(tempfile.gettempdir(),
                                tmp_filename)
     
     def save_mesh(self,
@@ -1432,7 +1439,7 @@ class BoneMesh(Mesh):
             Only use 1 if not using for cartilage and just want to see what object is closest to the bone.
         """        
         tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
-        path_save_tmp_file = os.path.join('/tmp', tmp_filename)
+        path_save_tmp_file = os.path.join(tempfile.gettempdir(), tmp_filename)
         # if self._bone == 'femur':
         #     new_seg_image = qc.get_knee_segmentation_with_femur_subregions(seg_image,
         #                                                                    fem_cart_label_idx=1)
@@ -1447,7 +1454,7 @@ class BoneMesh(Mesh):
         seg_transformer = SitkVtkTransformer(self._seg_image)
 
         # Delete tmp files
-        safely_delete_tmp_file('/tmp',
+        safely_delete_tmp_file(tempfile.gettempdir(),
                                tmp_filename)
         
         self.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
