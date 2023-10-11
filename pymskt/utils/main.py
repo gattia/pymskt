@@ -146,10 +146,15 @@ def safely_delete_tmp_file(location,
         location of the temporary file to remove
     filename : str
         the filename of the temporary file to delete
-    """                           
-    try:
-        os.remove(os.path.join(location, filename))
-    except OSError as exc:
-        if exc.errno != errno.ENOENT:
-            raise
-        pass
+    """
+
+    if os.path.exists(location):        
+        try:
+            os.remove(os.path.join(location, filename))
+        except OSError as exc:
+            if exc.errno != errno.ENOENT:
+                raise
+            pass
+    
+    else:
+        print('File does not exist.')
