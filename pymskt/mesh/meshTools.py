@@ -755,6 +755,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
             new_mesh_.GetPointData().AddArray(new_array)
         return new_mesh_
 
+
 def get_smoothed_scalars(mesh, max_dist=2.0, order=2, gaussian=False):
     """
     perform smoothing of scalars on the nodes of a surface mesh. 
@@ -1082,6 +1083,17 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
                     unique_pts[1, :]
                 )
             elif n_unique_pts == 3:
+                bc_ = bc[nan_row]
+                A, B, C = unique_pts
+                bc[np.isinf(bc)] = np.nan
+                if np.isnan(bc_).all():  # All barycentric coords are NaN
+                    print('All barycentric coords are NaN - using centroid')
+                    new_pt = compute_centroid(A, B, C)
+                else:
+                    print('Some barycentric coords are NaN - using closest point')
+                    corrected_bc = np.where(np.isnan(bc_), 0, bc_)
+                    new_pt = compute_point_from_barycentric(corrected_bc, A, B, C)
+            else:
                 raise ValueError('Has 3 unique points but still nan error.... ')
 
             closest_pts[nan_row, :] = new_pt
@@ -1093,6 +1105,15 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
     new_mesh = pv.PolyData(points_wt, faces_wt)
 
     return new_mesh
+
+def compute_centroid(A, B, C):
+    print(A, B, C)
+    return (A + B + C) / 3.0
+
+def compute_point_from_barycentric(bc, A, B, C):
+    print(bc)
+    u, v, w = bc
+    return u * A + v * B + w * C
 
 def consistent_normals(mesh):
     """
