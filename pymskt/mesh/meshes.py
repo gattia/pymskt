@@ -35,7 +35,8 @@ from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars,
                                    vtk_sdf,
                                    pcu_sdf,
                                    decimate_mesh_pcu,
-                                   compute_assd_between_point_clouds
+                                   compute_assd_between_point_clouds,
+                                   get_largest_connected_component
                                    )
 from pymskt.mesh.createMesh import create_surface_mesh
 from pymskt.mesh.meshTransform import (SitkVtkTransformer, 
@@ -290,6 +291,12 @@ class Mesh:
         Decimate the mesh to reduce the number of faces/points.
         """
         self._mesh = decimate_mesh_pcu(self._mesh, percent_orig_faces=percent_orig_faces)
+    
+    def get_largest(self):
+        """
+        Get the largest connected component of the mesh. 
+        """
+        self._mesh = get_largest_connected_component(self._mesh)
     
     def rand_surface_pts(self, n_pts=100_000, method='bluenoise'):
         """
