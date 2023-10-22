@@ -903,6 +903,28 @@ def resample_surface(mesh, subdivisions=2, clusters=10000):
 
     return mesh
 
+def get_largest_connected_component(mesh):
+    """
+    Get the largest connected component of a mesh. 
+
+    Parameters
+    ----------
+    mesh : vtk.vtkPolyData or pyvista.PolyData or Mesh or BoneMesh or CartilageMesh
+        The mesh that we want to get the largest connected component of. 
+
+    Returns
+    -------
+    vtk.vtkPolyData
+        The largest connected component of the input mesh. 
+    """
+    mesh_ = check_mesh_types(mesh)
+
+    largest = mesh_.extract_largest()
+    largest.point_data.clear()
+    largest.cell_data.clear()
+
+    return largest
+
 def check_mesh_types(mesh, return_type='pyvista'):
     """
     Check the type of the input mesh and return the appropriate mesh type.
@@ -922,15 +944,16 @@ def check_mesh_types(mesh, return_type='pyvista'):
     from pymskt.mesh import Mesh, BoneMesh, CartilageMesh
 
     if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
-        mesh_ = mesh.mesh
-    elif isinstance(mesh, vtk.vtkPolyData):
-        mesh_ = pv.wrap(mesh)
-    elif isinstance(mesh, pv.PolyData):
-        mesh_ = mesh
-    else:
-        raise Exception(f"Mesh type not recognized: {type(mesh)}")
+        mesh = mesh.mesh
     
-    return mesh_
+    if isinstance(mesh, vtk.vtkPolyData):
+        mesh = pv.wrap(mesh)
+    elif isinstance(mesh, pv.PolyData):
+        pass
+    else:
+        raise TypeError(f"Mesh type not recognized: {type(mesh)}")
+
+    return mesh
 
 def fix_mesh(mesh, method='meshfix', treat_as_single_component=False, resolution=50000, project_onto_surface=True, verbose=True):
     """
