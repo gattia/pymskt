@@ -27,7 +27,24 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python :: 3",
 ]
-dependencies = []
+dependencies = [
+  "point-cloud-utils",
+  "numpy",
+  "Cython >= 0.29",
+  "pyacvd",
+  "pyvista",
+  "scipy",
+  "SimpleITK",
+  "vtk",
+  "param",
+  "jupyter",
+  "notebook",
+  "traittypes",
+  "pymeshfix",
+  "pyfocusr",
+  "itkwidgets",
+  "cycpd",
+]
 dynamic = ["version"]
 
 
