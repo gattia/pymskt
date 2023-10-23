@@ -159,4 +159,4 @@ The tests are located in `/testing` and are organized as:
 
 The tests use `pytest`. If you are not familiar with `pytest` a brief example is provided [here](https://docs.pytest.org/en/6.2.x/getting-started.html). 
 
-Currently, multiple tests are not passing, this is because dummy tests have been created where a test should go. If you want to help but dont know how or where to start, filling in these tests would be a great place to start! And greatly appreciated.
+Currently, 37 tests are being skipped for one of 2 (maybe 3) reasons. 1. They arent implemented yet and they are a placeholder. 2. They rely on a function that has small machine-to-machine differences so they dont pass or 3. A breaking change occured since result meshes were last saved. If you want to help but dont know how or where to start, filling in / fixing these tests would be a great place to start! And greatly appreciated.
