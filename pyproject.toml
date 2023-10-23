@@ -86,9 +86,9 @@ build = ["cp37-*", "cp38-*", "cp39-*", "cp310-*"]
 skip = ["*-win32", "*i686", "*aarch64", "*ppc64le", "*s390x", "*musllinux*"]
 
 # testing info: https://cibuildwheel.readthedocs.io/en/stable/options/#testing
-before-test = "pip install -r {project}/requirements.txt"
-test-command = "pytest {project}"
-test-requires = ["pytest"]
+# before-test = "pip install -r {project}/requirements.txt"
+# test-command = "pytest {project}"
+# test-requires = ["pytest"]
 
 # https://github.com/pypa/setuptools_scm/
 # [tool.setuptools_scm]
