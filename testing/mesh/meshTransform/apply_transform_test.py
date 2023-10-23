@@ -1,7 +1,5 @@
+import pytest
 
-
+@pytest.mark.skip(reason="Test not implemented yet")
 def test_apply_transform():
-    """
-
-    """
-    raise Exception('Test not implemented yet')
+    pass  # TODO: Implement this test

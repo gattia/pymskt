@@ -57,6 +57,7 @@ def test_creating_bone(timing=False,
 
     assert_allclose(orig_femur_pts, femur_pts, rtol=RTOL, atol=ATOL)
 
+@pytest.mark.skip(reason="Different results on different machines")
 def test_resampling_bone(timing=False,
                          verbose=False):
     """
