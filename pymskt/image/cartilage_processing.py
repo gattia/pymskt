@@ -248,7 +248,8 @@ def verify_and_correct_med_lat_tib_cart(
     tib_label=6,
     med_tib_cart_label=2, 
     lat_tib_cart_label=3,
-    ml_axis=0
+    ml_axis=0,
+    split_method='geometric_tibia'
 ):
     '''
     Verify that the medial and lateral tibial cartilage are correctly labeled.
@@ -281,8 +282,10 @@ def verify_and_correct_med_lat_tib_cart(
     array_tib_cart[(seg_array == lat_tib_cart_label) + (seg_array == med_tib_cart_label)] = 1
 
     #get the locatons of med/lat cartilage & get their centroids
-    med_cart_locs = np.asarray(np.where(seg_array == med_tib_cart_label))
-    lat_cart_locs = np.asarray(np.where(seg_array == lat_tib_cart_label))
+    med_cart_locs_ = np.where(seg_array == med_tib_cart_label)
+    med_cart_locs = np.asarray(med_cart_locs_)
+    lat_cart_locs_ = np.where(seg_array == lat_tib_cart_label)
+    lat_cart_locs = np.asarray(lat_cart_locs_)
     middle_med_cart = med_cart_locs[ml_axis,:].mean()
     middle_lat_cart = lat_cart_locs[ml_axis,:].mean()
 
@@ -301,12 +304,67 @@ def verify_and_correct_med_lat_tib_cart(
     med_tib_cart_mask = np.zeros_like(seg_array)
     lat_tib_cart_mask = np.zeros_like(seg_array)
 
+    if split_method == 'geometric_tibia':
+        center_ = center_tibia_slice
+    elif split_method == 'geometric_cartilage':
+        raise Exception('Not implemented yet!')
+    elif split_method == 'logistic_cartilage':
+        from scipy.optimize import minimize
+
+        def logistic(z):
+            return 1 / (1 + np.exp(-z))
+
+        def cost_function(theta, X, y):
+            predictions = logistic(X @ theta)
+            errors = y * np.log(predictions) + (1 - y) * np.log(1 - predictions)
+            return -np.mean(errors)
+
+        def gradient(theta, X, y):
+            predictions = logistic(X @ theta)
+            return X.T @ (predictions - y) / len(y)
+        
+        med_lat_axis_med_cart_locs = med_cart_locs_[ml_axis]
+        med_lat_axis_lat_cart_locs = lat_cart_locs_[ml_axis]
+        
+        # med = np.asarray(flat_med_cart_locs).T
+        # lat = np.asarray(flat_lat_cart_locs).T
+        # pre-allocate data for logistic regression
+        locs = np.zeros((
+            med_lat_axis_med_cart_locs.shape[0] + med_lat_axis_lat_cart_locs.shape[0],
+            2
+        ))
+        # add intercept term
+        locs[:,0] = 1
+        # add locations (along ML axis)
+        locs[:,1] = np.concatenate(
+            (
+                med_lat_axis_med_cart_locs, 
+                med_lat_axis_lat_cart_locs
+            ), axis=0
+        )
+        # create labels array (dependent variable)
+        labels = np.zeros(locs.shape[0])
+        labels[med_lat_axis_med_cart_locs.shape[0]:] = 1
+
+        # pre-allocate coefficients
+        m, n = locs.shape
+        theta = np.zeros(n)
+        # run logistic regression
+        result = minimize(cost_function, theta, args=(locs, labels), jac=gradient, options={'maxiter': 400})
+        theta = result.x
+
+        X = np.zeros((seg_array.shape[ml_axis], 2))
+        X[:,0] = 1
+        X[:,1] = np.arange(seg_array.shape[ml_axis])
+        predictions = logistic(X @ theta)
+        center_ = int(np.argmin(abs(predictions - 0.5)))
+
     if med_direction > 0:
-        med_tib_cart_mask[center_tibia_slice:,...] = 1
-        lat_tib_cart_mask[:center_tibia_slice,...] = 1
+        med_tib_cart_mask[center_:,...] = 1
+        lat_tib_cart_mask[:center_,...] = 1
     elif med_direction < 0:
-        med_tib_cart_mask[:center_tibia_slice,...] = 1
-        lat_tib_cart_mask[center_tibia_slice:,...] = 1
+        med_tib_cart_mask[:center_,...] = 1
+        lat_tib_cart_mask[center_:,...] = 1
 
     # create new med/lat cartilage arrays 
     new_med_cart_array = array_tib_cart * med_tib_cart_mask
