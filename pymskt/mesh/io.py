@@ -2,6 +2,7 @@ from asyncore import write
 import vtk
 import os
 from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
+import pyvista as pv
 
 def read_vtk(filepath):
     """
@@ -17,10 +18,19 @@ def read_vtk(filepath):
     vtk.PolyData
         The surface mesh at `filepath`.
     """    
-    reader = vtk.vtkPolyDataReader()
-    reader.SetFileName(filepath)
-    reader.Update()
-    return reader.GetOutput()
+    # reader = vtk.vtkPolyDataReader()
+    # reader.SetFileName(filepath)
+    # reader.Update()
+    # polydata = reader.GetOutput()
+    
+    # check if file exists
+    if not os.path.isfile(filepath):
+        raise FileNotFoundError(f'File {filepath} not found')
+
+    # check to see if binary or ascii
+    polydata = pv.PolyData(filepath)
+
+    return polydata
 
 
 def write_vtk(
