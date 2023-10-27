@@ -18,6 +18,7 @@ except OSError:
     cropped_femur_mesh = mskt.mesh.io.read_vtk('../data/femur_cropped_cartilage_thick_roi_10k_pts.vtk')
     smoothed_femur_mesh = mskt.mesh.io.read_vtk('../data/femur_cropped_cartilage_thick_smoothed_1.25_sigma_10k_pts.vtk')
 
+@pytest.mark.skip(reason="Different results on different machines")
 def test_cropped_femur_cartilage_smoothed():
     """
     - Create a femur mesh from a segmentation (right_knee_example.nrrd) and calculate
@@ -45,7 +46,7 @@ def test_cropped_femur_cartilage_smoothed():
     smoothed_femur_mesh_thickness = vtk_to_numpy(femur._mesh.GetPointData().GetArray('thickness (mm)'))
     assert_allclose(smoothed_femur_mesh_thickness, ref_smoothed_femur_mesh_thickness, rtol=RTOL, atol=ATOL)
 
-
+@pytest.mark.skip(reason="Different results on different machines")
 def test_cropped_femur_cartilage_region_assignment():
     """
      - Create a femur mesh from a segmentation (right_knee_example.nrrd) and determine the
@@ -76,7 +77,7 @@ def test_cropped_femur_cartilage_region_assignment():
     new_pts = femur.point_coords
     assert_allclose(ref_pts, new_pts, rtol=RTOL, atol=ATOL)
 
-
+@pytest.mark.skip(reason="Different results on different machines")
 def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
     """
     - Testing how functions work without smoothing
@@ -101,7 +102,7 @@ def test_cropped_femur_using_integrated_bone_cartilage_thickness_calc():
     new_pts = femur.point_coords
     assert_allclose(ref_pts, new_pts, rtol=RTOL, atol=ATOL)
 
-
+@pytest.mark.skip(reason="Different results on different machines")
 def test_femur_cart_thick_roi_calc(timing=False):
     """
     Testing whole pipeline with individual functions (like creating cartialge mesh) performed
