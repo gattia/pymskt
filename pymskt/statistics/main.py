@@ -4,6 +4,7 @@ import numpy as np
 from datetime import date
 from multiprocessing import Pool
 import time
+import warnings
 
 import pyvista as pv
 import pyacvd
@@ -355,37 +356,50 @@ class ProcrustesRegistration:
                 
             # Close the pool and wait for worker processes to finish
             else:
-                results = [registration_step(idx, self._ref_mesh, self.reg_idx, self.include_ref_in_sample, self.vertex_features, self.list_mesh_paths, self.ref_mesh_eigenmap_as_reference, self.kwargs, self.verbose) for idx, path in enumerate(self.list_mesh_paths)]
+                results = [registration_step(idx, self._ref_mesh, self.get_path_save_mesh(path), self.reg_idx, self.include_ref_in_sample, self.vertex_features, self.save_meshes_during_registration, self.list_mesh_paths, self.ref_mesh_eigenmap_as_reference, self.kwargs, self.verbose) for idx, path in enumerate(self.list_mesh_paths)]
 
             # for idx, path in enumerate(self.list_mesh_paths):
             for idx, (registered_pt_coords_, registered_vertex_features_, registered_icp_transform_) in enumerate(results):
                 # registered_pt_coords_, registered_vertex_features_, registered_icp_transform = self.registration_step(idx, path)
-                if type(registered_icp_transform_) is str:
-                    # if the registered_icp_transform is a string, then it is a path to a temp file
-                    # that was created to save the transform. 
-                    # read the transform from disk & delete the temp file. 
-                    registered_icp_transform = read_linear_transform(registered_icp_transform_)
-                    os.remove(registered_icp_transform_)
+                if registered_pt_coords_ is None:
+                    # warning that there was an error in registration and the mesh was skipped - e.g., 
+                    # nans were used in its place. 
+                    warnings.warn(f'WARNING: mesh has no points, skipping registration\n\tPath: {self.list_mesh_paths[idx]}', RuntimeWarning)
+                    registered_pt_coords[idx, :, :] = np.nan
+                    if self.vertex_features is not None:
+                        registered_vertex_features[idx, :, :] = np.nan
+                    registered_icp_transforms.append(None)
                 else:
-                    registered_icp_transform = registered_icp_transform_
+                    if type(registered_icp_transform_) is str:
+                        # if the registered_icp_transform is a string, then it is a path to a temp file
+                        # that was created to save the transform. 
+                        # read the transform from disk & delete the temp file. 
+                        registered_icp_transform = read_linear_transform(registered_icp_transform_)
+                        os.remove(registered_icp_transform_)
+                    else:
+                        registered_icp_transform = registered_icp_transform_
 
-                registered_pt_coords[idx, :, :] = registered_pt_coords_
-                if self.vertex_features is not None:
-                    registered_vertex_features[idx, :, :] = registered_vertex_features_
-                registered_icp_transforms.append(registered_icp_transform)
+                    registered_pt_coords[idx, :, :] = registered_pt_coords_
+                    if self.vertex_features is not None:
+                        registered_vertex_features[idx, :, :] = registered_vertex_features_
+                    registered_icp_transforms.append(registered_icp_transform)
             
+            # if there is a nan in registered pt corrds, let user know - we handle with nanmean
+            if np.isnan(registered_pt_coords).sum() > 0:
+                warnings.warn(f'WARNING: registered_pt_coords has nans', RuntimeWarning)
             # Calculate the mean bone shape & create new mean bone shape mesh
-            mean_shape = np.mean(registered_pt_coords, axis=0)
+            mean_shape = np.nanmean(registered_pt_coords, axis=0)
             mean_mesh = vtk_deep_copy(self._ref_mesh)
             set_mesh_physical_point_coords(mean_mesh, mean_shape)
             if self.vertex_features is not None:
-                mean_features = np.mean(registered_vertex_features, axis=0)
+                mean_features = np.nanmean(registered_vertex_features, axis=0)
                 set_mesh_point_features(mesh=mean_mesh, features=mean_features, feature_names=self.vertex_features)
 
             # store in list of reference meshes
             self.list_ref_meshes.append(mean_mesh)
 
             # Get surface distance between previous reference mesh and the new mean
+            #TODO: Update below to get real ASSD - look at Mesh get assd_mesh code. 
             sym_error = get_symmetric_surface_distance(self._ref_mesh, mean_mesh)
             self.error_2_error_change = np.abs(sym_error - self.sym_error)
             self.sym_error = sym_error
@@ -521,6 +535,15 @@ def register(
 ):
     target_mesh = io.read_vtk(path_other_mesh)
 
+    if (
+            (target_mesh.points.shape[0] == 0) or 
+            (np.mean(target_mesh.points) == 0) or 
+            (np.isnan(target_mesh.points).sum() > 0)
+        ):
+        print('ERROR: target mesh has no points, skipping registration')
+        print(f'\tPath: {path_other_mesh}')
+        return None, None, None
+
     registered_mesh, icp_transform = non_rigidly_register(
         target_mesh=target_mesh,
         source_mesh=ref_mesh_source,
@@ -556,6 +579,11 @@ def registration_step(
     verbose
     
 ):
+    with open('/dataNAS/people/aagatti/projects/OAI_Segmentation/CVPR_Data_Curation/ssm_registrations/output.log', 'a') as f:
+        # add a line to the log file of the mesh that errored
+        f.write(f'loading... \n')
+        f.write(f'\tPath: {list_mesh_paths[idx]}\n')
+
     tic = time.time()
     # This is a helper function to allow for multiprocessing to work
     # becuase cant pickle vtk objects, instead we read them from disk. 
@@ -567,6 +595,7 @@ def registration_step(
 
     if verbose is True:
         print(f'\tRegistering to mesh # {idx}')
+        print(f'\t\tPath save mesh: {path_save_mesh}')
     # skip the first mesh in the list if its the first round (its the reference)
     if (reg_idx == 0) & (idx == 0) & (include_ref_in_sample is True):
         # first iteration & ref mesh, just use points as they are. 
@@ -586,6 +615,15 @@ def registration_step(
             verbose=verbose,
             kwargs=kwargs
         )
+        print(registered_pt_coords)
+        if registered_pt_coords is None:
+            # if the registered_pt_coords is None, then there was an error reading the mesh
+            # so just return None for everything. 
+            with open('/dataNAS/people/aagatti/projects/OAI_Segmentation/CVPR_Data_Curation/ssm_registrations/output.log', 'a') as f:
+                # add a line to the log file of the mesh that errored
+                f.write(f'ERROR: mesh has no points, skipping registration\n')
+                f.write(f'\tPath: {list_mesh_paths[idx]}\n')
+            return None, None, None
         if vertex_features is not None:
             registered_vertex_features = features
         else:
