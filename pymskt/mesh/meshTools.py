@@ -1065,7 +1065,10 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
         closest_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
 
         # Get nan bc/closest_pts & fix them
-        nans_rows = np.unique(np.where(np.isnan(bc))[0])
+        nans_rows_bc = np.unique(np.where(np.isnan(bc))[0])
+        nans_rows_pts = np.unique(np.where(np.isnan(closest_pts))[0])
+        nans_rows = np.unique(np.concatenate((nans_rows_bc, nans_rows_pts)))
+
         # if 2 points are identical, then interpolate between them
         # if all 3 points are identical, then just use that point
         for nan_row in nans_rows:
@@ -1097,7 +1100,6 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True):
                 raise ValueError('Has 3 unique points but still nan error.... ')
 
             closest_pts[nan_row, :] = new_pt
-
         
         points_wt = closest_pts
 
