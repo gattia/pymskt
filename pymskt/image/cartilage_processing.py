@@ -163,7 +163,8 @@ def getAnteriorOfWeightBearing(segArray, femurIndex=1):
     
 def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
                            femurLabel=1, medTibiaLabel=2, latTibiaLabel=3, antFemurMask=5, 
-                           medWbFemurMask=6, latWbFemurMask=7, medPostFemurMask=8, latPostFemurMask=9):
+                           medWbFemurMask=6, latWbFemurMask=7, medPostFemurMask=8, latPostFemurMask=9,
+                           mid_fem_y=None):
     '''
     Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.  
     Parameters
@@ -211,6 +212,13 @@ def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
     wb_femur_mask = np.zeros_like(segArray)
     wb_femur_mask[:,:,anteriorWBslice:posteriorWBslice] = 1
 
+    # only get weight bearing from the lower part of the femur - to make
+    # sure don't accidentall get the top of the posterior condyle when it wraps back around.
+    distal_fem_cart = np.zeros_like(segArray)
+    distal_fem_cart[:,mid_fem_y:,:] = 1
+
+    wb_femur_mask = wb_femur_mask * distal_fem_cart
+
     posterior_femur_mask = np.zeros_like(segArray)
     posterior_femur_mask[:,:,posteriorWBslice:] = 1
     
@@ -224,6 +232,7 @@ def getCartilageSubRegions(segArray, anteriorWBslice, posteriorWBslice, trochY,
     
     centerMedialTibia = locationMedialTibia.mean(axis=1)
     centerLateralTibia = locationLateralTibia.mean(axis=1)
+
 
     med_femur_mask = np.zeros_like(segArray)
     lat_femur_mask = np.zeros_like(segArray)
@@ -437,6 +446,10 @@ def get_knee_segmentation_with_femur_subregions(seg_image,
     loc_fem_z, loc_fem_y, loc_fem_x = np.where(sitk.GetArrayViewFromImage(seg_image) == fem_cart_label_idx)
     post_femur_slice = np.max(loc_fem_x)
     posterior_wb_slice = np.round((post_femur_slice - troch_notch_x) * wb_region_percent_dist + troch_notch_x).astype(int)
+    
+    # Get midpoint of femoral cartilage in the inferior/superior direction
+    fem_y_midpoint = np.round(np.mean(loc_fem_y)).astype(int)
+
     new_seg_array = getCartilageSubRegions(sitk.GetArrayViewFromImage(seg_image),
                                            anteriorWBslice=troch_notch_x,
                                            posteriorWBslice=posterior_wb_slice,
@@ -448,7 +461,8 @@ def get_knee_segmentation_with_femur_subregions(seg_image,
                                            medWbFemurMask=med_wb_femur_mask,
                                            latWbFemurMask=lat_wb_femur_mask,
                                            medPostFemurMask=med_post_femur_mask,
-                                           latPostFemurMask=lat_post_femur_mask
+                                           latPostFemurMask=lat_post_femur_mask,
+                                           mid_fem_y=fem_y_midpoint
                                            )
 
     if verify_med_lat_tib_cart:
