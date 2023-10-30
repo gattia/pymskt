@@ -158,7 +158,10 @@ class SSM:
 
         for idx in range(self.n_meshes):
             xyz = procrustes_reg.registered_pt_coords[idx,:,:].flatten()
-            features = procrustes_reg.registered_vertex_features[idx,:,:].flatten()
+            if self.vertex_features is None:
+                features = np.zeros(0)
+            else:
+                features = procrustes_reg.registered_vertex_features[idx,:,:].flatten()
             self.points[idx, :] = np.concatenate((xyz, features))
     
     def prepare_points(self):
@@ -173,7 +176,10 @@ class SSM:
             for idx, path in enumerate(self._list_mesh_paths):
                 mesh = io.read_vtk(path)
                 xyz = get_mesh_physical_point_coords(mesh).flatten()
-                features = get_mesh_point_features(mesh, self.vertex_features).flatten()
+                if self.vertex_features is None:
+                    features = np.zeros(0)
+                else:
+                    features = get_mesh_point_features(mesh, self.vertex_features).flatten()
                 self.points[idx, :] = np.concatenate((xyz, features))
         
         self._points_loaded = True
