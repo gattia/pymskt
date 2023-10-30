@@ -579,10 +579,6 @@ def registration_step(
     verbose
     
 ):
-    with open('/dataNAS/people/aagatti/projects/OAI_Segmentation/CVPR_Data_Curation/ssm_registrations/output.log', 'a') as f:
-        # add a line to the log file of the mesh that errored
-        f.write(f'loading... \n')
-        f.write(f'\tPath: {list_mesh_paths[idx]}\n')
 
     tic = time.time()
     # This is a helper function to allow for multiprocessing to work
