@@ -91,7 +91,7 @@ class SSM:
 
         self.scores = None
         self.scores_raw = None
-        self.dict_threshold_n_pcs = None
+        self.dict_threshold_n_pcs = {}
         self.absolute_variance_explained = None
         self.percent_variance_explained = None
     
@@ -324,8 +324,8 @@ class SSM:
         self._list_mesh_paths = dict_model_params['list_mesh_locations']
 
 
-        self.dict_threshold_n_pcs = dict_model_params.get('dict_threshold_n_pcs', None)
-        if self.dict_threshold_n_pcs is not None:
+        self.dict_threshold_n_pcs = dict_model_params.get('dict_threshold_n_pcs', {})
+        if len(self.dict_threshold_n_pcs) > 0:
             # convert keys back to integers
             self.dict_threshold_n_pcs = {int(key): value for key, value in self.dict_threshold_n_pcs.items()}
         self.absolute_variance_explained = dict_model_params.get('absolute_variance_explained', None)
