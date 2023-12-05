@@ -1,4 +1,7 @@
 # pyMSKT (Musculoskeletal Toolkit)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)<br>
+![Build Status](https://github.com/gattia/pymskt/actions/workflows/build-test.yml/badge.svg?branch=master)<br>
+|[Documentation](https://anthonygattiphd.com/pymskt/)|
 
 pyMSKT is an open-source library for performing quantitative analyses of the musculoskeletal system. It enables creation of surface meshes of musculoskeletal anatomy and then processes these meshes to get quantitative outcomes and visualizatons, like for cartilage thickness.  
 
@@ -137,6 +140,8 @@ view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow])
 
 
 # Development / Contributing
+General information for contributing can be found [here](https://github.com/gattia/pymskt/blob/main/CONTRIBUTING.md)
+
 ## Tests
 - Running tests requires pytest (`conda install pytest` or `pip install pytest`)
 - Run tests using `pytest` or `make test` in the home directory. 
@@ -160,3 +165,6 @@ The tests are located in `/testing` and are organized as:
 The tests use `pytest`. If you are not familiar with `pytest` a brief example is provided [here](https://docs.pytest.org/en/6.2.x/getting-started.html). 
 
 Currently, 37 tests are being skipped for one of 2 (maybe 3) reasons. 1. They arent implemented yet and they are a placeholder. 2. They rely on a function that has small machine-to-machine differences so they dont pass or 3. A breaking change occured since result meshes were last saved. If you want to help but dont know how or where to start, filling in / fixing these tests would be a great place to start! And greatly appreciated.
+
+## Code of Conduct
+We have adopted the code of conduct defined by the [Contributor Covenant](https://www.contributor-covenant.org) to clarify expected behavior in our community. For more information see the [Code of Conduct](https://github.com/gattia/pymskt/blob/main/CODE_OF_CONDUCT.md).
