@@ -139,6 +139,11 @@ view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow])
 |![](/images/femur_acs.png)   | ![](/images/femur_subregions.png) |
 
 
+An example of how the cartilage thickness values are computed:
+
+![](/images/cartilage_thickness_analysis.png)
+
+
 # Development / Contributing
 General information for contributing can be found [here](https://github.com/gattia/pymskt/blob/main/CONTRIBUTING.md)
 
