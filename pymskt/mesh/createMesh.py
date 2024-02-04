@@ -7,7 +7,7 @@ import pymskt.mesh.meshTransform as meshTransform
 import tempfile
 from pymskt.utils import safely_delete_tmp_file
 
-def discrete_marching_cubes(vtk_image_reader,
+def discrete_marching_cubes(vtk_image,
                             n_labels=1,
                             start_label=1,
                             end_label=1,
@@ -20,7 +20,7 @@ def discrete_marching_cubes(vtk_image_reader,
 
     Parameters
     ----------
-    vtk_image_reader : vtk.Filter
+    vtk_image : vtk.vtkImageData
         VTK Filter pipeline to apply discrete marching cubes to. 
     n_labels : int, optional
         Number of labes to create mesh for, by default 1
@@ -46,7 +46,8 @@ def discrete_marching_cubes(vtk_image_reader,
     """    
 
     dmc = vtk.vtkDiscreteMarchingCubes()
-    dmc.SetInputConnection(vtk_image_reader.GetOutputPort())
+    # dmc.SetInputConnection(vtk_image)
+    dmc.SetInputDataObject(vtk_image)
     if compute_normals_on is True:
         dmc.ComputeNormalsOn()
     dmc.GenerateValues(n_labels, start_label, end_label)
@@ -58,7 +59,7 @@ def discrete_marching_cubes(vtk_image_reader,
         return dmc
 
 
-def continuous_marching_cubes(vtk_image_reader, 
+def continuous_marching_cubes(vtk_image, 
                               threshold=0.5,
                               compute_normals_on=True,
                               compute_gradients_on=True,
@@ -70,7 +71,7 @@ def continuous_marching_cubes(vtk_image_reader,
 
     Parameters
     ----------
-    vtk_image_reader : vtk.Filter
+    vtk_image : vtk.vtkImageData
         This is the output of a `vtk.Filter` from a previous step. E.g., output of pymskt.image.read_nrrd().
         
     threshold : float, optional
@@ -93,7 +94,8 @@ def continuous_marching_cubes(vtk_image_reader,
         Returns a polydata (surface mesh). 
     """    
     mc = vtk.vtkMarchingContourFilter()
-    mc.SetInputConnection(vtk_image_reader.GetOutputPort())
+    # mc.SetInputConnection(vtk_image)
+    mc.SetInputDataObject(vtk_image)
     if compute_normals_on is True:
         mc.ComputeNormalsOn()
     elif compute_normals_on is False:
@@ -164,26 +166,27 @@ def create_surface_mesh(seg_image,
         seg_image = msktimage.smooth_image(seg_image, label_idx, image_smooth_var)
         
     # save filtered image to disk so can read it in using vtk nrrd reader
-    sitk.WriteImage(seg_image, os.path.join(loc_tmp_save, tmp_filename))
-    nrrd_reader = msktimage.read_nrrd(os.path.join(loc_tmp_save, tmp_filename),
-                                               set_origin_zero=True)
+    # sitk.WriteImage(seg_image, os.path.join(loc_tmp_save, tmp_filename))
+    # nrrd_reader = msktimage.read_nrrd(os.path.join(loc_tmp_save, tmp_filename),
+    #                                            set_origin_zero=True)
+    vtk_image = msktimage.sitk_to_vtk(seg_image)
     # create the mesh using continuous marching cubes applied to the smoothed binary image.
     if use_discrete_marching_cubes is True:
-        mesh = discrete_marching_cubes(nrrd_reader, 
+        mesh = discrete_marching_cubes(vtk_image, 
                                        n_labels=1,
                                        start_label=1,
                                        end_label=1,
                                        compute_normals_on=True,
                                        return_polydata=True)
     else:
-        mesh = continuous_marching_cubes(nrrd_reader, threshold=mc_threshold)
+        mesh = continuous_marching_cubes(vtk_image, threshold=mc_threshold)
     
     if copy_image_transform is True:
         # copy image transofrm to the image to the mesh so that when viewed (e.g. in 3D Slicer) it is aligned with image
         mesh = meshTransform.copy_image_transform_to_mesh(mesh, seg_image)
 
-    # Delete vtk reader - to ensure we can delete the tmp file
-    del nrrd_reader
+    # # Delete vtk reader - to ensure we can delete the tmp file
+    # del nrrd_reader
     
     # Delete tmp files
     safely_delete_tmp_file(loc_tmp_save,

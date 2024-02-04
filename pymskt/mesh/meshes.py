@@ -13,13 +13,14 @@ import random
 import string
 import warnings
 import tempfile
+import copy
 
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT? 
 
 import pymskt
 from pymskt.mesh import createMesh
 from pymskt.utils import safely_delete_tmp_file, copy_image_transform_to_mesh
-from pymskt.image import read_nrrd, crop_bone_based_on_width
+from pymskt.image import crop_bone_based_on_width, sitk_to_vtk
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.mesh.meshTools import (gaussian_smooth_surface_scalars, 
                                    get_mesh_physical_point_coords, 
@@ -1445,26 +1446,29 @@ class BoneMesh(Mesh):
             Number of intersections to use when ray casting to find cartilage regions, by default 2
             Only use 1 if not using for cartilage and just want to see what object is closest to the bone.
         """        
-        tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
-        path_save_tmp_file = os.path.join(tempfile.gettempdir(), tmp_filename)
+        # tmp_filename = ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.nrrd'
+        # path_save_tmp_file = os.path.join(tempfile.gettempdir(), tmp_filename)
         # if self._bone == 'femur':
         #     new_seg_image = qc.get_knee_segmentation_with_femur_subregions(seg_image,
         #                                                                    fem_cart_label_idx=1)
         #     sitk.WriteImage(new_seg_image, path_save_tmp_file)
         # else:
-        sitk.WriteImage(self._seg_image, path_save_tmp_file)
-        vtk_seg_reader = read_nrrd(path_save_tmp_file,
-                                   set_origin_zero=True
-                                   )
-        vtk_seg = vtk_seg_reader.GetOutput()
+        # sitk.WriteImage(self._seg_image, path_save_tmp_file)
 
-        seg_transformer = SitkVtkTransformer(self._seg_image)
+        vtk_seg = sitk_to_vtk(copy.deepcopy(self._seg_image))
 
-        # Delete tmp files
-        safely_delete_tmp_file(tempfile.gettempdir(),
-                               tmp_filename)
+        # vtk_seg_reader = read_nrrd(path_save_tmp_file,
+        #                            set_origin_zero=True
+        #                            )
+        # vtk_seg = vtk_seg_reader.GetOutput()
+
+        # seg_transformer = SitkVtkTransformer(self._seg_image)
+
+        # # Delete tmp files
+        # safely_delete_tmp_file(tempfile.gettempdir(),
+        #                        tmp_filename)
         
-        self.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
+        # self.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
         labels = np.zeros(self._mesh.GetNumberOfPoints(), dtype=int)
 
         # if cartilage meshes don't exist yet, then make them. 
@@ -1474,7 +1478,7 @@ class BoneMesh(Mesh):
         
         # iterate over meshes and add their label (region) 
         for cart_mesh in self._list_cartilage_meshes:
-            cart_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
+            # cart_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
             node_data = get_cartilage_properties_at_points(self._mesh,
                                                            cart_mesh._mesh,
                                                            t2_vtk_image=None,
@@ -1484,14 +1488,14 @@ class BoneMesh(Mesh):
                                                            n_intersections=n_intersections
                                                            )
             labels += node_data[1]
-            cart_mesh.reverse_all_transforms()
+            # cart_mesh.reverse_all_transforms()
 
         # Assign the label (region) scalars to the bone mesh surface. 
         label_scalars = numpy_to_vtk(labels)
         label_scalars.SetName('labels')
         self._mesh.GetPointData().AddArray(label_scalars)
 
-        self.reverse_all_transforms()
+        # self.reverse_all_transforms()
     
     def get_cart_thickness_mean(self,
                                 region_idx):

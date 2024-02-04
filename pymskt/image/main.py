@@ -45,7 +45,9 @@ def read_nrrd(path, set_origin_zero=False):
     -------
     vtk.Filter
         End of VTK filter pipeline. 
-    """    
+    """
+
+    raise DeprecationWarning('Read image in SimpleITK and then convert to VTK. using `sitk_to_vtk` instead')
 
     image_reader = vtk.vtkNrrdReader()
     image_reader.SetFileName(path)
@@ -55,6 +57,36 @@ def read_nrrd(path, set_origin_zero=False):
         return change_origin
     elif set_origin_zero is False:
         return image_reader
+
+def sitk_to_vtk(sitk_image):
+    """
+    Convert a SimpleITK image to a VTK image.
+    
+    Parameters
+    ----------
+    sitk_image : SimpleITK.Image
+        Image to be converted to VTK image.
+    
+    Returns
+    -------
+    vtk.vtkImageData
+    """
+    vtk_image = vtk.vtkImageData()
+    size = sitk_image.GetSize()
+
+    vtk_image.SetDimensions(size)
+    vtk_image.SetSpacing(sitk_image.GetSpacing())
+    vtk_image.SetOrigin(sitk_image.GetOrigin())
+    vtk_image.SetExtent(0, size[0] - 1, 0, size[1] - 1, 0, size[2] - 1)
+    vtk_image.SetDirectionMatrix(sitk_image.GetDirection())
+
+    vtk_array = numpy_to_vtk(sitk.GetArrayFromImage(sitk_image).ravel())
+    vtk_array.SetNumberOfComponents(sitk_image.GetNumberOfComponentsPerPixel())
+    
+    vtk_image.GetPointData().SetScalars(vtk_array)
+
+    vtk_image.Modified()
+    return vtk_image
 
 
 def set_seg_border_to_zeros(seg_image,
