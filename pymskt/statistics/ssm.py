@@ -246,7 +246,7 @@ class SSM:
             'Vs_filename': f'{Vs_filename}.npy',
             'geometric_std': self._std_geometric,
             'list_vertex_features': self.vertex_features,
-            'list_vertex_features_stds': self._std_features,
+            'list_vertex_features_stds': None if self.vertex_features is None else self._std_features,
             'feature_norm_ignore_zero': self.feature_norm_ignore_zero,
             'dict_threshold_n_pcs': self.dict_threshold_n_pcs,
             'absolute_variance_explained': self.absolute_variance_explained,
@@ -254,8 +254,9 @@ class SSM:
         }
 
         # add feature specific stds for normalization
-        for idx, vertex_feature in enumerate(self.vertex_features):
-            dict_dump[f'{vertex_feature}_std'] = self._std_features[idx] 
+        if self.vertex_features is not None:
+            for idx, vertex_feature in enumerate(self.vertex_features):
+                dict_dump[f'{vertex_feature}_std'] = self._std_features[idx] 
 
         # Add whether points already corresponding... and registration parameters
         # registration parameters should be used for future registrations/using the model. 
@@ -367,7 +368,9 @@ class SSM:
         for pc in range(self.PCs.shape[1]):
             pred_ = self.scores_raw[pc,:][None,:].T @ self.PCs[:,pc][None,:]
             pred_[:,:3*self.n_points] *= self.std_geometric
-            pred_[:,3*self.n_points:] *= self.std_features[0]
+            if self.vertex_features is not None:
+                for idx in range(len(self.vertex_features)):
+                    pred_[:,3*self.n_points:] *= self.std_features[0]
             pred_ = self.mean + pred_
             variance = np.sum(np.square(pred_ - self.points))/self.points.shape[0]
             explained_var = self.total_variance - variance
@@ -449,7 +452,8 @@ class SSM:
             camera_position='xz',
             scalar_bar_range=[0, 4],
             background_color='white',
-            cmap=None
+            cmap=None,
+            **kwargs
         ):
 
         """Save gif"""
@@ -473,7 +477,9 @@ class SSM:
             scalar_bar_range=scalar_bar_range,
             cmap=cmap,
             verbose=False,
+            **kwargs
         )
+
     def save_gif_vector(
         self,
         path_save,
