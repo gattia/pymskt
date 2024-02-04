@@ -3,6 +3,9 @@
 # example scripts Anthony used for testing: 
 examples/**/test_*.ipynb
 
+# extra figures
+images/cart_thick_fig_pics/
+
 # Created by https://www.toptal.com/developers/gitignore/api/python
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
