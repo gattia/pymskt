@@ -14,4 +14,4 @@ import pymskt.statistics as statistics
 RTOL = 1e-4
 ATOL = 1e-5
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
