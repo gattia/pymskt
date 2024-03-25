@@ -1,29 +1,31 @@
 from operator import sub
+
 import pytest
-import pymskt as mskt
 import SimpleITK as sitk
 from numpy.testing import assert_allclose
 
-from pymskt import RTOL, ATOL
+import pymskt as mskt
+from pymskt import ATOL, RTOL
 
 try:
-    orig_femur_mesh = mskt.mesh.io.read_vtk('data/femur_mesh_orig.vtk')
-    downsampled_femur_mesh = mskt.mesh.io.read_vtk('data/femur_thickness_mm_10k_pts.vtk')
+    orig_femur_mesh = mskt.mesh.io.read_vtk("data/femur_mesh_orig.vtk")
+    downsampled_femur_mesh = mskt.mesh.io.read_vtk("data/femur_thickness_mm_10k_pts.vtk")
 except OSError:
-    orig_femur_mesh = mskt.mesh.io.read_vtk('../data/femur_mesh_orig.vtk')
-    downsampled_femur_mesh = mskt.mesh.io.read_vtk('../data/femur_thickness_mm_10k_pts.vtk')
+    orig_femur_mesh = mskt.mesh.io.read_vtk("../data/femur_mesh_orig.vtk")
+    downsampled_femur_mesh = mskt.mesh.io.read_vtk("../data/femur_thickness_mm_10k_pts.vtk")
+
 
 def assert_images_same(image1, image2):
     """
-    Helper function to assert that 2 SimpleITK images are the same. 
+    Helper function to assert that 2 SimpleITK images are the same.
 
     Parameters
     ----------
     image1 : SimpleITK.Image
-        Version 1 of the image. 
+        Version 1 of the image.
     image2 : SimpleITK.Image
-        Version 2 of the image. 
-    """    
+        Version 2 of the image.
+    """
     image1_array = sitk.GetArrayFromImage(image1)
     image2_array = sitk.GetArrayFromImage(image2)
 
@@ -32,10 +34,10 @@ def assert_images_same(image1, image2):
     assert image1.GetSpacing() == image2.GetSpacing()
     assert image1.GetDirection() == image2.GetDirection()
 
-def test_creating_bone(timing=False,
-                       verbose=False):
+
+def test_creating_bone(timing=False, verbose=False):
     """
-    Create femur mesh & compare its point coordinates to an already saved mesh. 
+    Create femur mesh & compare its point coordinates to an already saved mesh.
 
     Parameters
     ----------
@@ -43,13 +45,13 @@ def test_creating_bone(timing=False,
         Should the function be timed?, by default False
     verbose : bool, optional
         Should we print out results?, by default False
-    """    
+    """
 
     try:
-        femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', label_idx=5)
+        femur = mskt.mesh.BoneMesh(path_seg_image="data/right_knee_example.nrrd", label_idx=5)
     except OSError:
-        femur = mskt.mesh.BoneMesh(path_seg_image='../data/right_knee_example.nrrd', label_idx=5)
-    
+        femur = mskt.mesh.BoneMesh(path_seg_image="../data/right_knee_example.nrrd", label_idx=5)
+
     femur.create_mesh()
     femur_pts = femur.point_coords
 
@@ -57,9 +59,9 @@ def test_creating_bone(timing=False,
 
     assert_allclose(orig_femur_pts, femur_pts, rtol=RTOL, atol=ATOL)
 
+
 @pytest.mark.skip(reason="Different results on different machines")
-def test_resampling_bone(timing=False,
-                         verbose=False):
+def test_resampling_bone(timing=False, verbose=False):
     """
     Test resampling of surface mesh using pyacvd
 
@@ -69,12 +71,12 @@ def test_resampling_bone(timing=False,
         Should the function be timed?, by default False
     verbose : bool, optional
         Should we print out results?, by default False
-    """    
+    """
     try:
-        femur = mskt.mesh.BoneMesh(path_seg_image='data/right_knee_example.nrrd', label_idx=5)
+        femur = mskt.mesh.BoneMesh(path_seg_image="data/right_knee_example.nrrd", label_idx=5)
     except OSError:
-        femur = mskt.mesh.BoneMesh(path_seg_image='../data/right_knee_example.nrrd', label_idx=5)
-    
+        femur = mskt.mesh.BoneMesh(path_seg_image="../data/right_knee_example.nrrd", label_idx=5)
+
     # READ IN FEMUR MESH THAT IS ALREADY CREATED BUT NOT RESAMPLED! ONLY APPLY RESAMPLING
 
     femur.create_mesh()
@@ -86,7 +88,7 @@ def test_resampling_bone(timing=False,
     assert_allclose(downsampled_femur_pts, femur_pts, rtol=RTOL, atol=ATOL)
 
 
-
 if __name__ == "__main__":
     import time
+
     test_creating_bone(timing=True, verbose=True)
