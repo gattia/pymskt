@@ -1,37 +1,47 @@
 import pytest
-import pymskt as mskt
 import SimpleITK as sitk
 
-FEMUR_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/femur_cart_smoothed_binary_no_surface_resampling.vtk')
-MED_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/med_tib_cart_smoothed_binary_no_surface_resampling.vtk')
-LAT_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk('data/lat_tib_cart_smoothed_binary_no_surface_resampling.vtk')
-SEG_IMAGE = sitk.ReadImage('data/right_knee_example.nrrd')
+import pymskt as mskt
 
-from pymskt import RTOL, ATOL
+FEMUR_CARTILAGE_MESH = mskt.mesh.io.read_vtk(
+    "data/femur_cart_smoothed_binary_no_surface_resampling.vtk"
+)
+MED_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk(
+    "data/med_tib_cart_smoothed_binary_no_surface_resampling.vtk"
+)
+LAT_TIB_CARTILAGE_MESH = mskt.mesh.io.read_vtk(
+    "data/lat_tib_cart_smoothed_binary_no_surface_resampling.vtk"
+)
+SEG_IMAGE = sitk.ReadImage("data/right_knee_example.nrrd")
 
-def test_create_cartilage_meshes_single(
-    fem_cart_mesh=FEMUR_CARTILAGE_MESH,
-    seg_image=SEG_IMAGE
-):  
+from pymskt import ATOL, RTOL
+
+
+def test_create_cartilage_meshes_single(fem_cart_mesh=FEMUR_CARTILAGE_MESH, seg_image=SEG_IMAGE):
     mesh = mskt.mesh.BoneMesh(
         seg_image=seg_image,
-        list_cartilage_labels=[1,]
+        list_cartilage_labels=[
+            1,
+        ],
     )
 
     assert mesh.list_cartilage_meshes is None
 
     mesh.create_cartilage_meshes()
 
-    assert len(mesh.list_cartilage_meshes) == 1  
+    assert len(mesh.list_cartilage_meshes) == 1
 
-    mskt.utils.testing.assert_mesh_coordinates_same(mesh.list_cartilage_meshes[0].mesh, fem_cart_mesh, rtol=RTOL, atol=ATOL)
+    mskt.utils.testing.assert_mesh_coordinates_same(
+        mesh.list_cartilage_meshes[0].mesh, fem_cart_mesh, rtol=RTOL, atol=ATOL
+    )
 
-def test_create_cartilage_meshes_exception_no_pixels(
-    seg_image=SEG_IMAGE
-):
+
+def test_create_cartilage_meshes_exception_no_pixels(seg_image=SEG_IMAGE):
     mesh = mskt.mesh.BoneMesh(
         seg_image=seg_image,
-        list_cartilage_labels=[100,]
+        list_cartilage_labels=[
+            100,
+        ],
     )
     with pytest.warns(UserWarning):
         mesh.create_cartilage_meshes()
@@ -41,12 +51,9 @@ def test_create_multiple_cartilage_meshes(
     fem_cart_mesh=FEMUR_CARTILAGE_MESH,
     med_tib_cart_mesh=MED_TIB_CARTILAGE_MESH,
     lat_tib_cart_mesh=LAT_TIB_CARTILAGE_MESH,
-    seg_image=SEG_IMAGE
-):  
-    mesh = mskt.mesh.BoneMesh(
-        seg_image=seg_image,
-        list_cartilage_labels=[1, 2, 3]
-    )
+    seg_image=SEG_IMAGE,
+):
+    mesh = mskt.mesh.BoneMesh(seg_image=seg_image, list_cartilage_labels=[1, 2, 3])
 
     assert mesh.list_cartilage_meshes is None
 
@@ -54,6 +61,12 @@ def test_create_multiple_cartilage_meshes(
 
     assert len(mesh.list_cartilage_meshes) == 3
 
-    mskt.utils.testing.assert_mesh_coordinates_same(mesh.list_cartilage_meshes[0].mesh, fem_cart_mesh, rtol=RTOL, atol=ATOL)
-    mskt.utils.testing.assert_mesh_coordinates_same(mesh.list_cartilage_meshes[1].mesh, med_tib_cart_mesh, rtol=RTOL, atol=ATOL)
-    mskt.utils.testing.assert_mesh_coordinates_same(mesh.list_cartilage_meshes[2].mesh, lat_tib_cart_mesh, rtol=RTOL, atol=ATOL)
+    mskt.utils.testing.assert_mesh_coordinates_same(
+        mesh.list_cartilage_meshes[0].mesh, fem_cart_mesh, rtol=RTOL, atol=ATOL
+    )
+    mskt.utils.testing.assert_mesh_coordinates_same(
+        mesh.list_cartilage_meshes[1].mesh, med_tib_cart_mesh, rtol=RTOL, atol=ATOL
+    )
+    mskt.utils.testing.assert_mesh_coordinates_same(
+        mesh.list_cartilage_meshes[2].mesh, lat_tib_cart_mesh, rtol=RTOL, atol=ATOL
+    )
