@@ -1,9 +1,13 @@
 # cython: infer_types=True
 import numpy as np
+
 cimport cython
+
 from cython.parallel import prange
+
 from libc.math cimport exp as c_exp
 from libc.math cimport pow as c_pow
+
 # from libc.math cimport log as c_log
 
 ctypedef fused my_type:

@@ -1,5 +1,5 @@
 point-cloud-utils
-numpy ==1.21.*
+numpy
 Cython >= 0.29
 pyacvd
 #python=3.8.12
