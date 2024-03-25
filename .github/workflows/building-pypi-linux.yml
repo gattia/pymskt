@@ -19,7 +19,7 @@ jobs:
       - name: Set up Python 
         uses: actions/setup-python@v5
         with:
-          python-version: 3.7
+          python-version: 3.8
       
       - name: Install dependencies
         run: |
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-sdist
-          path: ./dist/*.tar.gz
+          path: ./wheelhouse/*.tar.gz
 
   #BUILD WHEELS ONLY NEEDED FOR NON-PURE PYTHON PACKAGES
   #This is described here: https://packaging.python.org/en/latest/overview/#python-binary-distributions
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/setup-python@v5
         name: Install Python
         with:
-          python-version: '3.7'
+          python-version: '3.8'
       
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.7.0
