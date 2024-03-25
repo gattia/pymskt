@@ -1,13 +1,13 @@
-import vtk
 import numpy as np
-from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
-from pymskt.utils import sigma2fwhm
 import pyvista as pv
-import pymskt
+import vtk
 from matplotlib import pyplot as plt
+from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
+import pymskt
+from pymskt.utils import sigma2fwhm
 
-# Some functions were originally based on the tutorial on ray casting in python + vtk 
+# Some functions were originally based on the tutorial on ray casting in python + vtk
 # by Adamos Kyriakou @:
 # https://pyscience.wordpress.com/2014/09/21/ray-casting-with-python-and-vtk-intersecting-linesrays-with-surface-meshes/
 
@@ -19,7 +19,7 @@ def is_hit(obb_tree, source, target):
     Parameters
     ----------
     obb_tree : vtk.vtkOBBTree
-        OBBTree of a surface mesh. 
+        OBBTree of a surface mesh.
     source : list
         x/y/z position of starting point of ray (to find intersection)
     target : list
@@ -28,24 +28,24 @@ def is_hit(obb_tree, source, target):
     Returns
     -------
     bool
-        Telling if the line (source to target) intersects the obb_tree. 
-    """    
+        Telling if the line (source to target) intersects the obb_tree.
+    """
 
     code = obb_tree.IntersectWithLine(source, target, None, None)
     if code == 0:
         return False
-    else: 
+    else:
         return True
 
 
 def get_intersect(obbTree, pSource, pTarget):
     """
-    Get intersecting points on the obbTree between a line from pSource to pTarget. 
+    Get intersecting points on the obbTree between a line from pSource to pTarget.
 
     Parameters
     ----------
     obb_tree : vtk.vtkOBBTree
-        OBBTree of a surface mesh. 
+        OBBTree of a surface mesh.
     pSource : list
         x/y/z position of starting point of ray (to find intersection)
     pTarget : list
@@ -55,8 +55,8 @@ def get_intersect(obbTree, pSource, pTarget):
     -------
     tuple (list1, list2)
         list1 is of the intersection points
-        list2 is the idx of the cells that were intersected. 
-    """    
+        list2 is the idx of the cells that were intersected.
+    """
     # Create an empty 'vtkPoints' object to store the intersection point coordinates
     points = vtk.vtkPoints()
     # Create an empty 'vtkIdList' object to store the ids of the cells that intersect
@@ -73,7 +73,7 @@ def get_intersect(obbTree, pSource, pTarget):
     # Get number of intersected cell ids
     n_Ids = cell_ids.GetNumberOfIds()
 
-    assert (n_points == n_Ids)
+    assert n_points == n_Ids
 
     # Loop through the found points and cells and store
     # them in lists
@@ -86,16 +86,14 @@ def get_intersect(obbTree, pSource, pTarget):
     return points_inter, cell_ids_inter
 
 
-def get_surface_normals(surface,
-                        point_normals_on=True,
-                        cell_normals_on=True):
+def get_surface_normals(surface, point_normals_on=True, cell_normals_on=True):
     """
     Get the surface normals of a mesh (`surface`
 
     Parameters
     ----------
     surface : vtk.vtkPolyData
-        surface mesh to get normals from 
+        surface mesh to get normals from
     point_normals_on : bool, optional
         Whether or not to get normals of points (vertices), by default True
     cell_normals_on : bool, optional
@@ -104,8 +102,8 @@ def get_surface_normals(surface,
     Returns
     -------
     vtk.vtkPolyDataNormals
-        Normval vectors for points/cells. 
-    """    
+        Normval vectors for points/cells.
+    """
 
     normals = vtk.vtkPolyDataNormals()
     normals.SetInputData(surface)
@@ -140,13 +138,13 @@ def get_obb_surface(surface):
     Parameters
     ----------
     surface : vtk.vtkPolyData
-        The surface mesh to get an OBBTree for. 
+        The surface mesh to get an OBBTree for.
 
     Returns
     -------
     vtk.vtkOBBTree
-        The OBBTree to be used to find intersections for calculating cartilage thickness etc. 
-    """    
+        The OBBTree to be used to find intersections for calculating cartilage thickness etc.
+    """
 
     obb = vtk.vtkOBBTree()
     obb.SetDataSet(surface)
@@ -156,30 +154,31 @@ def get_obb_surface(surface):
 
 def vtk_deep_copy(mesh):
     """
-    "Deep" copy a vtk.vtkPolyData so that they are not connected in any way. 
+    "Deep" copy a vtk.vtkPolyData so that they are not connected in any way.
 
     Parameters
     ----------
     mesh : vtk.vtkPolyData
-        Mesh to copy. 
+        Mesh to copy.
 
     Returns
     -------
     vtk.vtkPolyData
-        Copy of the input mesh. 
-    """    
+        Copy of the input mesh.
+    """
     new_mesh = vtk.vtkPolyData()
     new_mesh.DeepCopy(mesh)
     return new_mesh
 
-def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
+
+def estimate_mesh_scalars_FWHMs(mesh, scalar_name="thickness_mm"):
     """
-    Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars. 
+    Calculate the Full Width Half Maximum (FWHM) based on surface mesh scalars.
 
     Parameters
     ----------
     mesh : vtk.vtkPolyData
-        Surface mesh to estimate FWHM of the scalars from. 
+        Surface mesh to estimate FWHM of the scalars from.
     scalar_name : str, optional
         Name of the scalars to calcualte FWHM for, by default 'thickness_mm'
 
@@ -187,7 +186,7 @@ def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
     -------
     list
         List of the FWHM values. Assuming they are for X/Y/Z
-    """    
+    """
     gradient_filter = vtk.vtkGradientFilter()
     gradient_filter.SetInputData(mesh)
     gradient_filter.Update()
@@ -196,7 +195,7 @@ def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
 
     scalars = vtk_to_numpy(mesh.GetPointData().GetScalars())
     location_non_zero = np.where(scalars != 0)
-    gradient_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray('Gradients'))
+    gradient_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray("Gradients"))
     cartilage_gradients = gradient_scalars[location_non_zero, :][0]
 
     thickness_scalars = vtk_to_numpy(gradient_mesh.GetPointData().GetAbstractArray(scalar_name))
@@ -210,29 +209,29 @@ def estimate_mesh_scalars_FWHMs(mesh, scalar_name='thickness_mm'):
 
     return FWHMs
 
-def get_surface_distance(surface_1, 
-                         surface_2, 
-                         return_RMS=True,
-                         return_individual_distances=False):
+
+def get_surface_distance(surface_1, surface_2, return_RMS=True, return_individual_distances=False):
 
     if (return_RMS is True) & (return_individual_distances is True):
-        raise Exception('Nothing to return - either return_RMS or return_individual_distances must be `True`')
+        raise Exception(
+            "Nothing to return - either return_RMS or return_individual_distances must be `True`"
+        )
 
     pt_locator = vtk.vtkPointLocator()
     pt_locator.SetDataSet(surface_2)
     pt_locator.AutomaticOn()
     pt_locator.BuildLocator()
-    
+
     distances = np.zeros(surface_1.GetNumberOfPoints())
-    
+
     for pt_idx in range(surface_1.GetNumberOfPoints()):
         point_1 = np.asarray(surface_1.GetPoint(pt_idx))
         pt_idx_2 = pt_locator.FindClosestPoint(point_1)
         point_2 = np.asarray(surface_2.GetPoint(pt_idx_2))
-        distances[pt_idx] = np.sqrt(np.sum(np.square(point_2-point_1)))
-    
+        distances[pt_idx] = np.sqrt(np.sum(np.square(point_2 - point_1)))
+
     RMS = np.sqrt(np.mean(np.square(distances)))
-    
+
     if return_individual_distances is True:
         if return_RMS is True:
             return RMS, distances
@@ -242,13 +241,21 @@ def get_surface_distance(surface_1,
         if return_RMS is True:
             return RMS
 
-def get_symmetric_surface_distance(surface_1, surface_2):
-    surf1_to_2_distances = get_surface_distance(surface_1, surface_2, return_RMS=False, return_individual_distances=True)
-    surf2_to_1_distances = get_surface_distance(surface_2, surface_1, return_RMS=False, return_individual_distances=True)
 
-    symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (len(surf1_to_2_distances) + len(surf2_to_1_distances))
+def get_symmetric_surface_distance(surface_1, surface_2):
+    surf1_to_2_distances = get_surface_distance(
+        surface_1, surface_2, return_RMS=False, return_individual_distances=True
+    )
+    surf2_to_1_distances = get_surface_distance(
+        surface_2, surface_1, return_RMS=False, return_individual_distances=True
+    )
+
+    symmetric_distance = (np.sum(surf1_to_2_distances) + np.sum(surf2_to_1_distances)) / (
+        len(surf1_to_2_distances) + len(surf2_to_1_distances)
+    )
 
     return symmetric_distance
+
 
 class GIF:
     """
@@ -272,7 +279,7 @@ class GIF:
         Background color to use, by default 'white'
     path_save: str, optional
         Path to save GIF, by default '~/Downloads/ssm.gif'
-    
+
     Attributes
     ----------
     _plotter : pyvista.Plotter
@@ -291,7 +298,7 @@ class GIF:
         Background color to use.
     _path_save : str
         Path to save GIF.
-    
+
     Methods
     -------
     add_mesh_frame(mesh)
@@ -303,20 +310,20 @@ class GIF:
 
 
     """
+
     def __init__(
         self,
         plotter=None,
-        color='orange', 
-        show_edges=True, 
-        edge_color='black',
-        camera_position='xz',
+        color="orange",
+        show_edges=True,
+        edge_color="black",
+        camera_position="xz",
         window_size=[3000, 4000],
-        background_color='white',
-        path_save='~/Downloads/ssm.gif',
+        background_color="white",
+        path_save="~/Downloads/ssm.gif",
         scalar_bar_range=[0, 4],
-        cmap='viridis',
+        cmap="viridis",
         lighting=False,
-
     ):
         """
         Initialize the GIF class.
@@ -339,18 +346,18 @@ class GIF:
             Background color to use, by default 'white'
         path_save: str, optional
             Path to save GIF, by default '~/Downloads/ssm.gif'
-        
+
         """
         if plotter is None:
             self._plotter = pv.Plotter(notebook=False, off_screen=True)
         else:
             self._plotter = plotter
-        
-        if path_save[-3:] != 'gif':
-            raise Exception('path must be to a file ending with suffix `.gif`')
-        
+
+        if path_save[-3:] != "gif":
+            raise Exception("path must be to a file ending with suffix `.gif`")
+
         self.counter = 0
-        
+
         self._plotter.open_gif(path_save)
 
         self._color = color
@@ -363,36 +370,36 @@ class GIF:
         self._scalar_bar_range = scalar_bar_range
         self._cmap = plt.cm.get_cmap(cmap)
         self._lighting = lighting
-    
-    def update_view(
-        self
-    ):
+
+    def update_view(self):
         self._plotter.camera_position = self._camera_position
         self._plotter.window_size = self._window_size
         self._plotter.set_background(color=self._background_color)
-    
+
     def add_mesh_frame(self, mesh):
         if type(mesh) in (list, tuple):
             actors = []
             for mesh_ in mesh:
-                actors.append(self._plotter.add_mesh(
-                    mesh_, 
-                    render=False,
-                    color=self._color, 
-                    edge_color=self._edge_color, 
-                    show_edges=self._show_edges,
-                    cmap=self._cmap,
-                    clim=self._scalar_bar_range,
-                    lighting=self._lighting,
-                    n_colors=1000,
-                    # pbr=True,
-                ))
+                actors.append(
+                    self._plotter.add_mesh(
+                        mesh_,
+                        render=False,
+                        color=self._color,
+                        edge_color=self._edge_color,
+                        show_edges=self._show_edges,
+                        cmap=self._cmap,
+                        clim=self._scalar_bar_range,
+                        lighting=self._lighting,
+                        n_colors=1000,
+                        # pbr=True,
+                    )
+                )
         else:
             actor = self._plotter.add_mesh(
-                mesh, 
+                mesh,
                 render=False,
-                color=self._color, 
-                edge_color=self._edge_color, 
+                color=self._color,
+                edge_color=self._edge_color,
                 show_edges=self._show_edges,
                 cmap=self._cmap,
                 clim=self._scalar_bar_range,
@@ -405,21 +412,21 @@ class GIF:
             self.update_view()
         # self._plotter.update_scalar_bar_range(clim=self._scalar_bar_range)
         self._plotter.write_frame()
-        
+
         if type(mesh) in (list, tuple):
             for actor in actors:
                 self._plotter.remove_actor(actor)
         else:
             self._plotter.remove_actor(actor)
         self.counter += 1
-    
+
     def done(self):
         self._plotter.close()
-    
+
     @property
     def scalar_bar_range(self):
         return self._scalar_bar_range
-    
+
     @scalar_bar_range.setter
     def scalar_bar_range(self, scalar_bar_range):
         self._scalar_bar_range = scalar_bar_range
@@ -428,54 +435,55 @@ class GIF:
     @property
     def color(self):
         return self._color
-    
+
     @color.setter
     def color(self, color):
         self._color = color
-    
+
     @property
     def show_edges(self):
         return self._show_edges
-    
+
     @show_edges.setter
     def show_edges(self, show_edges):
         self._show_edges = show_edges
-    
+
     @property
     def edge_color(self):
         return self._edge_color
-    
+
     @edge_color.setter
     def edge_color(self, edge_color):
         self._edge_color = edge_color
-    
+
     @property
     def camera_position(self):
         return self._camera_position
-    
+
     @camera_position.setter
     def camera_position(self, camera_position):
         self._camera_position = camera_position
-    
+
     @property
     def window_size(self):
         return self._window_size
-    
+
     @window_size.setter
     def window_size(self, window_size):
         self._window_size = window_size
-    
+
     @property
     def background_color(self):
         return self._background_color
-    
+
     @background_color.setter
     def background_color(self, background_color):
         self._background_color = background_color
-    
+
     @property
     def path_save(self):
         return self._path_save
+
 
 def get_arrow(
     direction,
@@ -483,7 +491,7 @@ def get_arrow(
     scale=100,
     tip_length=0.25,
     tip_radius=0.1,
-    tip_resolution=20, 
+    tip_resolution=20,
     shaft_radius=0.05,
     shaft_resolution=20,
 ):
@@ -508,12 +516,12 @@ def get_arrow(
     normy = np.cross(normz, normx)
 
     four_by_four = np.identity(4)
-    four_by_four[:3,0] = normx
-    four_by_four[:3,1] = normy
-    four_by_four[:3,2] = normz
+    four_by_four[:3, 0] = normx
+    four_by_four[:3, 1] = normy
+    four_by_four[:3, 2] = normz
     four_by_four[:3, 3] = origin
 
     transform = pymskt.mesh.meshTransform.create_transform(four_by_four)
     arrow = pymskt.mesh.meshTransform.apply_transform(arrow, transform)
-    
+
     return arrow

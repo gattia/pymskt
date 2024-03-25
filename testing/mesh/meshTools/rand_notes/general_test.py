@@ -37,7 +37,7 @@
 #     resolution=0.1,
 #     magnitude_impulse=100
 # ):
-#     # Use the same logic as the above test. 
+#     # Use the same logic as the above test.
 #     # This test should be the same except that it will create identical meshes (no scalars, yet).
 #     # Create the mesh
 #     n_points = int(width_height * (1/resolution) + 1)
@@ -65,7 +65,7 @@
 #     # Add impulse at the center
 #     np_scalars[int(len(xv.flatten('F'))/2)] = magnitude_impulse
 
-#     # Apply scalars (and impulse) to mesh. 
+#     # Apply scalars (and impulse) to mesh.
 #     vtk_scalars = numpy_to_vtk(np.copy(np_scalars))
 #     vtk_scalars.SetName('test')
 #     mesh1.GetPointData().AddArray(vtk_scalars)
@@ -90,11 +90,11 @@
 #     pdf = norm.pdf(x)
 #     # Normalized pdf to magnitude of the scalars:
 #     # This scales the whole curve based on the size of the peak (center)
-#     # of the curve in relation to our calcualted distribution. 
+#     # of the curve in relation to our calcualted distribution.
 #     middle_idx = int((n_points-1)/2)
 #     pdf = pdf / (pdf[middle_idx] / unraveled[middle_idx, middle_idx])
 
-#     # assert that the x & y axies (down the middle) follow the expected normal distribution. 
+#     # assert that the x & y axies (down the middle) follow the expected normal distribution.
 #     assert_allclose(pdf, unraveled[middle_idx,:], atol=1e-4)
 #     assert_allclose(pdf, unraveled[:, middle_idx], atol=1e-4)
 
@@ -136,10 +136,10 @@
 #     return np.sqrt(np.sum(np.square(diff + epsilon)))
 
 # def test_get_smoothed_scalars(
-#     max_dist=1.1, # use 1.1 so only need to get single points in-line(x/y) & no diag for testing - but dont want 1.0 otherwise weighting = 0 for all other points. 
+#     max_dist=1.1, # use 1.1 so only need to get single points in-line(x/y) & no diag for testing - but dont want 1.0 otherwise weighting = 0 for all other points.
 #     order=2.
 # ):
-#     # Create small mesh that can easily manually calculate the outcomes. 
+#     # Create small mesh that can easily manually calculate the outcomes.
 
 #     width_height = 1
 #     resolution = 1
@@ -181,25 +181,23 @@
 #             if j < width_height:
 #                 scalars.append(np_scalars_reshaped[i, j+1])
 #                 distances.append(dist(1.0))
-#             weights = (max_dist - np.asarray(distances))**order 
+#             weights = (max_dist - np.asarray(distances))**order
 #             weighted_scalars = weights * np.asarray(scalars)
 #             normalized_point = np.sum(weighted_scalars) / np.sum(weights)
 #             np_scalars_smoothed_test[i, j] = normalized_point
 
 
-
-#     # Apply scalars (and impulse) to mesh. 
+#     # Apply scalars (and impulse) to mesh.
 #     vtk_scalars = numpy_to_vtk(np.copy(np_scalars))
 #     vtk_scalars.SetName('test')
 #     mesh.GetPointData().AddArray(vtk_scalars)
 #     mesh.GetPointData().SetActiveScalars('test')
-    
 
 
 #     scalars_smoothed = meshTools.get_smoothed_scalars(
-#         mesh, 
-#         max_dist=max_dist, 
-#         order=order, 
+#         mesh,
+#         max_dist=max_dist,
+#         order=order,
 #         gaussian=False
 #     )
 
@@ -219,7 +217,7 @@
 # ):
 #     # This function gaussian filters an impulse & ensures that the resulting grid follows a normal distribution.
 #     # Calculates the smoothed mesh/points & then compares lines through the center in the x & y axes to a normal
-#     # distribution. 
+#     # distribution.
 
 #     # Create the mesh
 #     n_points = int(width_height * (1/resolution) + 1)
@@ -244,22 +242,22 @@
 #     # Add impulse at the center
 #     np_scalars[int(len(xv.flatten('F'))/2)] = magnitude_impulse
 
-#     # Apply scalars (and impulse) to mesh. 
+#     # Apply scalars (and impulse) to mesh.
 #     vtk_scalars = numpy_to_vtk(np.copy(np_scalars))
 #     vtk_scalars.SetName('test')
 #     mesh.GetPointData().AddArray(vtk_scalars)
 #     mesh.GetPointData().SetActiveScalars('test')
 
-#     # gaussian filter the points. 
+#     # gaussian filter the points.
 #     mesh2 = meshTools.gaussian_smooth_surface_scalars(
-#         mesh=mesh, 
-#         sigma=sigma, 
-#         idx_coords_to_smooth=None, 
-#         array_name='test', 
+#         mesh=mesh,
+#         sigma=sigma,
+#         idx_coords_to_smooth=None,
+#         array_name='test',
 #         array_idx=None
 #     )
 
-#     # retrieve and re-shape the filtered scalars. 
+#     # retrieve and re-shape the filtered scalars.
 #     smoothed_scalars = vtk_to_numpy(mesh2.GetPointData().GetScalars())
 #     unraveled = np.reshape(smoothed_scalars, (n_points, n_points), order="F")
 
@@ -269,14 +267,13 @@
 #     pdf = norm.pdf(x)
 #     # Normalized pdf to magnitude of the scalars:
 #     # This scales the whole curve based on the size of the peak (center)
-#     # of the curve in relation to our calcualted distribution. 
+#     # of the curve in relation to our calcualted distribution.
 #     middle_idx = int((n_points-1)/2)
 #     pdf = pdf / (pdf[middle_idx] / unraveled[middle_idx, middle_idx])
 
-#     # assert that the x & y axies (down the middle) follow the expected normal distribution. 
+#     # assert that the x & y axies (down the middle) follow the expected normal distribution.
 #     assert_allclose(pdf, unraveled[middle_idx,:], atol=1e-4)
 #     assert_allclose(pdf, unraveled[:, middle_idx], atol=1e-4)
-
 
 
 # def test_gaussian_smooth_surface_scalars_use_idx_for_base_mesh():

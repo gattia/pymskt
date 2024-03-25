@@ -1,8 +1,9 @@
-from typing import Optional
 import os
-import vtk
-import SimpleITK as sitk
+from typing import Optional
+
 import numpy as np
+import SimpleITK as sitk
+import vtk
 from vtk.util.numpy_support import numpy_to_vtk
 
 
@@ -13,21 +14,22 @@ def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
     Parameters
     ----------
     vtk_image : vtk.image
-        VTK image that we want to change the origin of. 
+        VTK image that we want to change the origin of.
     new_origin : tuple, optional
         New origin to asign to `vtk_image`, by default (0, 0, 0)
 
     Returns
     -------
     vtk.Filter
-        End of VTK filter pipeline after applying origin change. 
-    """    
+        End of VTK filter pipeline after applying origin change.
+    """
 
     change_origin = vtk.vtkImageChangeInformation()
     change_origin.SetInputConnection(vtk_image.GetOutputPort())
     change_origin.SetOutputOrigin(new_origin)
     change_origin.Update()
     return change_origin
+
 
 def read_nrrd(path, set_origin_zero=False):
     """
@@ -37,15 +39,15 @@ def read_nrrd(path, set_origin_zero=False):
     Parameters
     ----------
     path : str
-        Path to `.nrrd` medical image to read in. 
+        Path to `.nrrd` medical image to read in.
     set_origin_zero : bool, optional
         Bool to determine if origin should be set to zeros, by default False
 
     Returns
     -------
     vtk.Filter
-        End of VTK filter pipeline. 
-    """    
+        End of VTK filter pipeline.
+    """
 
     image_reader = vtk.vtkNrrdReader()
     image_reader.SetFileName(path)
@@ -57,29 +59,30 @@ def read_nrrd(path, set_origin_zero=False):
         return image_reader
 
 
-def set_seg_border_to_zeros(seg_image,
-                            border_size=1):
+def set_seg_border_to_zeros(seg_image, border_size=1):
     """
-    Utility function to ensure that all segmentations are "closed" after marching cubes. 
-    If the segmentation extends to the edges of the image then the surface wont be closed 
-    at the places it touches the edges. 
+    Utility function to ensure that all segmentations are "closed" after marching cubes.
+    If the segmentation extends to the edges of the image then the surface wont be closed
+    at the places it touches the edges.
 
     Parameters
     ----------
     seg_image : SimpleITK.Image
-        Image of a segmentation. 
+        Image of a segmentation.
     border_size : int, optional
         The size of the border to set around the edges of the 3D image, by default 1
 
     Returns
     -------
     SimpleITK.Image
-        The image with border set to 0 (background). 
-    """    
+        The image with border set to 0 (background).
+    """
 
     seg_array = sitk.GetArrayFromImage(seg_image)
     new_seg_array = np.zeros_like(seg_array)
-    new_seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size] = seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size]
+    new_seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size] = (
+        seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size]
+    )
     new_seg_image = sitk.GetImageFromArray(new_seg_array)
     new_seg_image.CopyInformation(seg_image)
     return new_seg_image
@@ -87,23 +90,23 @@ def set_seg_border_to_zeros(seg_image,
 
 def smooth_image(image, label_idx, variance=1.0):
     """
-    Smooth a single label in a SimpleITK image. Used as pre-processing for 
-    bones/cartilage before applying marching cubes. Helps obtain smooth surfaces. 
+    Smooth a single label in a SimpleITK image. Used as pre-processing for
+    bones/cartilage before applying marching cubes. Helps obtain smooth surfaces.
 
     Parameters
     ----------
     image : SimpleITK.Image
-        Image to be smoothed. 
+        Image to be smoothed.
     label_idx : int
-        Integer of the tissue of interest to be smoothed in the image. 
+        Integer of the tissue of interest to be smoothed in the image.
     variance : float, optional
         The size of the smoothing, by default 1.0
 
     Returns
     -------
     SimpleITK.Image
-        Image of only the label (tissue) of interest after being smoothed. 
-    """    
+        Image of only the label (tissue) of interest after being smoothed.
+    """
     new_image = binarize_segmentation_image(image, label_idx)
 
     new_image = sitk.Cast(new_image, sitk.sitkFloat32)
@@ -116,10 +119,11 @@ def smooth_image(image, label_idx, variance=1.0):
 
     return filtered_new_image
 
+
 def binarize_segmentation_image(seg_image, label_idx):
     """
     Return segmentation that is only 0s/1s, with 1s where label_idx is
-    located in the image. 
+    located in the image.
 
     Parameters
     ----------
@@ -132,8 +136,8 @@ def binarize_segmentation_image(seg_image, label_idx):
     Returns
     -------
     SimpleITK.Image
-        New segmentation image that is binarized. 
-    """    
+        New segmentation image that is binarized.
+    """
     array = sitk.GetArrayFromImage(seg_image)
     array_ = np.zeros_like(array)
     array_[array == label_idx] = 1
@@ -141,23 +145,26 @@ def binarize_segmentation_image(seg_image, label_idx):
     new_seg_image.CopyInformation(seg_image)
     return new_seg_image
 
-def crop_bone_based_on_width(seg_image,
-                             bone_idx,
-                             np_med_lat_axis=0,
-                             np_inf_sup_axis=1,
-                             bone_crop_distal=True,
-                             value_to_reassign=0,
-                             percent_width_to_crop_height=1.0):
+
+def crop_bone_based_on_width(
+    seg_image,
+    bone_idx,
+    np_med_lat_axis=0,
+    np_inf_sup_axis=1,
+    bone_crop_distal=True,
+    value_to_reassign=0,
+    percent_width_to_crop_height=1.0,
+):
     """
     Crop the bone labelmap of a SimpleITK.Image so that it is proportional to the
-    bones medial/lateral width. 
+    bones medial/lateral width.
 
     Parameters
     ----------
     seg_image : SimpleITK.Image
-        Image to be cropped. 
+        Image to be cropped.
     bone_idx : int
-        Label_index of the bone to be cropped. 
+        Label_index of the bone to be cropped.
     np_med_lat_axis : int, optional
         Medial/lateral axis, by default 0
     np_inf_sup_axis : int, optional
@@ -172,14 +179,16 @@ def crop_bone_based_on_width(seg_image,
     Returns
     -------
     SimpleITK.Image
-        Image after bone is cropped as a proportion of the bone's width. 
-    """    
+        Image after bone is cropped as a proportion of the bone's width.
+    """
     seg_array = sitk.GetArrayFromImage(seg_image)
     loc_bone = np.where(seg_array == bone_idx)
-    med_lat_width_bone_mm = (np.max(loc_bone[np_med_lat_axis]) - np.min(loc_bone[np_med_lat_axis])) * \
-                            seg_image.GetSpacing()[::-1][np_med_lat_axis]
-    inf_sup_crop_in_pixels = (med_lat_width_bone_mm / seg_image.GetSpacing()[::-1][
-        np_inf_sup_axis]) * percent_width_to_crop_height
+    med_lat_width_bone_mm = (
+        np.max(loc_bone[np_med_lat_axis]) - np.min(loc_bone[np_med_lat_axis])
+    ) * seg_image.GetSpacing()[::-1][np_med_lat_axis]
+    inf_sup_crop_in_pixels = (
+        med_lat_width_bone_mm / seg_image.GetSpacing()[::-1][np_inf_sup_axis]
+    ) * percent_width_to_crop_height
     if bone_crop_distal is True:
         bone_distal_idx = np.max(loc_bone[np_inf_sup_axis])
         bone_proximal_idx = bone_distal_idx - inf_sup_crop_in_pixels
@@ -196,7 +205,9 @@ def crop_bone_based_on_width(seg_image,
     min_inf_sup_idx = min(bone_distal_idx, bone_proximal_idx)
 
     idx_bone_to_keep = np.where(
-        (loc_bone[np_inf_sup_axis] > min_inf_sup_idx) & (loc_bone[np_inf_sup_axis] < max_inf_sup_idx))
+        (loc_bone[np_inf_sup_axis] > min_inf_sup_idx)
+        & (loc_bone[np_inf_sup_axis] < max_inf_sup_idx)
+    )
     loc_bone_to_remove = tuple([np.delete(x, idx_bone_to_keep) for x in loc_bone])
 
     seg_array[loc_bone_to_remove] = value_to_reassign
@@ -206,11 +217,12 @@ def crop_bone_based_on_width(seg_image,
 
     return new_seg_image
 
+
 def apply_transform_retain_array(image, transform, interpolator=sitk.sitkNearestNeighbor):
     """
-    This function will move the actual image in space but keep the underlying array the same. 
-    So, in x/y/z land the pixels are in a new location, but the actual underlying data array 
-    is the same. 
+    This function will move the actual image in space but keep the underlying array the same.
+    So, in x/y/z land the pixels are in a new location, but the actual underlying data array
+    is the same.
 
     Parameters
     ----------
@@ -225,18 +237,24 @@ def apply_transform_retain_array(image, transform, interpolator=sitk.sitkNearest
     -------
     SimpleITK.Image
         New image after applying the appropriate transform.
-    
+
     Notes
     -----
     I have a feeling that this is overkill.
-    """    
+    """
 
     inverse_transform = transform.GetInverse()
     new_origin = inverse_transform.TransformPoint(image.GetOrigin())
 
-    new_x = inverse_transform.TransformPoint(image.TransformIndexToPhysicalPoint((image.GetSize()[0], 0, 0)))
-    new_y = inverse_transform.TransformPoint(image.TransformIndexToPhysicalPoint((0, image.GetSize()[1], 0)))
-    new_z = inverse_transform.TransformPoint(image.TransformIndexToPhysicalPoint((0, 0, image.GetSize()[2])))
+    new_x = inverse_transform.TransformPoint(
+        image.TransformIndexToPhysicalPoint((image.GetSize()[0], 0, 0))
+    )
+    new_y = inverse_transform.TransformPoint(
+        image.TransformIndexToPhysicalPoint((0, image.GetSize()[1], 0))
+    )
+    new_z = inverse_transform.TransformPoint(
+        image.TransformIndexToPhysicalPoint((0, 0, image.GetSize()[2]))
+    )
 
     # Create x-axis vector
     new_x_vector = np.asarray(new_x) - np.asarray(new_origin)
@@ -249,29 +267,32 @@ def apply_transform_retain_array(image, transform, interpolator=sitk.sitkNearest
     new_z_vector /= np.sqrt(np.sum(np.square(new_z_vector)))
     # New image size (shape)
     new_size = image.GetSize()
-    # New image spacing 
+    # New image spacing
     new_spacing = image.GetSpacing()
-    # Create 3x3 transformation matrix from the x/y/z unit vectors. 
-    new_three_by_three = np.zeros((3,3))
-    new_three_by_three[:,0] = new_x_vector
-    new_three_by_three[:,1] = new_y_vector
-    new_three_by_three[:,2] = new_z_vector
+    # Create 3x3 transformation matrix from the x/y/z unit vectors.
+    new_three_by_three = np.zeros((3, 3))
+    new_three_by_three[:, 0] = new_x_vector
+    new_three_by_three[:, 1] = new_y_vector
+    new_three_by_three[:, 2] = new_z_vector
 
-    new_image = sitk.Resample(image, 
-                              new_size,
-                              transform,
-                              interpolator,
-                              new_origin, 
-                              new_spacing,
-                              new_three_by_three.flatten().tolist())
+    new_image = sitk.Resample(
+        image,
+        new_size,
+        transform,
+        interpolator,
+        new_origin,
+        new_spacing,
+        new_three_by_three.flatten().tolist(),
+    )
     return new_image
+
 
 def create_vtk_image(
     origin: Optional[int] = [0, 0, 0],
     dimensions: Optional[list] = [20, 20, 20],
-    spacing: Optional[float] = [1., 1., 1.],
-    scalar: Optional[float] = 20.,
-    data: Optional[np.ndarray] = None
+    spacing: Optional[float] = [1.0, 1.0, 1.0],
+    scalar: Optional[float] = 20.0,
+    data: Optional[np.ndarray] = None,
 ):
     """
     Function to create a 3D vtkimage from a numpy array
@@ -289,8 +310,8 @@ def create_vtk_image(
         Scalar value to use for a uniform image, by default 20.
     data : Optional[np.ndarray], optional
         Data for a non-uniform image, by default None
-    """    
-    
+    """
+
     if data is None:
         data = np.ones(dimensions) * scalar
     else:
@@ -300,8 +321,8 @@ def create_vtk_image(
             dimensions = [1, 1, 1]
             for idx, dim_size in enumerate(data.shape):
                 dimensions[idx] = dim_size
-    vtk_array = numpy_to_vtk(data.flatten(order='F'))
-    vtk_array.SetName('test')
+    vtk_array = numpy_to_vtk(data.flatten(order="F"))
+    vtk_array.SetName("test")
 
     # points = vtk.vtkDoubleArray()
     # points.SetName('test')
@@ -319,44 +340,44 @@ def create_vtk_image(
     vtk_image.SetOrigin(*origin)
     vtk_image.SetDimensions(*dimensions)
     vtk_image.SetSpacing(*spacing)
-    vtk_image.GetPointData().SetScalars(vtk_array)            
+    vtk_image.GetPointData().SetScalars(vtk_array)
 
-# 
+    #
     return vtk_image
+
 
 def get_largest_component_binary(
     seg,
 ):
     if isinstance(seg, np.ndarray):
-        input_type = 'array'
+        input_type = "array"
         seg = sitk.GetImageFromArray(seg)
     else:
-        input_type = 'sitk'
+        input_type = "sitk"
 
-    labelled_regions_image = sitk.RelabelComponent(sitk.ConnectedComponent(seg == 1), sortByObjectSize=True)
+    labelled_regions_image = sitk.RelabelComponent(
+        sitk.ConnectedComponent(seg == 1), sortByObjectSize=True
+    )
     # labelled_regions = sitk.GetArrayFromImage(labelled_regions_image)
     largest_component = labelled_regions_image == 1
 
-    if input_type == 'array':
+    if input_type == "array":
         largest_component = sitk.GetArrayFromImage(largest_component)
-    
+
     return largest_component
 
-def get_largest_connected_components(
-    seg,
-    labels
-):
+
+def get_largest_connected_components(seg, labels):
     if isinstance(labels, int):
         labels = [labels]
-    
+
     if isinstance(seg, np.ndarray):
-        input_type = 'array'
+        input_type = "array"
         seg_array = seg
         seg = sitk.GetImageFromArray(seg)
     else:
         seg_array = sitk.GetArrayFromImage(seg)
-        input_type = 'sitk'
-        
+        input_type = "sitk"
 
     result = np.zeros_like(seg_array)
     other_labels = [label_idx for label_idx in np.unique(seg_array) if label_idx not in labels]
@@ -367,9 +388,9 @@ def get_largest_connected_components(
         binary_seg_array = (seg_array == label).astype(int)
         largest_connected = get_largest_component_binary(binary_seg_array)
         result[largest_connected == 1] = label
-    
-    if input_type == 'sitk':
+
+    if input_type == "sitk":
         result = sitk.GetImageFromArray(result)
         result.CopyInformation(seg)
-    
+
     return result

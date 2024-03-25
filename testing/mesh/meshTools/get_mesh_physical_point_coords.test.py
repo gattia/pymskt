@@ -1,24 +1,21 @@
-from pymskt.mesh import meshTools
-import vtk
 import numpy as np
-from vtk.util.numpy_support import numpy_to_vtk
+import vtk
 from numpy.testing import assert_allclose
+from vtk.util.numpy_support import numpy_to_vtk
 
-from pymskt import RTOL, ATOL
+from pymskt import ATOL, RTOL
+from pymskt.mesh import meshTools
 
-NP_POINTS = np.asarray([
-        [0, 0, 0],
-        [1, 1, 1],
-        [10, 10, 10]
-    ])
+NP_POINTS = np.asarray([[0, 0, 0], [1, 1, 1], [10, 10, 10]])
 
 #
 # get_mesh_physical_point_coords
 #
 
+
 def test_get_mesh_physical_point_coords(np_points=NP_POINTS):
     vtk_points_ = numpy_to_vtk(np_points)
-    vtk_points_.SetName('test')
+    vtk_points_.SetName("test")
     vtk_points = vtk.vtkPoints()
     vtk_points.SetData(vtk_points_)
 
