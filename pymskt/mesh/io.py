@@ -90,7 +90,7 @@ def write_vtk(mesh, filepath, scalar_name=None, points_dtype=float, write_binary
     if scalar_name is not None:
         writer.SetScalarsName(scalar_name)
 
-    if extension != ".obj":
+    if extension in (".stl", ".vtk"):
         if write_binary is True:
             writer.SetFileTypeToBinary()
 
