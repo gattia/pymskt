@@ -80,9 +80,9 @@ def set_seg_border_to_zeros(seg_image, border_size=1):
 
     seg_array = sitk.GetArrayFromImage(seg_image)
     new_seg_array = np.zeros_like(seg_array)
-    new_seg_array[
-        border_size:-border_size, border_size:-border_size, border_size:-border_size
-    ] = seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size]
+    new_seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size] = (
+        seg_array[border_size:-border_size, border_size:-border_size, border_size:-border_size]
+    )
     new_seg_image = sitk.GetImageFromArray(new_seg_array)
     new_seg_image.CopyInformation(seg_image)
     return new_seg_image
