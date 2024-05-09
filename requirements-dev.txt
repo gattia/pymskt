@@ -1,6 +1,6 @@
 pytest 
-black 
-isort 
+black==24.1.0
+isort==5.13.2
 wheel 
 pdoc3 
 coverage 
