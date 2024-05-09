@@ -74,7 +74,7 @@ class FitCylinderFemur:
         if self.inertial_matrix_artic_surf is None:
             self.get_inertial_matrix_articular_surface()
         self.inertial_aligned_pts_articular_cylinder = (
-            self.inertial_matrix_artic_surf @ self.pts_articular_cylinder.T
+            self.inv_inertial_matrix_artic_surf @ self.pts_articular_cylinder.T
         )
 
     def guess_height(self):
@@ -114,9 +114,9 @@ class FitCylinderFemur:
             ]
         )
 
-        origin1 = self.inv_inertial_matrix_artic_surf @ origin1.T
+        origin1 = self.inertial_matrix_artic_surf @ origin1.T
         origin1 = np.squeeze(origin1.T)
-        origin2 = self.inv_inertial_matrix_artic_surf @ origin2.T
+        origin2 = self.inertial_matrix_artic_surf @ origin2.T
         origin2 = np.squeeze(origin2.T)
 
         # Set the origin to a point just inside of the extreme on the min_x side (whether thats medial or lateral)
