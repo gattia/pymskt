@@ -170,7 +170,70 @@ def getAnteriorOfWeightBearing(segArray, femurIndex=1):
     return (trochY, trochX)
 
 
-def getCartilageSubRegions(
+def get_superior_fem_cart_region(seg_array, fem_cart_idx=2, ratio=0.33):
+    # get the average location of the fem cartilage
+    # in the IS direction for each slice.
+    mean_fem_ap = np.zeros(seg_array.shape[2])
+    # iteratve over slices
+    for ap_idx in range(seg_array.shape[2]):
+        # get locations where fem cartilage is
+        slice_ = np.where(seg_array[:, :, ap_idx] == fem_cart_idx)
+        # get average of fem cart locations
+        mean_ = np.mean(slice_[1])
+        # store result
+        mean_fem_ap[ap_idx] = mean_
+
+    # get the top of the femoral cartilage globally (in IS)
+    top_fem_cart = np.min(np.where(seg_array == fem_cart_idx)[1])
+
+    # create a superior decision boundary between the
+    # top of the fem cartilag and the average of the fem cartilage
+    # at that slice. This position is a ratio between the two. If
+    # the ratio = 0.5 its the middle, if 1.0 its the top
+    # if 0.0 its the mean of the fem cart at that slice.
+    # default 0.33 is above the middle of the femur for that slice,
+    # but below the midway point.
+    wb_IS_cutoff = mean_fem_ap * (1 - ratio) + top_fem_cart * ratio
+
+    # create a mask for all cartilage above this wb_IS_cutoff
+    superior_mask = np.zeros_like(seg_array)
+
+    # set the parts anterior to the fem cart as all having
+    # the same mask that would happen at the most anterior border
+    # and the ones behind the fem cart to be the same as the last
+    # point.
+    # get all fem cart points.
+    loc_fem_cart = np.where(seg_array == fem_cart_idx)
+    # Get the anterior point of fem cart
+    ap_start_idx = np.min(loc_fem_cart[-1])
+    # get posterior point.
+    ap_end_idx = np.max(loc_fem_cart[-1])
+
+    # get the anterior/posterior parts of the mask.
+    superior_mask[:, : int(wb_IS_cutoff[ap_start_idx]), :ap_start_idx] = 1
+    superior_mask[:, : int(wb_IS_cutoff[ap_end_idx]), ap_end_idx:] = 1
+
+    # iterate over all other slices between the ant/post and
+    # fill mask accordingly
+    for ap_idx in range(ap_start_idx, ap_end_idx):
+        # get the border for the superior/inferior regions
+        border_ = wb_IS_cutoff[ap_idx]
+        if np.isfinite(border_):
+            # If its finite, then make it the official border used
+            # for masking.
+            border = int(border_)
+            # If it wasnt finite, then this isnt updated,
+            # which means that the last time it was finite will
+            # be used. This handles the casess where cartilage holes
+            # could potentially cause there to be no values.
+            # Thought - its unlikely there wuold be complete holes
+            # along the entire medial/lateral condyles.
+        superior_mask[:, :border, ap_idx] = 1
+
+    return superior_mask
+
+
+def get_cartilage_subregions(
     segArray,
     anteriorWBslice,
     posteriorWBslice,
@@ -183,7 +246,7 @@ def getCartilageSubRegions(
     latWbFemurMask=7,
     medPostFemurMask=8,
     latPostFemurMask=9,
-    mid_fem_y=None,
+    # mid_fem_y=None,
 ):
     """
     Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.
@@ -232,15 +295,20 @@ def getCartilageSubRegions(
     wb_femur_mask = np.zeros_like(segArray)
     wb_femur_mask[:, :, anteriorWBslice:posteriorWBslice] = 1
 
+    superior_mask = get_superior_fem_cart_region(segArray, fem_cart_idx=femurLabel, ratio=0.33)
+
     # only get weight bearing from the lower part of the femur - to make
     # sure don't accidentall get the top of the posterior condyle when it wraps back around.
-    distal_fem_cart = np.zeros_like(segArray)
-    distal_fem_cart[:, mid_fem_y:, :] = 1
 
-    wb_femur_mask = wb_femur_mask * distal_fem_cart
+    # If its the wb_femur region, but above the superior mask cut line
+    # then assign to be wb_reror and actually assign to be posteror_femur_mask
+    wb_femur_mask_error = wb_femur_mask * superior_mask
+    wb_femur_mask[wb_femur_mask_error == 1] = 0  # fix the wb_femur_mask
 
     posterior_femur_mask = np.zeros_like(segArray)
     posterior_femur_mask[:, :, posteriorWBslice:] = 1
+
+    posterior_femur_mask = np.max((wb_femur_mask_error, posterior_femur_mask), axis=0)
 
     # create seg of just femur - and then break it into the sub-regions
     femurSegArray = np.zeros_like(segArray)
@@ -475,7 +543,7 @@ def get_knee_segmentation_with_femur_subregions(
     # Get midpoint of femoral cartilage in the inferior/superior direction
     fem_y_midpoint = np.round(np.mean(loc_fem_y)).astype(int)
 
-    new_seg_array = getCartilageSubRegions(
+    new_seg_array = get_cartilage_subregions(
         sitk.GetArrayViewFromImage(seg_image),
         anteriorWBslice=troch_notch_x,
         posteriorWBslice=posterior_wb_slice,
