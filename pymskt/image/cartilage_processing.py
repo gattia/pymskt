@@ -1,6 +1,7 @@
 import numpy as np
 import SimpleITK as sitk
 from scipy import ndimage as ndi
+import warnings
 
 
 def CofM(array):
@@ -246,7 +247,7 @@ def get_cartilage_subregions(
     latWbFemurMask=7,
     medPostFemurMask=8,
     latPostFemurMask=9,
-    # mid_fem_y=None,
+    mid_fem_y=None,
 ):
     """
     Take cartilage segmentation, and decompose femoral cartilage into subregions of interest.
@@ -276,6 +277,8 @@ def get_cartilage_subregions(
         Label medial posterior femur should be labeled in final segmentation.
     latPostFemurMask : int
         Label lateral posterior femur should be labeled in final segmentation.
+    mid_fem_y : int
+        Deprecated - not used.
     Returns
     -------
     final_segmentation : array
@@ -284,6 +287,10 @@ def get_cartilage_subregions(
     -----
 
     """
+
+    if mid_fem_y is not None:
+        # warning that this is deprecated and not used.
+        warnings.warn("mid_fem_y is deprecated and not used.")
 
     # array to store final segmentation
     final_segmentation = np.zeros_like(segArray)
