@@ -1,7 +1,8 @@
+import warnings
+
 import numpy as np
 import SimpleITK as sitk
 from scipy import ndimage as ndi
-import warnings
 
 
 def CofM(array):
