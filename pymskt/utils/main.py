@@ -1,8 +1,8 @@
-import vtk
-import numpy as np
-import os
 import errno
+import os
 
+import numpy as np
+import vtk
 
 
 def l2n(l):
@@ -18,7 +18,7 @@ def l2n(l):
     -------
     numpy.ndarray
         array created from inputted list `l`
-    """    
+    """
     return np.array(l)
 
 
@@ -29,19 +29,19 @@ def n2l(n):
     Parameters
     ----------
     n : numpy.ndarray
-        array to convert into list. 
+        array to convert into list.
 
     Returns
     -------
     list
         list created from inputted numpy array `n`.
-    """    
+    """
     return list(n)
 
 
 def create_4x4_from_3x3(three_by_three, translation=None):
     """
-    Create a 4x4 transformation matrix from a 3x3 transformation matrix. 
+    Create a 4x4 transformation matrix from a 3x3 transformation matrix.
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def create_4x4_from_3x3(three_by_three, translation=None):
     numpy.ndarray
         4x4 transformation matrix created from inputted
         `three_by_three` and `translation`.
-    """    
+    """
     if len(three_by_three) == 9:
         three_by_three = np.reshape(three_by_three, (3, 3))
     four_by_four = np.identity(4)
@@ -69,16 +69,16 @@ def create_4x4_from_3x3(three_by_three, translation=None):
 
 def copy_image_transform_to_mesh(mesh, image, verbose=False):
     """
-    Copy the transformation matrix from image to mesh. 
+    Copy the transformation matrix from image to mesh.
     This is the same as the function `meshTransform.copy_image_transform_to_mesh` and
-    `meshTransform.apply_transform`. 
+    `meshTransform.apply_transform`.
 
     Parameters
     ----------
     mesh : vtk.vtkPolyData
-        Surface mesh to transform. 
+        Surface mesh to transform.
     image : SimpleITK.Image
-        Image who's transform to apply to the `mesh`. 
+        Image who's transform to apply to the `mesh`.
     verbose : bool, optional
         Whether or not to print the transform to console, by default False
 
@@ -86,7 +86,7 @@ def copy_image_transform_to_mesh(mesh, image, verbose=False):
     -------
     [type]
         [description]
-    """    
+    """
     transform_array = create_4x4_from_3x3(image.GetDirection())
     transform_array[:3, 3] = image.GetOrigin()
     transform = vtk.vtkTransform()
@@ -105,7 +105,7 @@ def copy_image_transform_to_mesh(mesh, image, verbose=False):
 
 def sigma2fwhm(sigma):
     """
-    Converting sigma to Full Width Half Maximum (FWHM). 
+    Converting sigma to Full Width Half Maximum (FWHM).
 
     Parameters
     ----------
@@ -115,30 +115,31 @@ def sigma2fwhm(sigma):
     Returns
     -------
     float
-        The FWHM that is equivalent to the inputted sigma. 
-    """    
+        The FWHM that is equivalent to the inputted sigma.
+    """
     return sigma * np.sqrt(8 * np.log(2))
+
 
 def fwhm2sigma(fwhm):
     """
-    Convert a Full Width Half Maximum into sigma. 
+    Convert a Full Width Half Maximum into sigma.
 
     Parameters
     ----------
     fwhm : float
-        The FWHM to convert to sigma. 
+        The FWHM to convert to sigma.
 
     Returns
     -------
     float
-        The sigma that is equivalent to the inputted FWHM. 
-    """    
+        The sigma that is equivalent to the inputted FWHM.
+    """
     return fwhm / np.sqrt(8 * np.log(2))
 
-def safely_delete_tmp_file(location,
-                           filename):
+
+def safely_delete_tmp_file(location, filename):
     """
-    Function to safely remove a temporary file. 
+    Function to safely remove a temporary file.
 
     Parameters
     ----------
@@ -148,13 +149,13 @@ def safely_delete_tmp_file(location,
         the filename of the temporary file to delete
     """
 
-    if os.path.exists(location):        
+    if os.path.exists(location):
         try:
             os.remove(os.path.join(location, filename))
         except OSError as exc:
             if exc.errno != errno.ENOENT:
                 raise
             pass
-    
+
     else:
-        print('File does not exist.')
+        print("File does not exist.")
