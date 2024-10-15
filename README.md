@@ -1,6 +1,6 @@
 # pyMSKT (Musculoskeletal Toolkit)
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)<br>
-![Build Status](https://github.com/gattia/pymskt/actions/workflows/build-test.yml/badge.svg?branch=master)<br>
+![Build Status](https://github.com/gattia/pymskt/actions/workflows/build-test.yml/badge.svg?branch=main)<br>
 |[Documentation](https://anthonygattiphd.com/pymskt/)|
 
 pyMSKT is an open-source library for performing quantitative analyses of the musculoskeletal system. It enables creation of surface meshes of musculoskeletal anatomy and then processes these meshes to get quantitative outcomes and visualizatons, like for cartilage thickness.  
@@ -11,9 +11,16 @@ pyMSKT is an open-source library for performing quantitative analyses of the mus
 
 # Installation
 
-This repository depends on [`pyfocusr`](https://github.com/gattia/pyfocusr) and [`cycpd`](https://github.com/gattia/cycpd) for registration. All dependencies for these other libraries are included in the requirements for this repository - instructions for installing are included below. 
+# Pip install from pypi
+```bash
+    # create environment
+    conda env create -n mskt
+    conda activate mskt
 
-### Conda / pip (Recommended)
+    pip install mskt
+```
+
+### Conda / pip install from source
 ```bash
     # clone repository
     git clone https://github.com/gattia/pymskt.git

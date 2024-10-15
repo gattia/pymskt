@@ -6,13 +6,13 @@
 
 #Specify the requirements needed to build the package.
 [build-system]
-requires = ["setuptools", "setuptools-scm", "numpy==1.21.*", "Cython>=0.29"]
+requires = ["setuptools", "setuptools-scm", "numpy", "Cython>=0.29"]
 build-backend = "setuptools.build_meta"
 
 #Specify the requirements needed to build the project itself. 
 #Instructions for defining the project info
 [project]
-name = "pymskt"
+name = "mskt"
 description = "vtk helper tools/functions for musculoskeletal analyses"
 readme = "README.md"
 requires-python = ">=3.7"

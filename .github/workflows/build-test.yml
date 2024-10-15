@@ -15,12 +15,13 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest, ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
+        # only run linting on a single python version (a recent one that is used for development)
+        python-version: ["3.11"]
     
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -39,13 +40,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
-        python-version: [3.7, 3.8, 3.9]
+        os: [macos-12, ubuntu-latest]
+        #TODO: Fix macos-12 to be macos-latest. Issue with using latest (arm?) and point cloud utils install. . 
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
