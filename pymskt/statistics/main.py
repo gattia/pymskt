@@ -168,6 +168,7 @@ class ProcrustesRegistration:
         save_mesh_suffix=f'procrustes_registered_{today.strftime("%b")}_{today.day}_{today.year}',
         multiprocessing=True,
         num_processes=None,
+        remove_temp_icp=True,
         **kwargs
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -190,6 +191,8 @@ class ProcrustesRegistration:
         self.tolerance1 = tolerance1
         self.tolerance2 = tolerance2
         self.max_n_registration_steps = max_n_registration_steps
+
+        self.remove_temp_icp = remove_temp_icp
 
         self.kwargs = kwargs
         # ORIGINALLY THIS WAS THE LOGIC:
@@ -375,7 +378,8 @@ class ProcrustesRegistration:
                         # that was created to save the transform. 
                         # read the transform from disk & delete the temp file. 
                         registered_icp_transform = read_linear_transform(registered_icp_transform_)
-                        os.remove(registered_icp_transform_)
+                        if self.remove_temp_icp is True:
+                            os.remove(registered_icp_transform_)
                     else:
                         registered_icp_transform = registered_icp_transform_
 
