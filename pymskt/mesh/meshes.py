@@ -839,7 +839,7 @@ class Mesh:
 
         # add sdf as new scalar to current mesh
         self.set_scalar(new_scalar_name, sdf)
-    
+
     def transfer_cell_data_to_points(self):
         """
         Transfer the cell data to points data for the mesh.

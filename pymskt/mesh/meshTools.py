@@ -761,10 +761,8 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
                 if dist_ > max_dist:
                     continue
             list_scalars.append([scalars[pt_idx] for scalars in scalars_old_mesh])
-            distance_weighting.append(
-                1 / dist_
-            )
-        
+            distance_weighting.append(1 / dist_)
+
         if len(list_scalars) == 0:
             # no points within max_dist, skip (which leaves the scalar(s) at zero)
             continue

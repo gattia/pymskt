@@ -163,7 +163,7 @@ class ProcrustesRegistration:
         multiprocessing=True,
         num_processes=None,
         remove_temp_icp=True,
-        **kwargs
+        **kwargs,
     ):
         self.path_ref_mesh = path_ref_mesh
         self.list_mesh_paths = list_mesh_paths
