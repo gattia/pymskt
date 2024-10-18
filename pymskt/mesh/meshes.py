@@ -119,7 +119,6 @@ class Mesh:
             All islands smaller than this size are dropped, by default 5000
         """
         if isinstance(mesh, str):  # accept path like objects?
-            print("mesh string passed, loading mesh from disk")
             self._mesh = io.read_vtk(mesh)
         else:
             self._mesh = mesh
@@ -837,6 +836,17 @@ class Mesh:
 
         # add sdf as new scalar to current mesh
         self.set_scalar(new_scalar_name, sdf)
+    
+    def transfer_cell_data_to_points(self):
+        """
+        Transfer the cell data to points data for the mesh.
+        """
+        cell_data_to_points = vtk.vtkCellDataToPointData()
+        cell_data_to_points.SetInputData(self._mesh)
+        cell_data_to_points.SetPassCellData(False)
+        cell_data_to_points.Update()
+        self._mesh = pv.PolyData(cell_data_to_points.GetOutput())
+        self.load_mesh_scalars()
 
     @property
     def seg_image(self):
