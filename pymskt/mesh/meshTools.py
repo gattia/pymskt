@@ -701,7 +701,7 @@ def smooth_scalars_from_second_mesh_onto_base(
 
 
 def transfer_mesh_scalars_get_weighted_average_n_closest(
-    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False
+    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False, max_dist=None
 ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
@@ -756,15 +756,20 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         for closest_pts_idx in range(closest_ids.GetNumberOfIds()):
             pt_idx = closest_ids.GetId(closest_pts_idx)
             _point = old_mesh.GetPoint(pt_idx)
+            dist_ = np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point) + epsilon)))
+            if max_dist is not None:
+                if dist_ > max_dist:
+                    continue
             list_scalars.append([scalars[pt_idx] for scalars in scalars_old_mesh])
             distance_weighting.append(
-                1 / np.sqrt(np.sum(np.square(np.asarray(point) - np.asarray(_point) + epsilon)))
+                1 / dist_
             )
+        
+        if len(list_scalars) == 0:
+            # no points within max_dist, skip (which leaves the scalar(s) at zero)
+            continue
 
         total_distance = np.sum(distance_weighting)
-        # print('list_scalars', list_scalars)
-        # print('distance_weighting', distance_weighting)
-        # print('total_distance', total_distance)
         normalized_value = (
             np.sum(
                 np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
@@ -772,9 +777,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
             )
             / total_distance
         )
-        # print('new_mesh_pt_idx', new_mesh_pt_idx)
-        # print('normalized_value', normalized_value)
-        # print('new_scalars shape', new_scalars.shape)
+
         for array_idx, array_name in enumerate(array_names):
             new_scalars[array_name][new_mesh_pt_idx] = normalized_value[array_idx]
     if return_mesh is False:
