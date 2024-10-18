@@ -652,6 +652,7 @@ class Mesh:
         new_scalars_name=None,  # Defaule None - therefore will use the original scalar names
         weighted_avg=True,  # Use weighted average, otherwise guassian smooth transfer
         n_closest=3,
+        max_dist=None,
         sigma=1.0,
         idx_coords_to_smooth_base=None,
         idx_coords_to_smooth_other=None,
@@ -677,6 +678,8 @@ class Mesh:
             Should we use `weighted average` or `gaussian smooth` methods for transfer, by default True
         n_closest : int, optional
             If `weighted_avg` True, the number of nearest neighbours to use, by default 3
+        max_dist : float, optional
+            If `weighted_avg` True, the maximum distance to consider when finding nearest neighbours, by default None
         sigma : float, optional
             If `weighted_avg` False, the standard deviation of gaussian kernel, by default 1.
         idx_coords_to_smooth_base : list, optional
@@ -719,7 +722,7 @@ class Mesh:
 
         if weighted_avg is True:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
-                self._mesh, other_mesh, n=n_closest
+                self._mesh, other_mesh, n=n_closest, max_dist=max_dist
             )
         else:
             raise Exception("Gaussian smoothing only implemented for active scalars")
