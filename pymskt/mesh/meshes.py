@@ -45,6 +45,7 @@ from pymskt.mesh.meshTransform import (
     create_transform,
     get_versor_from_transform,
 )
+from pymskt.mesh.meshCartilage import extract_articular_surface, break_cartilage_into_superficial_deep
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import copy_image_transform_to_mesh, safely_delete_tmp_file
 
@@ -1234,6 +1235,7 @@ class BoneMesh(Mesh):
         min_n_pixels=5000,
         list_cartilage_meshes=None,
         list_cartilage_labels=None,
+        list_articular_surfaces=None,
         crop_percent=None,
         bone="femur",
     ):
@@ -1272,6 +1274,7 @@ class BoneMesh(Mesh):
         self._bone = bone
         self._list_cartilage_meshes = list_cartilage_meshes
         self._list_cartilage_labels = list_cartilage_labels
+        self._list_articular_surfaces = list_articular_surfaces
 
         super().__init__(
             mesh=mesh,
@@ -1407,6 +1410,21 @@ class BoneMesh(Mesh):
                     marching_cubes_threshold=marching_cubes_threshold,
                 )
                 self._list_cartilage_meshes.append(cart_mesh)
+    def extract_articular_surfaces(self, ray_length=10.0, smooth_iter=100, n_largest=1):
+        """
+        Extract the articular surface from the cartilage meshes.
+
+        Parameters
+        ----------
+        ray_length : float, optional
+            The length of the ray to cast from each vertex of the cartilage mesh, by default 10.0.
+        smooth_iter : int, optional
+            The number of iterations to smooth the articular surface, by default 100.
+        n_largest : int, optional
+            The number of largest regions to get, by default 1.
+        """
+        
+        self._list_articular_surfaces = extract_articular_surface(self, ray_length=10.0, smooth_iter=100, n_largest=1)
 
     def calc_cartilage_thickness(
         self,
@@ -1561,7 +1579,10 @@ class BoneMesh(Mesh):
         self._mesh.GetPointData().AddArray(label_scalars)
 
         self.reverse_all_transforms()
-
+    
+    def break_cartilage_into_superficial_deep(self, rel_depth_thresh=0.5, resample_cartilage_surface=None, return_rel_depth=False):
+        return break_cartilage_into_superficial_deep(self, rel_depth_thresh=rel_depth_thresh, resample_cartilage_surface=resample_cartilage_surface, return_rel_depth=return_rel_depth)
+    
     def get_cart_thickness_mean(self, region_idx):
         """
         Calculate the mean thickness of a given cartilage region.
@@ -1776,6 +1797,10 @@ class BoneMesh(Mesh):
                 new_list_cartilage_meshes,
             ]
         self._list_cartilage_meshes = new_list_cartilage_meshes
+    
+    @property
+    def list_articular_surfaces(self):
+        return self._list_articular_surfaces
 
     @property
     def list_cartilage_labels(self):

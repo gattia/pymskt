@@ -578,3 +578,56 @@ def get_knee_segmentation_with_femur_subregions(
     seg_label_image = sitk.GetImageFromArray(new_seg_array)
     seg_label_image.CopyInformation(seg_image)
     return seg_label_image
+
+def combine_depth_region_segs(orig_seg, depth_segs):
+    
+    if isinstance(orig_seg, sitk.Image):
+        type_orig_seg = 'sitk'
+        orig_seg_array = sitk.GetArrayFromImage(orig_seg)
+    elif isinstance(orig_seg, np.ndarray):
+        type_orig_seg = 'np'
+        orig_seg_array = orig_seg
+        
+    # combine all of the depth segs that exist into one:
+    if isinstance(depth_segs, np.ndarray):
+        depth_segs = [depth_segs]
+    elif isinstance(depth_segs, sitk.Image):
+        depth_segs = [sitk.GetArrayFromImage(depth_segs)]
+    elif isinstance(depth_segs, (list, tuple)):
+        if all(isinstance(i, np.ndarray) for i in depth_segs):
+            pass
+        elif all(isinstance(i, sitk.Image) for i in depth_segs):
+            depth_segs = [sitk.GetArrayFromImage(i) for i in depth_segs]
+        else:
+            raise ValueError('depth_segs must be a list of numpy arrays or SimpleITK images')
+    
+    # assert that all depth segs are the same size, and that they match the orig_seg size
+    assert all(i.shape == orig_seg_array.shape for i in depth_segs), 'all depth segs must be the same size as orig_seg'
+    
+    # finally, assert that depth_segs only has 3 unique values (0, 100, 200)
+    # if it happens to have 0, 1, 2 then convert to 0, 100, 200
+    if np.unique(depth_segs).tolist() == [0, 1, 2]:
+        depth_segs = [i*100 for i in depth_segs]
+        
+    # combine the depth segs into a single mask. 
+    new_seg_combined = np.zeros_like(orig_seg_array, dtype=np.uint16)
+    for i, depth_seg in enumerate(depth_segs):
+        # if happens to be 0,1,2 then convert to 0,100,200
+        if np.unique(depth_seg).tolist() == [0, 1, 2]:
+            depth_seg = depth_seg*100
+        # assert that depth_seg only has 3 unique values (0, 100, 200)
+        assert np.unique(depth_seg).tolist() == [0, 100, 200], 'depth_segs must only contain the values 0, 100, 200'
+        # could do += but this might end up with higher values in a voxel if
+        # the same two masks are accidentally added twice.
+        # this is safer in the event that there are duplicates in the depth_segs provided.
+        new_seg_combined[depth_seg == 100] = 100
+        new_seg_combined[depth_seg == 200] = 200
+    
+    # finally, add the orig_seg back in.
+    new_seg_combined += orig_seg_array.astype(np.uint16) # this way label 1 will be 101 and 201 for the deep and superficial regions.
+    
+    if type_orig_seg == 'sitk':
+        new_seg_combined = sitk.GetImageFromArray(new_seg_combined)
+        new_seg_combined.CopyInformation(orig_seg)
+    
+    return new_seg_combined
