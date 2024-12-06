@@ -120,8 +120,8 @@ def findNotch(flattenedSeg, trochleaPositionX=1000):
     second_guess = centerX
 
     # We use the 2 guesses to help define a search space for the trochlear notch.
-    min_search = int(np.min((first_guess, second_guess)) - 20)
-    max_search = int(np.max((first_guess, second_guess)) + 20)
+    min_search = max(int(np.min((first_guess, second_guess)) - 20), 0)
+    max_search = min(int(np.max((first_guess, second_guess)) + 20), flattenedSeg.shape[0])
 
     # now, we iterate over all of the rows (axis 1) of the search space (moving in the medial/lateral direction)
     # we are looking for the row where the most posterior point (back of femur) is furthest anterior (notch).
