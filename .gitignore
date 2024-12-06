@@ -182,4 +182,3 @@ pymskt/*.so
 pymskt/mesh/testing_pcu_utils.py
 
 examples/superficial_deep_cartilage_regions/*.nrrd
-examples/
