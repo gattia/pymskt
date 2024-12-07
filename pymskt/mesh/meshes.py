@@ -1409,6 +1409,7 @@ class BoneMesh(Mesh):
                     smooth_image_var=image_smooth_var_cart,
                     marching_cubes_threshold=marching_cubes_threshold,
                 )
+                cart_mesh.fix_mesh('pcu')
                 self._list_cartilage_meshes.append(cart_mesh)
     def extract_articular_surfaces(self, ray_length=10.0, smooth_iter=100, n_largest=1):
         """
