@@ -59,7 +59,7 @@ jobs:
       matrix:
         # macos-13 = intel mac runner
         # macos-14 = apple silicon mac runner
-        os: [ubuntu-latest, windows-2019, macos-12]
+        os: [ubuntu-latest, windows-2019, macos-13]
         # add macos-14 when apple silicon mac runners are available
         # for all of the python versions. Seems like only 3.10 + is 
         # available now, but is intended to be fixed: 
