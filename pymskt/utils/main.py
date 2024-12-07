@@ -189,5 +189,4 @@ def safely_delete_tmp_file(location, filename):
                 pass
         else:
             print(f"Failed to delete {file_path} after multiple attempts.")
-    else:
-        print("File does not exist.")
+            
