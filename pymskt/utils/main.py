@@ -1,5 +1,6 @@
 import errno
 import os
+import time
 
 import numpy as np
 import vtk
@@ -137,6 +138,29 @@ def fwhm2sigma(fwhm):
     return fwhm / np.sqrt(8 * np.log(2))
 
 
+# def safely_delete_tmp_file(location, filename):
+#     """
+#     Function to safely remove a temporary file.
+
+#     Parameters
+#     ----------
+#     location : str
+#         location of the temporary file to remove
+#     filename : str
+#         the filename of the temporary file to delete
+#     """
+
+#     if os.path.exists(location):
+#         try:
+#             os.remove(os.path.join(location, filename))
+#         except OSError as exc:
+#             if exc.errno != errno.ENOENT:
+#                 raise
+#             pass
+
+#     else:
+#         print("File does not exist.")
+
 def safely_delete_tmp_file(location, filename):
     """
     Function to safely remove a temporary file.
@@ -144,18 +168,26 @@ def safely_delete_tmp_file(location, filename):
     Parameters
     ----------
     location : str
-        location of the temporary file to remove
+        Location of the temporary file to remove.
     filename : str
-        the filename of the temporary file to delete
+        The filename of the temporary file to delete.
     """
+    file_path = os.path.join(location, filename)
 
-    if os.path.exists(location):
-        try:
-            os.remove(os.path.join(location, filename))
-        except OSError as exc:
-            if exc.errno != errno.ENOENT:
-                raise
-            pass
-
+    if os.path.exists(file_path):
+        for attempt in range(5):  # Retry up to 5 times
+            try:
+                os.remove(file_path)
+                #print(f"Successfully deleted {file_path}.")
+                break  # Exit the loop if successful
+            except PermissionError:
+                #print(f"PermissionError: Unable to delete {file_path}. Attempt {attempt + 1} of 5.")
+                time.sleep(1)  # Wait before retrying
+            except OSError as exc:
+                if exc.errno != errno.ENOENT:
+                    raise  # Re-raise if it's not a "file not found" error
+                pass
+        else:
+            print(f"Failed to delete {file_path} after multiple attempts.")
     else:
         print("File does not exist.")

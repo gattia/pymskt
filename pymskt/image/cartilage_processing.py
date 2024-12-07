@@ -59,9 +59,13 @@ def get_y_CofM(flattenedSeg):
         yCofM[x, 1] = int(
             CofM(flattenedSeg[x, :])
         )  # store the CofM value (make it an integer for indexing)
-    yCofM = yCofM[
-        minRow + 10 : maxRow - 10, :
-    ]  # remove 10 most medial and most lateral pixels of femoral cartilage.
+    if minRow + 10 < maxRow - 10:
+        yCofM = yCofM[minRow + 10 : maxRow - 10, :]  # remove 10 most medial and most lateral pixels of femoral cartilage.
+    elif minRow + 2 < maxRow - 2:
+        yCofM = yCofM[minRow + 2 : maxRow - 2, :]  # remove 2 most medial and most lateral pixels of femoral cartilage.
+    else:
+        # fallback to original range if removing pixels is not possible.
+        warnings.warn("Not enough pixels to remove most medial and most lateral pixels of femoral cartilage.")
     return yCofM
 
 
