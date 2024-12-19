@@ -891,7 +891,7 @@ def gaussian_smooth_surface_scalars(
     """
 
     from pymskt.mesh import BoneMesh, CartilageMesh, Mesh
-    
+
     point_coordinates = get_mesh_physical_point_coords(mesh)
     if idx_coords_to_smooth is not None:
         point_coordinates = point_coordinates[idx_coords_to_smooth, :]
