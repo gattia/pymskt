@@ -45,7 +45,6 @@ def test_get_data_along_line_that_is_outside_volume_assert_no_data_returned(
 def test_scalars_retrieved_appropriately_line_in_middle_of_cells_categorical_false(
     line_resolution=9, categorical=False
 ):
-
     data = np.zeros((2, 2, 10))
     for i in range(line_resolution + 1):
         data[:, 0, i] = i
@@ -65,7 +64,6 @@ def test_scalars_retrieved_appropriately_line_in_middle_of_cells_categorical_fal
 def test_scalars_retrieved_appropriately_line_just_off_center_categorical_true(
     line_resolution=9, categorical=True
 ):
-
     data = np.zeros((2, 2, 10))
     for i in range(line_resolution + 1):
         data[:, 0, i] = i
