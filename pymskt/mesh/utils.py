@@ -211,7 +211,6 @@ def estimate_mesh_scalars_FWHMs(mesh, scalar_name="thickness_mm"):
 
 
 def get_surface_distance(surface_1, surface_2, return_RMS=True, return_individual_distances=False):
-
     if (return_RMS is True) & (return_individual_distances is True):
         raise Exception(
             "Nothing to return - either return_RMS or return_individual_distances must be `True`"
@@ -495,7 +494,6 @@ def get_arrow(
     shaft_radius=0.05,
     shaft_resolution=20,
 ):
-
     arrow = vtk.vtkArrowSource()
     arrow.SetTipLength(tip_length)
     arrow.SetTipRadius(tip_radius)

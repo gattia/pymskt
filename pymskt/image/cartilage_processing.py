@@ -59,14 +59,18 @@ def get_y_CofM(flattenedSeg):
         yCofM[x, 1] = int(
             CofM(flattenedSeg[x, :])
         )  # store the CofM value (make it an integer for indexing)
-    
+
     # remove 0.2 * (maxRow - minRow) of pixels from the most medial and most lateral side of the femur
     offset = int(0.2 * (maxRow - minRow))
     if minRow + offset < maxRow - offset:
-        yCofM = yCofM[minRow + offset : maxRow - offset, :]  # remove 10 most medial and most lateral pixels of femoral cartilage.
+        yCofM = yCofM[
+            minRow + offset : maxRow - offset, :
+        ]  # remove 10 most medial and most lateral pixels of femoral cartilage.
     else:
         # fallback to original range if removing pixels is not possible.
-        warnings.warn("Not enough pixels to remove most medial and most lateral pixels of femoral cartilage.")
+        warnings.warn(
+            "Not enough pixels to remove most medial and most lateral pixels of femoral cartilage."
+        )
     return yCofM
 
 
@@ -130,8 +134,10 @@ def findNotch(flattenedSeg, trochleaPositionX=1000):
     max_search = int(np.max((first_guess, second_guess)) + offset)
     # check if search space is valid
     if min_search > max_search or min_search < 0 or max_search > flattenedSeg.shape[0]:
-        warnings.warn("Avoiding invalid search space for trochlear notch,\
-                       the search space will be set to the full range of the flattened segmentation.")
+        warnings.warn(
+            "Avoiding invalid search space for trochlear notch,\
+                       the search space will be set to the full range of the flattened segmentation."
+        )
         min_search = 0
         max_search = flattenedSeg.shape[0]
 
@@ -591,15 +597,15 @@ def get_knee_segmentation_with_femur_subregions(
     seg_label_image.CopyInformation(seg_image)
     return seg_label_image
 
+
 def combine_depth_region_segs(orig_seg, depth_segs):
-    
     if isinstance(orig_seg, sitk.Image):
-        type_orig_seg = 'sitk'
+        type_orig_seg = "sitk"
         orig_seg_array = sitk.GetArrayFromImage(orig_seg)
     elif isinstance(orig_seg, np.ndarray):
-        type_orig_seg = 'np'
+        type_orig_seg = "np"
         orig_seg_array = orig_seg
-        
+
     # combine all of the depth segs that exist into one:
     if isinstance(depth_segs, np.ndarray):
         depth_segs = [depth_segs]
@@ -611,35 +617,43 @@ def combine_depth_region_segs(orig_seg, depth_segs):
         elif all(isinstance(i, sitk.Image) for i in depth_segs):
             depth_segs = [sitk.GetArrayFromImage(i) for i in depth_segs]
         else:
-            raise ValueError('depth_segs must be a list of numpy arrays or SimpleITK images')
-    
+            raise ValueError("depth_segs must be a list of numpy arrays or SimpleITK images")
+
     # assert that all depth segs are the same size, and that they match the orig_seg size
-    assert all(i.shape == orig_seg_array.shape for i in depth_segs), 'all depth segs must be the same size as orig_seg'
-    
+    assert all(
+        i.shape == orig_seg_array.shape for i in depth_segs
+    ), "all depth segs must be the same size as orig_seg"
+
     # finally, assert that depth_segs only has 3 unique values (0, 100, 200)
     # if it happens to have 0, 1, 2 then convert to 0, 100, 200
     if np.unique(depth_segs).tolist() == [0, 1, 2]:
-        depth_segs = [i*100 for i in depth_segs]
-        
-    # combine the depth segs into a single mask. 
+        depth_segs = [i * 100 for i in depth_segs]
+
+    # combine the depth segs into a single mask.
     new_seg_combined = np.zeros_like(orig_seg_array, dtype=np.uint16)
     for i, depth_seg in enumerate(depth_segs):
         # if happens to be 0,1,2 then convert to 0,100,200
         if np.unique(depth_seg).tolist() == [0, 1, 2]:
-            depth_seg = depth_seg*100
+            depth_seg = depth_seg * 100
         # assert that depth_seg only has 3 unique values (0, 100, 200)
-        assert np.unique(depth_seg).tolist() == [0, 100, 200], 'depth_segs must only contain the values 0, 100, 200'
+        assert np.unique(depth_seg).tolist() == [
+            0,
+            100,
+            200,
+        ], "depth_segs must only contain the values 0, 100, 200"
         # could do += but this might end up with higher values in a voxel if
         # the same two masks are accidentally added twice.
         # this is safer in the event that there are duplicates in the depth_segs provided.
         new_seg_combined[depth_seg == 100] = 100
         new_seg_combined[depth_seg == 200] = 200
-    
+
     # finally, add the orig_seg back in.
-    new_seg_combined += orig_seg_array.astype(np.uint16) # this way label 1 will be 101 and 201 for the deep and superficial regions.
-    
-    if type_orig_seg == 'sitk':
+    new_seg_combined += orig_seg_array.astype(
+        np.uint16
+    )  # this way label 1 will be 101 and 201 for the deep and superficial regions.
+
+    if type_orig_seg == "sitk":
         new_seg_combined = sitk.GetImageFromArray(new_seg_combined)
         new_seg_combined.CopyInformation(orig_seg)
-    
+
     return new_seg_combined
