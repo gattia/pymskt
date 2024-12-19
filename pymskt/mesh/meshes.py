@@ -52,10 +52,12 @@ from pymskt.utils import copy_image_transform_to_mesh, safely_delete_tmp_file
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT?
 
 
-class Mesh:
+class Mesh(pv.PolyData):
     """
     An object to contain surface meshes for musculoskeletal anatomy. Includes helper
     functions to build surface meshes, to process them, and to save them.
+    Here are parameters and attributes relevant to Mesh class, 
+    but not to the parent pyvista.PolyData class that it inherits from.
 
     Parameters
     ----------
@@ -97,13 +99,20 @@ class Mesh:
     ----------
 
     """
-
+    
     def __init__(
-        self, mesh=None, seg_image=None, path_seg_image=None, label_idx=None, min_n_pixels=5000
+        self, 
+        mesh=None,
+        seg_image=None, 
+        path_seg_image=None, 
+        label_idx=None, 
+        min_n_pixels=5000,
+        **kwargs
     ):
         """
         Initialize Mesh class
-
+        Below are parameters relevant to Mesh class, 
+        but not to the parent pyvista.PolyData class.
         Parameters
         ----------
         mesh : vtk.vtkPolyData, optional
@@ -119,20 +128,19 @@ class Mesh:
         min_n_pixels : int, optional
             All islands smaller than this size are dropped, by default 5000
         """
-        if isinstance(mesh, str):  # accept path like objects?
-            self._mesh = io.read_vtk(mesh)
-        else:
-            self._mesh = mesh
+        # Initialize parent PolyData
+        super().__init__(mesh, deep=True,**kwargs)            
+        # Store additional attributes
         self._seg_image = seg_image
         self._path_seg_image = path_seg_image
         self._label_idx = label_idx
         self._min_n_pixels = min_n_pixels
         self._mesh_scalars = []
         self._n_scalars = 0
-        if self._mesh is not None:
-            self.load_mesh_scalars()
-
         self._list_applied_transforms = []
+        
+        if self.n_points > 0:
+            self.load_mesh_scalars()
 
     def copy(self):
         """
@@ -143,18 +151,15 @@ class Mesh:
         Mesh
             A copy of the mesh object
         """
+        
+        copy_ = super().copy(deep=True)
+        copy_.seg_image = self._seg_image
+        copy_.path_seg_image = self._path_seg_image
+        copy_.label_idx = self._label_idx
+        copy_.min_n_pixels = self._min_n_pixels
+        copy_.list_applied_transforms = self._list_applied_transforms
 
-        mesh = Mesh(
-            mesh=vtk_deep_copy(self._mesh),
-            seg_image=self._seg_image,
-            path_seg_image=self._path_seg_image,
-            label_idx=self._label_idx,
-            min_n_pixels=self.min_n_pixels,
-        )
-
-        mesh._list_applied_transforms = self._list_applied_transforms
-
-        return mesh
+        return copy_
 
     def read_seg_image(self, path_seg_image=None):
         """
@@ -239,7 +244,7 @@ class Mesh:
                 )
             )
         tmp_filename = "".join(random.choice(string.ascii_lowercase) for i in range(10)) + ".nrrd"
-        self._mesh = create_surface_mesh(
+        mesh_ = create_surface_mesh(
             self._seg_image,
             self._label_idx,
             smooth_image_var,
@@ -250,6 +255,7 @@ class Mesh:
             set_seg_border_to_zeros=set_seg_border_to_zeros,
             use_discrete_marching_cubes=use_discrete_marching_cubes,
         )
+        self.deep_copy(mesh_)
 
         self.load_mesh_scalars()
         safely_delete_tmp_file(tempfile.gettempdir(), tmp_filename)
@@ -265,7 +271,7 @@ class Mesh:
         write_binary : bool, optional
             Should the mesh be saved as a binary or ASCII format, by default False
         """
-        io.write_vtk(self._mesh, filepath, write_binary=write_binary)
+        io.write_vtk(self, filepath, write_binary=write_binary)
 
     def fix_mesh(
         self,
@@ -288,38 +294,42 @@ class Mesh:
             Should the function print out information about the mesh fixing
             process, by default True
         """
-        self._mesh = fix_mesh(
-            self._mesh,
+        mesh_ = fix_mesh(
+            self.copy(),
             method=method,
             treat_as_single_component=treat_as_single_component,
             resolution=resolution,
             project_onto_surface=project_onto_surface,
             verbose=verbose,
         )
+        self.deep_copy(mesh_)
 
     def consistent_faces(self):
         """
         Make the faces of the mesh consistent.
         """
-        self._mesh = consistent_normals(self._mesh)
+        mesh_ = consistent_normals(self)
+        self.deep_copy(mesh_)
 
     def decimate(self, percent_orig_faces=0.5):
-        """
+        """ 
         Decimate the mesh to reduce the number of faces/points.
         """
-        self._mesh = decimate_mesh_pcu(self._mesh, percent_orig_faces=percent_orig_faces)
+        mesh_ = decimate_mesh_pcu(self.copy(), percent_orig_faces=percent_orig_faces)
+        self.deep_copy(mesh_)
 
     def get_largest(self):
         """
         Get the largest connected component of the mesh.
         """
-        self._mesh = get_largest_connected_component(self._mesh)
+        mesh_ = get_largest_connected_component(self)
+        self.deep_copy(mesh_)
 
     def rand_surface_pts(self, n_pts=100_000, method="bluenoise"):
         """
         Sample points from the surface of the mesh.
         """
-        return rand_sample_pts_mesh(self._mesh, n_pts=n_pts, method=method)
+        return rand_sample_pts_mesh(self, n_pts=n_pts, method=method)
 
     def rand_pts_around_surface(
         self, n_pts=100_000, surface_method="bluenoise", distribution="normal", sigma=1.0
@@ -358,9 +368,9 @@ class Mesh:
             np.ndarray: (n_pts, ) array of SDFs
         """
         if method == "pcu":
-            sdfs = pcu_sdf(pts, self._mesh)
+            sdfs = pcu_sdf(pts, self)
         elif method == "vtk":
-            sdfs = vtk_sdf(pts, self._mesh)
+            sdfs = vtk_sdf(pts, self)
 
         return sdfs
 
@@ -403,9 +413,9 @@ class Mesh:
         """
         Retrieve scalar names from mesh & store as Mesh attribute.
         """
-        n_scalars = self._mesh.GetPointData().GetNumberOfArrays()
+        n_scalars = self.GetPointData().GetNumberOfArrays()
         array_names = [
-            self._mesh.GetPointData().GetArray(array_idx).GetName()
+            self.GetPointData().GetArray(array_idx).GetName()
             for array_idx in range(n_scalars)
         ]
         self._scalar_names = array_names
@@ -436,18 +446,18 @@ class Mesh:
         scalar_name : str
             Name of scalar array to set as active.
         """
-        self._mesh.GetPointData().SetActiveScalars(scalar_name)
+        self.GetPointData().SetActiveScalars(scalar_name)
 
     def fill_holes(self, max_size=100):
         """
         Fill holes in the mesh.
         """
         filler = vtk.vtkFillHolesFilter()
-        filler.SetInputData(self._mesh)
+        filler.SetInputData(self)
         filler.SetHoleSize(max_size)
         filler.Update()
 
-        self._mesh = filler.GetOutput()
+        self.deep_copy(filler.GetOutput())
 
     def resample_surface(self, subdivisions=2, clusters=10000):
         """
@@ -467,8 +477,9 @@ class Mesh:
             surafce, by default 10000
             - This is not exact, might have slight differences.
         """
-        self._mesh = resample_surface(self._mesh, subdivisions=subdivisions, clusters=clusters)
-
+        mesh_ = resample_surface(self.copy(), subdivisions=subdivisions, clusters=clusters)
+        self.deep_copy(mesh_)
+        
     def apply_transform_to_mesh(self, transform=None, transformer=None, save_transform=True):
         """
         Apply a transformation to the surface mesh.
@@ -498,9 +509,9 @@ class Mesh:
             transform = transformer.GetTransform()
 
         if transformer is not None:
-            transformer.SetInputData(self._mesh)
+            transformer.SetInputData(self)
             transformer.Update()
-            self._mesh = vtk_deep_copy(transformer.GetOutput())
+            self.deep_copy(transformer.GetOutput())
 
             if save_transform is True:
                 self._list_applied_transforms.append(transform)
@@ -552,11 +563,11 @@ class Mesh:
         """
         # Setup the source & target meshes based on `as_source``
         if as_source is True:
-            source = self._mesh
+            source = self
             target = other_mesh
         elif as_source is False:
             source = other_mesh
-            target = self._mesh
+            target = self
 
         # Get registered mesh (source to target)
         source_transformed_to_target = non_rigidly_register(
@@ -565,7 +576,7 @@ class Mesh:
 
         # If current mesh is source & apply_transform_to_mesh is true then replace current mesh.
         if (as_source is True) & (apply_transform_to_mesh is True):
-            self._mesh = source_transformed_to_target
+            self.deep_copy(source_transformed_to_target)
 
         # curent mesh is target, or is source & want to return mesh, then return it.
         if (as_source is False) or ((as_source is True) & (return_transformed_mesh is True)):
@@ -616,11 +627,11 @@ class Mesh:
 
         # Setup the source & target meshes based on `as_source``
         if as_source is True:
-            source = self._mesh
+            source = self
             target = other_mesh
         elif as_source is False:
             source = other_mesh
-            target = self._mesh
+            target = self
 
         icp_transform = get_icp_transform(
             source=source,
@@ -635,7 +646,7 @@ class Mesh:
             self.apply_transform_to_mesh(transform=icp_transform)
 
             if return_transformed_mesh is True:
-                return self._mesh
+                return self
 
         # curent mesh is target, or is source & want to return mesh, then return it.
         elif (as_source is False) & (return_transformed_mesh is True):
@@ -723,12 +734,12 @@ class Mesh:
 
         if weighted_avg is True:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
-                self._mesh, other_mesh, n=n_closest, max_dist=max_dist
+                self, other_mesh, n=n_closest, max_dist=max_dist
             )
         else:
             raise Exception("Gaussian smoothing only implemented for active scalars")
             transferred_scalars = smooth_scalars_from_second_mesh_onto_base(
-                self._mesh,
+                self,
                 other_mesh,
                 sigma=sigma,
                 idx_coords_to_smooth_base=idx_coords_to_smooth_base,
@@ -738,9 +749,7 @@ class Mesh:
 
         # for array_name in array_names:
         for scalars_idx, scalars_name in enumerate(orig_scalars_name):
-            vtk_transferred_scalars = numpy_to_vtk(transferred_scalars[scalars_name])
-            vtk_transferred_scalars.SetName(new_scalars_name[scalars_idx])
-            self._mesh.GetPointData().AddArray(vtk_transferred_scalars)
+            self.point_data[new_scalars_name[scalars_idx]] = transferred_scalars[scalars_name] 
 
         self.load_mesh_scalars()
         return transferred_scalars
@@ -786,7 +795,7 @@ class Mesh:
             ]
 
         # pre-allocate empty thicknesses so that as labels are iterated over, they can all be appended to the same bone.
-        distances = np.zeros(self._mesh.GetNumberOfPoints())
+        distances = np.zeros(self.GetNumberOfPoints())
 
         # iterate over meshes and add their thicknesses to the thicknesses list.
         for other_mesh in list_other_meshes:
@@ -794,7 +803,7 @@ class Mesh:
                 other_mesh = other_mesh.mesh
 
             node_data = get_distance_other_surface_at_points(
-                self._mesh,
+                self,
                 other_mesh,
                 ray_cast_length=ray_cast_length,
                 percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
@@ -805,7 +814,7 @@ class Mesh:
         # Assign the thickness scalars to the bone mesh surface.
         distance_scalars = numpy_to_vtk(distances)
         distance_scalars.SetName(name)
-        self._mesh.GetPointData().AddArray(distance_scalars)
+        self.GetPointData().AddArray(distance_scalars)
         self.set_active_scalars(name)
         self.load_mesh_scalars()  # Re load mesh scalars to include the newly calculated distances.
 
@@ -846,10 +855,10 @@ class Mesh:
         Transfer the cell data to points data for the mesh.
         """
         cell_data_to_points = vtk.vtkCellDataToPointData()
-        cell_data_to_points.SetInputData(self._mesh)
+        cell_data_to_points.SetInputData(self)
         cell_data_to_points.SetPassCellData(False)
         cell_data_to_points.Update()
-        self._mesh = pv.PolyData(cell_data_to_points.GetOutput())
+        self.deep_copy(pv.PolyData(cell_data_to_points.GetOutput()))
         self.load_mesh_scalars()
 
     @property
@@ -887,7 +896,11 @@ class Mesh:
         vtk.vtkPolyData
             The main mesh of this class.
         """
-        return self._mesh
+        # print warning that Mesh is now synonymous with pyvista.PolyData and thus
+        # this property is redundant and the Mesh object can be used for anything that
+        # pyvista.PolyData or vtk.vtkPolyData can be used for. 
+        print("WARNING: Mesh is now synonymous with pyvista.PolyData and thus this property is redundant and the Mesh object can be used for anything that pyvista.PolyData or vtk.vtkPolyData can be used for.")
+        return self
 
     @mesh.setter
     def mesh(self, new_mesh):
@@ -900,7 +913,7 @@ class Mesh:
             New mesh for this class - or a method to provide a mesh to the class
             after `__init__` has already been run.
         """
-        self._mesh = new_mesh
+        self.deep_copy(new_mesh)
 
     @property
     def point_coords(self):
@@ -912,7 +925,7 @@ class Mesh:
         numpy.ndarray
             Mx3 numpy array containing the x/y/z position of each vertex of the mesh.
         """
-        return get_mesh_physical_point_coords(self._mesh)
+        return self.points
 
     @point_coords.setter
     def point_coords(self, new_point_coords):
@@ -926,10 +939,8 @@ class Mesh:
             This can be used to easily/quickly update the x/y/z position of a set of points on a surface mesh.
             The `new_point_coords` must include the same number of points as the mesh contains.
         """
-        orig_point_coords = get_mesh_physical_point_coords(self._mesh)
-        if new_point_coords.shape == orig_point_coords.shape:
-            self._mesh.GetPoints().SetData(numpy_to_vtk(new_point_coords))
-
+        self.points = new_point_coords
+        
     @property
     def scalar_names(self):
         """
@@ -970,7 +981,7 @@ class Mesh:
         numpy.ndarray
             Numpy array containing the scalars in the mesh
         """
-        return vtk_to_numpy(self._mesh.GetPointData().GetArray(scalar_name))
+        return self.point_data[scalar_name]
 
     # @scalar.setter
     def set_scalar(self, scalar_name, scalar_array):
@@ -984,9 +995,8 @@ class Mesh:
         scalar_array : numpy.ndarray
             Array of scalars to add to mesh.
         """
-        array = numpy_to_vtk(scalar_array)
-        array.SetName(scalar_name)
-        self._mesh.GetPointData().AddArray(array)
+
+        self.point_data[scalar_name] = scalar_array
         self.load_mesh_scalars()  # Do this because it also updates the number of scalars.
 
     def remove_scalar(self, scalar_name):
@@ -998,7 +1008,7 @@ class Mesh:
         scalar_name : str
             Name of scalar array
         """
-        self._mesh.GetPointData().RemoveArray(scalar_name)
+        del self.point_data[scalar_name]
         self.load_mesh_scalars()
 
     @property
@@ -1085,6 +1095,10 @@ class Mesh:
         """
         return self._list_applied_transforms
 
+    @list_applied_transforms.setter
+    def list_applied_transforms(self, new_list_applied_transforms):
+        self._list_applied_transforms = new_list_applied_transforms
+
     @property
     def edge_lengths(self):
         """
@@ -1095,7 +1109,7 @@ class Mesh:
         numpy.ndarray
             Numpy array containing the edge lengths of the mesh
         """
-        return get_mesh_edge_lengths(self._mesh)
+        return get_mesh_edge_lengths(self)
 
 
 class CartilageMesh(Mesh):
@@ -1484,13 +1498,13 @@ class BoneMesh(Mesh):
             )
 
         # pre-allocate empty thicknesses so that as labels are iterated over, they can all be appended to the same bone.
-        thicknesses = np.zeros(self._mesh.GetNumberOfPoints())
+        thicknesses = np.zeros(self.GetNumberOfPoints())
 
         # iterate over meshes and add their thicknesses to the thicknesses list.
         for cart_mesh in self._list_cartilage_meshes:
             node_data = get_cartilage_properties_at_points(
-                self._mesh,
-                cart_mesh._mesh,
+                self,
+                cart_mesh,
                 t2_vtk_image=None,
                 #   seg_vtk_image=vtk_seg if assign_seg_label_to_bone is True else None,
                 seg_vtk_image=None,
@@ -1500,9 +1514,7 @@ class BoneMesh(Mesh):
             thicknesses += node_data
 
         # Assign the thickness scalars to the bone mesh surface.
-        thickness_scalars = numpy_to_vtk(thicknesses)
-        thickness_scalars.SetName("thickness (mm)")
-        self._mesh.GetPointData().SetScalars(thickness_scalars)
+        self.point_data["thickness (mm)"] = thicknesses
 
     def assign_cartilage_regions(
         self,
@@ -1550,7 +1562,7 @@ class BoneMesh(Mesh):
         safely_delete_tmp_file(tempfile.gettempdir(), tmp_filename)
 
         self.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
-        labels = np.zeros(self._mesh.GetNumberOfPoints(), dtype=int)
+        labels = np.zeros(self.GetNumberOfPoints(), dtype=int)
 
         # if cartilage meshes don't exist yet, then make them.
         if self._list_cartilage_meshes is None:
@@ -1563,8 +1575,8 @@ class BoneMesh(Mesh):
         for cart_mesh in self._list_cartilage_meshes:
             cart_mesh.apply_transform_to_mesh(transform=seg_transformer.get_inverse_transform())
             node_data = get_cartilage_properties_at_points(
-                self._mesh,
-                cart_mesh._mesh,
+                self,
+                cart_mesh,
                 t2_vtk_image=None,
                 seg_vtk_image=vtk_seg,
                 ray_cast_length=ray_cast_length,
@@ -1575,9 +1587,7 @@ class BoneMesh(Mesh):
             cart_mesh.reverse_all_transforms()
 
         # Assign the label (region) scalars to the bone mesh surface.
-        label_scalars = numpy_to_vtk(labels)
-        label_scalars.SetName("labels")
-        self._mesh.GetPointData().AddArray(label_scalars)
+        self.point_data["labels"] = labels
 
         self.reverse_all_transforms()
     
@@ -1755,17 +1765,20 @@ class BoneMesh(Mesh):
         """
         if smooth_only_cartilage is True:
             loc_cartilage = np.where(
-                vtk_to_numpy(self._mesh.GetPointData().GetArray("thickness (mm)")) > 0.01
+                self.point_data["thickness (mm)"] > 0.01
             )[0]
         else:
             loc_cartilage = None
-        self._mesh = gaussian_smooth_surface_scalars(
-            self._mesh,
+        print('loc_cartilage', loc_cartilage)
+        mesh_ = gaussian_smooth_surface_scalars(
+            self.copy(),
             sigma=scalar_sigma,
             idx_coords_to_smooth=loc_cartilage,
             array_name=scalar_array_name,
             array_idx=scalar_array_idx,
         )
+        
+        self.deep_copy(mesh_)
 
     @property
     def list_cartilage_meshes(self):

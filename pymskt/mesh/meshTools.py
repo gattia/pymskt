@@ -890,6 +890,8 @@ def gaussian_smooth_surface_scalars(
         during the course of the pipeline.
     """
 
+    from pymskt.mesh import BoneMesh, CartilageMesh, Mesh
+    
     point_coordinates = get_mesh_physical_point_coords(mesh)
     if idx_coords_to_smooth is not None:
         point_coordinates = point_coordinates[idx_coords_to_smooth, :]
@@ -907,9 +909,12 @@ def gaussian_smooth_surface_scalars(
     else:
         smoothed_scalars = np.sum(kernel * original_scalars, axis=1)
 
-    smoothed_scalars = numpy_to_vtk(smoothed_scalars)
-    smoothed_scalars.SetName(original_array.GetName())
-    original_array.DeepCopy(smoothed_scalars)  # Assign the scalars back to the original mesh
+    if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh, pv.PolyData)):
+        mesh.point_data[original_array.GetName()] = smoothed_scalars
+    else:
+        smoothed_scalars = numpy_to_vtk(smoothed_scalars)
+        smoothed_scalars.SetName(original_array.GetName())
+        original_array.DeepCopy(smoothed_scalars)  # Assign the scalars back to the original mesh
 
     # return the mesh object - however, if the original is not deleted, it should be smoothed
     # appropriately.
@@ -994,13 +999,11 @@ def check_mesh_types(mesh, return_type="pyvista"):
     """
     from pymskt.mesh import BoneMesh, CartilageMesh, Mesh
 
-    if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh)):
-        mesh = mesh.mesh
-
-    if isinstance(mesh, vtk.vtkPolyData):
-        mesh = pv.wrap(mesh)
-    elif isinstance(mesh, pv.PolyData):
+    if isinstance(mesh, (Mesh, BoneMesh, CartilageMesh, pv.PolyData)):
         pass
+
+    elif isinstance(mesh, vtk.vtkPolyData):
+        mesh = pv.wrap(mesh)
     else:
         raise TypeError(f"Mesh type not recognized: {type(mesh)}")
 

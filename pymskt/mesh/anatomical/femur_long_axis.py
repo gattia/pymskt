@@ -44,7 +44,7 @@ class FitLongAxisFemur:
         self._vector = None
 
     def get_bone_cart_points(self):
-        labels = vtk_to_numpy(self.femur.mesh.GetPointData().GetArray(self.labels_name))
+        labels = self.femur.point_data[self.labels_name]
         if (type(self.cart_label) == list) or (type(self.cart_label) == tuple):
             cart_indices = None
             for cart_label in self.cart_label:
@@ -141,8 +141,7 @@ class FitLongAxisFemur:
         diaph_points = self.femur.point_coords[side > 0, :]
         epiph_points = self.femur.point_coords[side < 0, :]
 
-        pv_femur = pv.PolyData(self.femur.mesh)
-        pv_diaph, _ = pv_femur.remove_points(side < 0)
+        pv_diaph, _ = self.femur.remove_points(side < 0)
 
         self.pv_diaph = pv_diaph
         self._diaph_points = diaph_points
