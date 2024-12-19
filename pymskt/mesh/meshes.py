@@ -1302,6 +1302,23 @@ class BoneMesh(Mesh):
             min_n_pixels=min_n_pixels,
         )
 
+    def copy(self):
+        """
+        Copy the current mesh object.
+
+        Returns
+        -------
+        BoneMesh
+            A copy of the current mesh object.
+        """
+        copy_ = super().copy()
+        copy_.crop_percent = self.crop_percent
+        copy_.bone = self.bone
+        copy_.list_cartilage_meshes = self.list_cartilage_meshes
+        copy_.list_cartilage_labels = self.list_cartilage_labels
+        copy_.list_articular_surfaces = self.list_articular_surfaces
+        return copy_
+
     def create_mesh(
         self,
         smooth_image=True,
@@ -1829,6 +1846,28 @@ class BoneMesh(Mesh):
     def list_articular_surfaces(self):
         return self._list_articular_surfaces
 
+    @list_articular_surfaces.setter
+    def list_articular_surfaces(self, new_list_articular_surfaces):
+        if isinstance(new_list_articular_surfaces, list):
+            for surface in new_list_articular_surfaces:
+                if isinstance(surface, (pv.PolyData, vtk.vtkPolyData)):
+                    surface = pymskt.mesh.Mesh(mesh=surface)
+                elif isinstance(surface, pymskt.mesh.meshes.Mesh):
+                    pass
+                else:
+                    raise TypeError(
+                        f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
+                    )
+        elif isinstance(
+            new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)
+        ):
+            if isinstance(new_list_articular_surfaces, (pv.PolyData, vtk.vtkPolyData)):
+                new_list_articular_surfaces = pymskt.mesh.Mesh(mesh=new_list_articular_surfaces)
+            new_list_articular_surfaces = [
+                new_list_articular_surfaces,
+            ]
+        self._list_articular_surfaces = new_list_articular_surfaces
+
     @property
     def list_cartilage_labels(self):
         """
@@ -1889,10 +1928,14 @@ class BoneMesh(Mesh):
             Floating point > 0.0 indicating how much of the length of the bone should be included
             when cropping - expressed as a proportion of the width.
         """
-        if not isinstance(new_crop_percent, float):
+        if new_crop_percent is None:
+            pass
+
+        elif not isinstance(new_crop_percent, float):
             raise TypeError(
                 f"New `crop_percent` provided is type {type(new_crop_percent)} - expected `float`"
             )
+
         self._crop_percent = new_crop_percent
 
     @property
