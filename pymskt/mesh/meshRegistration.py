@@ -95,7 +95,6 @@ def non_rigidly_register(
     return_icp_transform=False,
     verbose=False,
 ):
-
     if "pyfocusr" not in sys.modules:
         raise ModuleNotFoundError(
             "pyfocusr is not installed & is necessary for non-rigid registration."
