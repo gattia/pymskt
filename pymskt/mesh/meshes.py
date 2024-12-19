@@ -145,7 +145,7 @@ class Mesh(pv.PolyData):
         if self.n_points > 0:
             self.load_mesh_scalars()
 
-    def copy(self):
+    def copy(self, deep=True):
         """
         Create a copy of the mesh object.
 
@@ -155,7 +155,7 @@ class Mesh(pv.PolyData):
             A copy of the mesh object
         """
 
-        copy_ = super().copy(deep=True)
+        copy_ = super().copy(deep=deep)
         copy_.seg_image = self._seg_image
         copy_.path_seg_image = self._path_seg_image
         copy_.label_idx = self._label_idx
@@ -1302,7 +1302,7 @@ class BoneMesh(Mesh):
             min_n_pixels=min_n_pixels,
         )
 
-    def copy(self):
+    def copy(self, deep=True):
         """
         Copy the current mesh object.
 
@@ -1311,7 +1311,7 @@ class BoneMesh(Mesh):
         BoneMesh
             A copy of the current mesh object.
         """
-        copy_ = super().copy()
+        copy_ = super().copy(deep=deep)
         copy_.crop_percent = self.crop_percent
         copy_.bone = self.bone
         copy_.list_cartilage_meshes = self.list_cartilage_meshes
