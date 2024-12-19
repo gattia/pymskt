@@ -161,6 +161,7 @@ def fwhm2sigma(fwhm):
 #     else:
 #         print("File does not exist.")
 
+
 def safely_delete_tmp_file(location, filename):
     """
     Function to safely remove a temporary file.
@@ -178,10 +179,10 @@ def safely_delete_tmp_file(location, filename):
         for attempt in range(5):  # Retry up to 5 times
             try:
                 os.remove(file_path)
-                #print(f"Successfully deleted {file_path}.")
+                # print(f"Successfully deleted {file_path}.")
                 break  # Exit the loop if successful
             except PermissionError:
-                #print(f"PermissionError: Unable to delete {file_path}. Attempt {attempt + 1} of 5.")
+                # print(f"PermissionError: Unable to delete {file_path}. Attempt {attempt + 1} of 5.")
                 time.sleep(1)  # Wait before retrying
             except OSError as exc:
                 if exc.errno != errno.ENOENT:
@@ -189,4 +190,3 @@ def safely_delete_tmp_file(location, filename):
                 pass
         else:
             print(f"Failed to delete {file_path} after multiple attempts.")
-            
