@@ -624,7 +624,6 @@ def registration_step(
     kwargs,
     verbose,
 ):
-
     tic = time.time()
     # This is a helper function to allow for multiprocessing to work
     # becuase cant pickle vtk objects, instead we read them from disk.
