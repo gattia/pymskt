@@ -1383,7 +1383,7 @@ class BoneMesh(Mesh):
                 "or `tibia` currently supported for cropping. If using another bone, consider",
                 "making a pull request. If cropping not desired, set `crop_percent=None`.",
             )
-        
+
         super().create_mesh(
             smooth_image=smooth_image,
             smooth_image_var=smooth_image_var,
