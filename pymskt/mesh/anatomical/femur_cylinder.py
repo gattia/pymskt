@@ -54,15 +54,13 @@ class FitCylinderFemur:
         self.guess_radius()
 
     def get_articular_surf_points(self):
-        label_idx = vtk_to_numpy(self.femur.mesh.GetPointData().GetArray(self.labels_name))
+        label_idx = self.femur.point_data["self.labels_name"]
         cylinder_labels = label_idx == self.labels[0]
         if len(self.labels) > 1:
             for idx in range(1, len(self.labels)):
                 cylinder_labels += label_idx == self.labels[idx]
         cylinder_labels = np.asarray(cylinder_labels, dtype=int)
-        cylinder_scalars = numpy_to_vtk(cylinder_labels)
-        cylinder_scalars.SetName("cylinder labels")
-        self.femur.mesh.GetPointData().AddArray(cylinder_scalars)
+        self.femur.point_data["cylinder labels"] = cylinder_labels
 
         self.pts_articular_cylinder = self.femur.point_coords[cylinder_labels == 1, :]
 
