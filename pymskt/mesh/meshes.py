@@ -1301,7 +1301,7 @@ class BoneMesh(Mesh):
             label_idx=label_idx,
             min_n_pixels=min_n_pixels,
         )
-    
+
     def copy(self):
         """
         Copy the current mesh object.
