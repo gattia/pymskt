@@ -190,7 +190,6 @@ def fit_ssm_to_mesh_least_squares(
         ssm,
         mesh,
     ):
-
         list_features = [mesh.point_coords.flatten()]
         for feature in ssm.vertex_features:
             list_features.append(mesh.get_scalar(feature))
@@ -389,7 +388,6 @@ def save_meshes_across_pc(
     save_filename="{mesh_name}_{sd}.vtk",
     verbose=True,
 ):
-
     # TODO: create/confirm a single type for the vtkpolydata (or whatever is used)
     if type(mesh) not in (list, tuple):
         mesh = [

@@ -59,9 +59,18 @@ def get_y_CofM(flattenedSeg):
         yCofM[x, 1] = int(
             CofM(flattenedSeg[x, :])
         )  # store the CofM value (make it an integer for indexing)
-    yCofM = yCofM[
-        minRow + 10 : maxRow - 10, :
-    ]  # remove 10 most medial and most lateral pixels of femoral cartilage.
+
+    # remove 0.2 * (maxRow - minRow) of pixels from the most medial and most lateral side of the femur
+    offset = int(0.2 * (maxRow - minRow))
+    if minRow + offset < maxRow - offset:
+        yCofM = yCofM[
+            minRow + offset : maxRow - offset, :
+        ]  # remove 10 most medial and most lateral pixels of femoral cartilage.
+    else:
+        # fallback to original range if removing pixels is not possible.
+        warnings.warn(
+            "Not enough pixels to remove most medial and most lateral pixels of femoral cartilage."
+        )
     return yCofM
 
 
@@ -120,8 +129,17 @@ def findNotch(flattenedSeg, trochleaPositionX=1000):
     second_guess = centerX
 
     # We use the 2 guesses to help define a search space for the trochlear notch.
-    min_search = int(np.min((first_guess, second_guess)) - 20)
-    max_search = int(np.max((first_guess, second_guess)) + 20)
+    offset = int(0.25 * (flattenedSeg.shape[0]))
+    min_search = int(np.min((first_guess, second_guess)) - offset)
+    max_search = int(np.max((first_guess, second_guess)) + offset)
+    # check if search space is valid
+    if min_search > max_search or min_search < 0 or max_search > flattenedSeg.shape[0]:
+        warnings.warn(
+            "Avoiding invalid search space for trochlear notch,\
+                       the search space will be set to the full range of the flattened segmentation."
+        )
+        min_search = 0
+        max_search = flattenedSeg.shape[0]
 
     # now, we iterate over all of the rows (axis 1) of the search space (moving in the medial/lateral direction)
     # we are looking for the row where the most posterior point (back of femur) is furthest anterior (notch).
@@ -581,7 +599,6 @@ def get_knee_segmentation_with_femur_subregions(
 
 
 def combine_depth_region_segs(orig_seg, depth_segs):
-
     if isinstance(orig_seg, sitk.Image):
         type_orig_seg = "sitk"
         orig_seg_array = sitk.GetArrayFromImage(orig_seg)

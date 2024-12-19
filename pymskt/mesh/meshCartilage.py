@@ -208,7 +208,6 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
     list_articular_surfaces = []
 
     for cart_mesh in bone_mesh.list_cartilage_meshes:
-
         print(cart_mesh.point_coords.shape)
         print(bone_mesh.point_coords.shape)
         articular_surface = remove_intersecting_vertices(
