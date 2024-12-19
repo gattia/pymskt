@@ -1928,10 +1928,14 @@ class BoneMesh(Mesh):
             Floating point > 0.0 indicating how much of the length of the bone should be included
             when cropping - expressed as a proportion of the width.
         """
-        if not isinstance(new_crop_percent, float):
+        if new_crop_percent is None:
+            pass
+
+        elif not isinstance(new_crop_percent, float):
             raise TypeError(
                 f"New `crop_percent` provided is type {type(new_crop_percent)} - expected `float`"
             )
+
         self._crop_percent = new_crop_percent
 
     @property
