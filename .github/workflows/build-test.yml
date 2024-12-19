@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-13, ubuntu-latest]
         #TODO: Fix macos-12 to be macos-latest. Issue with using latest (arm?) and point cloud utils install. . 
         python-version: ["3.8", "3.9", "3.10", "3.11"]
 
