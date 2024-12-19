@@ -238,12 +238,12 @@ class Mesh(pv.PolyData):
         if min_n_pixels is None:
             min_n_pixels = self._min_n_pixels
         seg_view = sitk.GetArrayViewFromImage(self._seg_image)
-        n_pixels_labelled = sum(seg_view[seg_view == self._label_idx])
+        n_pixels_labelled = np.sum(seg_view == self._label_idx)
 
         if n_pixels_labelled < min_n_pixels:
             raise Exception(
                 "The mesh does not exist in this segmentation!, only {} pixels detected, threshold # is {}".format(
-                    n_pixels_labelled, marching_cubes_threshold
+                    n_pixels_labelled, self._min_n_pixels
                 )
             )
         tmp_filename = "".join(random.choice(string.ascii_lowercase) for i in range(10)) + ".nrrd"
@@ -1383,6 +1383,7 @@ class BoneMesh(Mesh):
                 "or `tibia` currently supported for cropping. If using another bone, consider",
                 "making a pull request. If cropping not desired, set `crop_percent=None`.",
             )
+        
         super().create_mesh(
             smooth_image=smooth_image,
             smooth_image_var=smooth_image_var,
