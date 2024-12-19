@@ -1,6 +1,8 @@
+import numpy as np
+
 import pymskt as mskt
 from pymskt.utils import testing
-import numpy as np
+
 MESH = mskt.mesh.io.read_vtk("data/femur_mesh_orig.vtk")
 MESH_RESAMPLED = mskt.mesh.Mesh(mskt.mesh.io.read_vtk("data/femur_mesh_10k_pts.vtk"))
 
