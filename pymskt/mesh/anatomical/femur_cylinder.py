@@ -54,7 +54,7 @@ class FitCylinderFemur:
         self.guess_radius()
 
     def get_articular_surf_points(self):
-        label_idx = self.femur.point_data['self.labels_name']
+        label_idx = self.femur.point_data["self.labels_name"]
         cylinder_labels = label_idx == self.labels[0]
         if len(self.labels) > 1:
             for idx in range(1, len(self.labels)):

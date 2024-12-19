@@ -19,6 +19,10 @@ from pymskt.image import crop_bone_based_on_width, read_nrrd
 from pymskt.image.main import apply_transform_retain_array
 from pymskt.mesh import createMesh
 from pymskt.mesh.createMesh import create_surface_mesh
+from pymskt.mesh.meshCartilage import (
+    break_cartilage_into_superficial_deep,
+    extract_articular_surface,
+)
 from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
 from pymskt.mesh.meshTools import (
     compute_assd_between_point_clouds,
@@ -45,7 +49,6 @@ from pymskt.mesh.meshTransform import (
     create_transform,
     get_versor_from_transform,
 )
-from pymskt.mesh.meshCartilage import extract_articular_surface, break_cartilage_into_superficial_deep
 from pymskt.mesh.utils import vtk_deep_copy
 from pymskt.utils import copy_image_transform_to_mesh, safely_delete_tmp_file
 
@@ -56,7 +59,7 @@ class Mesh(pv.PolyData):
     """
     An object to contain surface meshes for musculoskeletal anatomy. Includes helper
     functions to build surface meshes, to process them, and to save them.
-    Here are parameters and attributes relevant to Mesh class, 
+    Here are parameters and attributes relevant to Mesh class,
     but not to the parent pyvista.PolyData class that it inherits from.
 
     Parameters
@@ -99,19 +102,19 @@ class Mesh(pv.PolyData):
     ----------
 
     """
-    
+
     def __init__(
-        self, 
+        self,
         mesh=None,
-        seg_image=None, 
-        path_seg_image=None, 
-        label_idx=None, 
+        seg_image=None,
+        path_seg_image=None,
+        label_idx=None,
         min_n_pixels=5000,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize Mesh class
-        Below are parameters relevant to Mesh class, 
+        Below are parameters relevant to Mesh class,
         but not to the parent pyvista.PolyData class.
         Parameters
         ----------
@@ -129,7 +132,7 @@ class Mesh(pv.PolyData):
             All islands smaller than this size are dropped, by default 5000
         """
         # Initialize parent PolyData
-        super().__init__(mesh, deep=True,**kwargs)            
+        super().__init__(mesh, deep=True, **kwargs)
         # Store additional attributes
         self._seg_image = seg_image
         self._path_seg_image = path_seg_image
@@ -138,7 +141,7 @@ class Mesh(pv.PolyData):
         self._mesh_scalars = []
         self._n_scalars = 0
         self._list_applied_transforms = []
-        
+
         if self.n_points > 0:
             self.load_mesh_scalars()
 
@@ -151,7 +154,7 @@ class Mesh(pv.PolyData):
         Mesh
             A copy of the mesh object
         """
-        
+
         copy_ = super().copy(deep=True)
         copy_.seg_image = self._seg_image
         copy_.path_seg_image = self._path_seg_image
@@ -312,7 +315,7 @@ class Mesh(pv.PolyData):
         self.deep_copy(mesh_)
 
     def decimate(self, percent_orig_faces=0.5):
-        """ 
+        """
         Decimate the mesh to reduce the number of faces/points.
         """
         mesh_ = decimate_mesh_pcu(self.copy(), percent_orig_faces=percent_orig_faces)
@@ -415,8 +418,7 @@ class Mesh(pv.PolyData):
         """
         n_scalars = self.GetPointData().GetNumberOfArrays()
         array_names = [
-            self.GetPointData().GetArray(array_idx).GetName()
-            for array_idx in range(n_scalars)
+            self.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_scalars)
         ]
         self._scalar_names = array_names
         self._n_scalars = n_scalars
@@ -479,7 +481,7 @@ class Mesh(pv.PolyData):
         """
         mesh_ = resample_surface(self.copy(), subdivisions=subdivisions, clusters=clusters)
         self.deep_copy(mesh_)
-        
+
     def apply_transform_to_mesh(self, transform=None, transformer=None, save_transform=True):
         """
         Apply a transformation to the surface mesh.
@@ -749,7 +751,7 @@ class Mesh(pv.PolyData):
 
         # for array_name in array_names:
         for scalars_idx, scalars_name in enumerate(orig_scalars_name):
-            self.point_data[new_scalars_name[scalars_idx]] = transferred_scalars[scalars_name] 
+            self.point_data[new_scalars_name[scalars_idx]] = transferred_scalars[scalars_name]
 
         self.load_mesh_scalars()
         return transferred_scalars
@@ -898,8 +900,10 @@ class Mesh(pv.PolyData):
         """
         # print warning that Mesh is now synonymous with pyvista.PolyData and thus
         # this property is redundant and the Mesh object can be used for anything that
-        # pyvista.PolyData or vtk.vtkPolyData can be used for. 
-        print("WARNING: Mesh is now synonymous with pyvista.PolyData and thus this property is redundant and the Mesh object can be used for anything that pyvista.PolyData or vtk.vtkPolyData can be used for.")
+        # pyvista.PolyData or vtk.vtkPolyData can be used for.
+        print(
+            "WARNING: Mesh is now synonymous with pyvista.PolyData and thus this property is redundant and the Mesh object can be used for anything that pyvista.PolyData or vtk.vtkPolyData can be used for."
+        )
         return self
 
     @mesh.setter
@@ -940,7 +944,7 @@ class Mesh(pv.PolyData):
             The `new_point_coords` must include the same number of points as the mesh contains.
         """
         self.points = new_point_coords
-        
+
     @property
     def scalar_names(self):
         """
@@ -1423,8 +1427,9 @@ class BoneMesh(Mesh):
                     smooth_image_var=image_smooth_var_cart,
                     marching_cubes_threshold=marching_cubes_threshold,
                 )
-                cart_mesh.fix_mesh('pcu')
+                cart_mesh.fix_mesh("pcu")
                 self._list_cartilage_meshes.append(cart_mesh)
+
     def extract_articular_surfaces(self, ray_length=10.0, smooth_iter=100, n_largest=1):
         """
         Extract the articular surface from the cartilage meshes.
@@ -1438,8 +1443,10 @@ class BoneMesh(Mesh):
         n_largest : int, optional
             The number of largest regions to get, by default 1.
         """
-        
-        self._list_articular_surfaces = extract_articular_surface(self, ray_length=10.0, smooth_iter=100, n_largest=1)
+
+        self._list_articular_surfaces = extract_articular_surface(
+            self, ray_length=10.0, smooth_iter=100, n_largest=1
+        )
 
     def calc_cartilage_thickness(
         self,
@@ -1590,10 +1597,17 @@ class BoneMesh(Mesh):
         self.point_data["labels"] = labels
 
         self.reverse_all_transforms()
-    
-    def break_cartilage_into_superficial_deep(self, rel_depth_thresh=0.5, resample_cartilage_surface=None, return_rel_depth=False):
-        return break_cartilage_into_superficial_deep(self, rel_depth_thresh=rel_depth_thresh, resample_cartilage_surface=resample_cartilage_surface, return_rel_depth=return_rel_depth)
-    
+
+    def break_cartilage_into_superficial_deep(
+        self, rel_depth_thresh=0.5, resample_cartilage_surface=None, return_rel_depth=False
+    ):
+        return break_cartilage_into_superficial_deep(
+            self,
+            rel_depth_thresh=rel_depth_thresh,
+            resample_cartilage_surface=resample_cartilage_surface,
+            return_rel_depth=return_rel_depth,
+        )
+
     def get_cart_thickness_mean(self, region_idx):
         """
         Calculate the mean thickness of a given cartilage region.
@@ -1764,12 +1778,10 @@ class BoneMesh(Mesh):
             Index of the scalar array to smooth (alternative to using `scalar_array_name`) , by default None
         """
         if smooth_only_cartilage is True:
-            loc_cartilage = np.where(
-                self.point_data["thickness (mm)"] > 0.01
-            )[0]
+            loc_cartilage = np.where(self.point_data["thickness (mm)"] > 0.01)[0]
         else:
             loc_cartilage = None
-        print('loc_cartilage', loc_cartilage)
+        print("loc_cartilage", loc_cartilage)
         mesh_ = gaussian_smooth_surface_scalars(
             self.copy(),
             sigma=scalar_sigma,
@@ -1777,7 +1789,7 @@ class BoneMesh(Mesh):
             array_name=scalar_array_name,
             array_idx=scalar_array_idx,
         )
-        
+
         self.deep_copy(mesh_)
 
     @property
@@ -1811,7 +1823,7 @@ class BoneMesh(Mesh):
                 new_list_cartilage_meshes,
             ]
         self._list_cartilage_meshes = new_list_cartilage_meshes
-    
+
     @property
     def list_articular_surfaces(self):
         return self._list_articular_surfaces
