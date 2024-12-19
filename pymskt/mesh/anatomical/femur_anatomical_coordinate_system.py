@@ -54,7 +54,6 @@ class FemurACS:
         self._origin = self._fit_cylinder.origin + np.mean(proj_pts) * self._fit_cylinder.vector
 
     def fit(self):
-
         self._fit_longaxis = FitLongAxisFemur(
             self.femur,
             labels_name=self.labels_name,
