@@ -1845,7 +1845,7 @@ class BoneMesh(Mesh):
     @property
     def list_articular_surfaces(self):
         return self._list_articular_surfaces
-    
+
     @list_articular_surfaces.setter
     def list_articular_surfaces(self, new_list_articular_surfaces):
         if isinstance(new_list_articular_surfaces, list):
@@ -1855,11 +1855,17 @@ class BoneMesh(Mesh):
                 elif isinstance(surface, pymskt.mesh.meshes.Mesh):
                     pass
                 else:
-                    raise TypeError(f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}")
-        elif isinstance(new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)):
+                    raise TypeError(
+                        f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
+                    )
+        elif isinstance(
+            new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)
+        ):
             if isinstance(new_list_articular_surfaces, (pv.PolyData, vtk.vtkPolyData)):
                 new_list_articular_surfaces = pymskt.mesh.Mesh(mesh=new_list_articular_surfaces)
-            new_list_articular_surfaces = [new_list_articular_surfaces,]
+            new_list_articular_surfaces = [
+                new_list_articular_surfaces,
+            ]
         self._list_articular_surfaces = new_list_articular_surfaces
 
     @property
