@@ -367,9 +367,9 @@ def break_cartilage_into_superficial_deep(
     deep_idx = voxel_coords[rel_depth < rel_depth_thresh].astype(int)
     superficial_idx = voxel_coords[rel_depth >= rel_depth_thresh].astype(int)
     new_seg_array[deep_idx[:, 0], deep_idx[:, 1], deep_idx[:, 2]] = deep_label
-    new_seg_array[
-        superficial_idx[:, 0], superficial_idx[:, 1], superficial_idx[:, 2]
-    ] = superficial_label
+    new_seg_array[superficial_idx[:, 0], superficial_idx[:, 1], superficial_idx[:, 2]] = (
+        superficial_label
+    )
 
     new_seg_image = sitk.GetImageFromArray(new_seg_array)
     new_seg_image.CopyInformation(seg_image)
