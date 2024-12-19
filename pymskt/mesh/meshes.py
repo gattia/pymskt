@@ -1301,6 +1301,23 @@ class BoneMesh(Mesh):
             label_idx=label_idx,
             min_n_pixels=min_n_pixels,
         )
+    
+    def copy(self):
+        """
+        Copy the current mesh object.
+
+        Returns
+        -------
+        BoneMesh
+            A copy of the current mesh object.
+        """
+        copy_ = super().copy()
+        copy_.crop_percent = self.crop_percent
+        copy_.bone = self.bone
+        copy_.list_cartilage_meshes = self.list_cartilage_meshes
+        copy_.list_cartilage_labels = self.list_cartilage_labels
+        copy_.list_articular_surfaces = self.list_articular_surfaces
+        return copy_
 
     def create_mesh(
         self,
