@@ -301,7 +301,7 @@ def break_cartilage_into_superficial_deep(
     # if the cartilage meshes don't exist yet, create them.
     if bone_mesh.list_cartilage_meshes is None:
         bone_mesh.create_cartilage_meshes()
-    
+
     orig_cart_meshes = [cart_mesh_.copy() for cart_mesh_ in bone_mesh.list_cartilage_meshes]
 
     # if the cartilage surfaces are not resampled yet, and we want them to be,
@@ -313,10 +313,10 @@ def break_cartilage_into_superficial_deep(
     # if the articular surfaces don't exist yet, create them.
     if bone_mesh.list_articular_surfaces is None:
         bone_mesh.extract_articular_surfaces()
-    
+
     # re-assign the full resolution cartilage meshes to the bone_mesh object.
     bone_mesh.list_cartilage_meshes = orig_cart_meshes
-    
+
     # convert the seg_image to a numpy array, and get the voxel locations of the
     # cartilage labels.
     seg_arr = sitk.GetArrayFromImage(seg_image)
