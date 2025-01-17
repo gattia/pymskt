@@ -23,7 +23,7 @@ from pymskt.mesh.meshCartilage import (
     break_cartilage_into_superficial_deep,
     extract_articular_surface,
 )
-from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register
+from pymskt.mesh.meshRegistration import get_icp_transform, non_rigidly_register, cpd_register
 from pymskt.mesh.meshTools import (
     compute_assd_between_point_clouds,
     consistent_normals,
@@ -542,6 +542,7 @@ class Mesh(pv.PolyData):
         as_source=True,
         apply_transform_to_mesh=True,
         return_transformed_mesh=False,
+        reg_method='focusr', # alternatively 'cpd'
         **kwargs,
     ):
         """
@@ -570,11 +571,21 @@ class Mesh(pv.PolyData):
         elif as_source is False:
             source = other_mesh
             target = self
-
-        # Get registered mesh (source to target)
-        source_transformed_to_target = non_rigidly_register(
-            target_mesh=target, source_mesh=source, **kwargs
-        )
+        
+        if reg_method == 'focusr':
+            print('Using focusr for registration')
+            # Get registered mesh (source to target)
+            source_transformed_to_target = non_rigidly_register(
+                target_mesh=target, source_mesh=source, **kwargs
+            )
+        elif reg_method == 'cpd':
+            print('Using cpd for registration')
+            source_transformed_to_target, reg_params = cpd_register(
+                target_mesh=target.copy(), source_mesh=source.copy(), **kwargs
+            )
+        
+        print('source_transformed_to_target')
+        print(source_transformed_to_target)
 
         # If current mesh is source & apply_transform_to_mesh is true then replace current mesh.
         if (as_source is True) & (apply_transform_to_mesh is True):
@@ -1642,8 +1653,18 @@ class BoneMesh(Mesh):
         """
         region_array = self.get_scalar("labels")
         thickness_array = self.get_scalar("thickness (mm)")
+        
+        data = thickness_array[region_array == region_idx]
+        if len(data) == 0:
+            # print warning
+            warnings.warn(f"No data for region {region_idx} - returning mean as nan", UserWarning)
+            print(f'Unique labels: {np.unique(region_array)}, region_idx: {region_idx}')
+            mean = np.nan
+        else:
+            # convert to array to avoid runtime errors: 
+            #RuntimeError: ndarray subclass __array_wrap__ method returned an object which was not an instance of an ndarray subclass
+            mean = np.nanmean(np.array(data))
 
-        mean = np.nanmean(thickness_array[region_array == region_idx])
         return mean
 
     def get_cart_thickness_std(self, region_idx):
@@ -1662,8 +1683,18 @@ class BoneMesh(Mesh):
         """
         region_array = self.get_scalar("labels")
         thickness_array = self.get_scalar("thickness (mm)")
+        
+        data = thickness_array[region_array == region_idx]
+        if len(data) == 0:
+            # print warning
+            warnings.warn(f"No data for region {region_idx} - returning std as nan", UserWarning)
+            print(f'Unique labels: {np.unique(region_array)}, region_idx: {region_idx}')
+            std = np.nan
+        else:
+            # convert to array to avoid runtime errors: 
+            #RuntimeError: ndarray subclass __array_wrap__ method returned an object which was not an instance of an ndarray subclass
+            std = np.nanstd(np.array(data))
 
-        std = np.nanstd(thickness_array[region_array == region_idx])
         return std
 
     def get_cart_thickness_percentile(self, region_idx, percentile):
@@ -1689,7 +1720,16 @@ class BoneMesh(Mesh):
             warnings.warn("Percentiles should be between 0-100 and not 0-1", UserWarning)
 
         data = thickness_array[region_array == region_idx]
-        percentile = np.percentile(data, percentile)
+        if len(data) == 0:
+            # print warning
+            warnings.warn(f"No data for region {region_idx} - returning percentile as nan", UserWarning)
+            print(f'Unique labels: {np.unique(region_array)}, region_idx: {region_idx}')
+            percentile = np.nan
+        else:
+            # convert to array to avoid runtime errors: 
+            #RuntimeError: ndarray subclass __array_wrap__ method returned an object which was not an instance of an ndarray subclass
+
+            percentile = np.percentile(np.array(data), percentile)
 
         return percentile
 

@@ -1,6 +1,7 @@
 import sys
-
+import cycpd
 import vtk
+import pyvista as pv
 
 from pymskt.mesh.meshTools import transfer_mesh_scalars_get_weighted_average_n_closest
 
@@ -57,6 +58,112 @@ def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mod
     icp.SetMaximumNumberOfLandmarks(n_landmarks)
     return icp
 
+
+def cpd_register(
+    target_mesh,
+    source_mesh,
+    reg_type='non_rigid',
+    max_iterations=1_000,
+    alpha=1, #0.1
+    beta=7, #3
+    num_eig=100,
+    n_samples=1_000,
+    icp_register_first=True,  # Get bones/objects into roughly the same alignment first
+    icp_registration_mode="similarity",  # similarity = rigid + scaling (isotropic), ("rigid", "similarity", "affine")
+    icp_reg_target_to_source=True,
+    icp_iterations=100,
+    icp_n_landmarks=1000,
+    transfer_scalars=False,
+    return_icp_transform=False,
+):
+    from pymskt.mesh import Mesh
+    
+    assert isinstance(target_mesh, Mesh), "target_mesh must be inherited from pymskt.mesh.Mesh"
+    assert isinstance(source_mesh, Mesh), "source_mesh must be inherited from pymskt.mesh.Mesh"
+    
+    if icp_register_first is True:
+        if icp_reg_target_to_source is True:
+            icp_source = source_mesh.copy()
+            icp_target = target_mesh.copy()
+        else:
+            icp_source = target_mesh.copy()
+            icp_target = source_mesh.copy()
+            
+        
+        print('icp_source')
+        print(icp_source)
+        print('icp_target')
+        print(icp_target)
+        
+        icp_source = icp_source.rigidly_register(
+            other_mesh=icp_target,
+            as_source=True,
+            apply_transform_to_mesh=True,
+            return_transformed_mesh=True,
+            return_transform=False,
+            max_n_iter=icp_iterations,
+            n_landmarks=icp_n_landmarks,
+            reg_mode=icp_registration_mode
+        )
+        
+        print('icp_source')
+        print(icp_source)
+        
+        if icp_reg_target_to_source is True:
+            source_mesh = icp_source
+        else:
+            target_mesh = icp_source
+    
+    if n_samples is not None:
+        rand_idxs_source = np.random.choice(source_mesh.points.shape[0], n_samples, replace=False)
+        rand_idxs_target = np.random.choice(target_mesh.points.shape[0], n_samples, replace=False)
+    
+    if reg_type == 'non_rigid':
+        reg = cycpd.deformable_registration(
+            X=np.asarray(target_mesh.points if n_samples is None else target_mesh.points[rand_idxs_target,:]),
+            Y=np.asarray(source_mesh.points if n_samples is None else source_mesh.points[rand_idxs_source,:]),
+            max_iterations=max_iterations,
+            alpha=alpha,
+            beta=beta,
+            num_eig=num_eig,
+            tolerance=1e-5,
+            
+        )
+    elif reg_type == 'rigid':
+        # if rigid, then we can turn the result into the vtk transform
+        # on the other side of things. 
+        raise NotImplementedError("Rigid registration not implemented yet")
+    elif reg_type == 'affine':
+        raise NotImplementedError("Affine registration not implemented yet")
+    else:
+        raise ValueError(f"Registration type {reg_type} not recognized")
+
+    transformed_source, reg_params = reg.register()
+    
+    if n_samples is not None:
+        transformed_source = reg.transform_point_cloud(source_mesh.points)
+    
+    source_mesh.points = transformed_source
+    
+    print('source_mesh')
+    print(source_mesh)
+    
+    if transfer_scalars is True:
+        source_mesh = transfer_mesh_scalars_get_weighted_average_n_closest(
+            source_mesh,
+            target_mesh,
+            n=3,
+            return_mesh=True,
+            create_new_mesh=True,
+        )
+    
+    print('source_mesh')
+    print(source_mesh)
+
+    # if return_icp_transform is True:
+    #     return mesh_transformed_to_target, reg.icp_transform
+    
+    return source_mesh, reg_params
 
 def non_rigidly_register(
     target_mesh=None,
