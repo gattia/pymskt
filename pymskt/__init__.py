@@ -13,4 +13,4 @@ import pymskt.utils as utils
 RTOL = 1e-4
 ATOL = 1e-5
 
-__version__ = "0.1.01"
+__version__ = "0.1.03"
