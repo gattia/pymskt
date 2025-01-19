@@ -353,7 +353,7 @@ class Mesh(pv.PolyData):
             rand_pts = rand_gen(mean, cov, n_pts)
         elif distribution == "laplace" and (sigma is not None):
             scale = sigma / np.sqrt(2)  # Convert sigma to scale for Laplace
-            # size = number of points by the number of dimensions. 
+            # size = number of points by the number of dimensions.
             # not needed for multivariate gaussian.
             rand_pts = rand_gen(loc=mean, scale=scale, size=(n_pts, len(mean)))
 
