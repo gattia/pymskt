@@ -338,9 +338,11 @@ class Mesh:
         if (distribution == "normal") and (sigma is not None):
             cov = np.identity(len(mean)) * sigma**2
             rand_pts = rand_gen(mean, cov, n_pts)
-        elif distribution == "laplace":
-            rand_pts = np.tile(mean, [n_pts, 1])
-            rand_pts = rand_gen(rand_pts, sigma, n_pts)
+        elif distribution == "laplace" and (sigma is not None):
+            scale = sigma / np.sqrt(2)  # Convert sigma to scale for Laplace
+            # size = number of points by the number of dimensions. 
+            # not needed for multivariate gaussian.
+            rand_pts = rand_gen(loc=mean, scale=scale, size=(n_pts, len(mean)))
 
         samples = base_pts + rand_pts
 
