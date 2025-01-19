@@ -37,9 +37,9 @@ def test_set_mesh(vtk_mesh=MESH):
 
 def test_get_mesh(vtk_mesh=MESH):
     mesh = mskt.mesh.Mesh()
-    mesh._mesh = vtk_mesh
+    mesh.mesh = vtk_mesh
 
-    assert mesh.mesh == vtk_mesh
+    assert mesh == vtk_mesh
 
 
 # POINT COORDINATES
@@ -47,7 +47,7 @@ def test_get_point_coords(vtk_mesh=MESH):
     mesh = mskt.mesh.Mesh(mesh=vtk_mesh)
     pt_coords = mesh.point_coords
 
-    assert type(pt_coords) == np.ndarray
+    assert isinstance(pt_coords, np.ndarray)
     assert pt_coords.shape[0] == mesh.mesh.GetNumberOfPoints()
     assert pt_coords.shape[1] == 3
 
