@@ -40,10 +40,7 @@ def assert_mesh_coordinates_same(mesh1, mesh2, rtol=1e-4, atol=1e-5):
         Version 2 of the mesh
     """
 
-    mesh1_pts = mskt.mesh.get_mesh_physical_point_coords(mesh1)
-    mesh2_pts = mskt.mesh.get_mesh_physical_point_coords(mesh2)
-
-    assert_allclose(mesh1_pts, mesh2_pts, rtol=rtol, atol=atol)
+    assert_allclose(mesh1.points, mesh2.points, rtol=rtol, atol=atol)
 
 
 def assert_mesh_scalars_same(mesh1, mesh2, scalarname, scalarname2=None, rtol=1e-4, atol=1e-5):
@@ -64,7 +61,7 @@ def assert_mesh_scalars_same(mesh1, mesh2, scalarname, scalarname2=None, rtol=1e
     """
     if scalarname2 is None:
         scalarname2 = scalarname
-    scalars1 = vtk_to_numpy(mesh1.GetPointData().GetArray(scalarname))
-    scalars2 = vtk_to_numpy(mesh2.GetPointData().GetArray(scalarname2))
+    scalars1 = mesh1.point_data[scalarname]
+    scalars2 = mesh2.point_data[scalarname2]
 
     assert_allclose(scalars1, scalars2, rtol=rtol, atol=atol)

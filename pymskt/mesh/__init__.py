@@ -1,2 +1,2 @@
-from . import createMesh, io, meshRegistration, meshTools, meshTransform, utils, meshCartilage
+from . import createMesh, io, meshCartilage, meshRegistration, meshTools, meshTransform, utils
 from .meshes import *
