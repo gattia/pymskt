@@ -505,7 +505,7 @@ def get_knee_segmentation_with_femur_subregions(
     seg_image,
     fem_cart_label_idx=1,
     wb_region_percent_dist=0.6,
-    # femur_label=1,
+    femur_label=5,
     med_tibia_label=2,
     lat_tibia_label=3,
     ant_femur_mask=11,
@@ -516,6 +516,7 @@ def get_knee_segmentation_with_femur_subregions(
     verify_med_lat_tib_cart=True,
     tibia_label=6,
     ml_axis=0,
+    ref_image_reg_percent_sampling=0.1,
 ):
     """
     Give seg image of knee. Return seg image with all sub-regions of femur included.
@@ -556,26 +557,12 @@ def get_knee_segmentation_with_femur_subregions(
     SimpleITK.Image
         Image of the new/updated segmentation
     """
-    troch_notch_y, troch_notch_x = getAnteriorOfWeightBearing(
-        sitk.GetArrayViewFromImage(seg_image), femurIndex=fem_cart_label_idx
-    )
-    loc_fem_z, loc_fem_y, loc_fem_x = np.where(
-        sitk.GetArrayViewFromImage(seg_image) == fem_cart_label_idx
-    )
-    post_femur_slice = np.max(loc_fem_x)
-    posterior_wb_slice = np.round(
-        (post_femur_slice - troch_notch_x) * wb_region_percent_dist + troch_notch_x
-    ).astype(int)
 
-    # Get midpoint of femoral cartilage in the inferior/superior direction
-    fem_y_midpoint = np.round(np.mean(loc_fem_y)).astype(int)
-
-    new_seg_array = get_cartilage_subregions(
-        sitk.GetArrayViewFromImage(seg_image),
-        anteriorWBslice=troch_notch_x,
-        posteriorWBslice=posterior_wb_slice,
-        trochY=troch_notch_y,
+    new_seg_image = get_aligned_cartilage_subregions(
+        seg_image,
+        wb_region_percent_dist=wb_region_percent_dist,
         femurLabel=fem_cart_label_idx,
+        femurBoneLabel=femur_label,
         medTibiaLabel=med_tibia_label,
         latTibiaLabel=lat_tibia_label,
         antFemurMask=ant_femur_mask,
@@ -583,8 +570,10 @@ def get_knee_segmentation_with_femur_subregions(
         latWbFemurMask=lat_wb_femur_mask,
         medPostFemurMask=med_post_femur_mask,
         latPostFemurMask=lat_post_femur_mask,
-        mid_fem_y=fem_y_midpoint,
+        reg_percent_sampling=ref_image_reg_percent_sampling,
     )
+
+    new_seg_array = sitk.GetArrayFromImage(new_seg_image)
 
     if verify_med_lat_tib_cart:
         new_seg_array = verify_and_correct_med_lat_tib_cart(
@@ -672,7 +661,6 @@ def get_aligned_cartilage_subregions(
     latWbFemurMask=13,
     medPostFemurMask=14,
     latPostFemurMask=15,
-    mid_fem_y=None,
     reference_image_input=os.path.join(
         os.path.dirname(os.path.dirname(__file__)), "data", "right_knee_example.nrrd"
     ),
@@ -709,8 +697,6 @@ def get_aligned_cartilage_subregions(
         The label of the medial posterior femur region, by default 14
     latPostFemurMask: int, optional
         The label of the lateral posterior femur region, by default 15
-    mid_fem_y: int, optional
-        The y-coordinate of the midpoint of the femoral cartilage, by default None
     reference_image_input: str or sitk.Image, optional
         The reference image to align the segmentation to, by default the right knee example image
     ref_image_fem_bone_label: int, optional
@@ -853,7 +839,6 @@ def get_aligned_cartilage_subregions(
         latWbFemurMask=latWbFemurMask,
         medPostFemurMask=medPostFemurMask,
         latPostFemurMask=latPostFemurMask,
-        mid_fem_y=mid_fem_y,
     )
 
     # Create a SimpleITK image from subregion_array in the aligned space.
