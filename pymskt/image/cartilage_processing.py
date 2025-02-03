@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import numpy as np
@@ -657,3 +658,256 @@ def combine_depth_region_segs(orig_seg, depth_segs):
         new_seg_combined.CopyInformation(orig_seg)
 
     return new_seg_combined
+
+
+def get_aligned_cartilage_subregions(
+    seg_image_sitk,
+    wb_region_percent_dist=0.6,
+    femurLabel=1,
+    femurBoneLabel=5,
+    medTibiaLabel=2,
+    latTibiaLabel=3,
+    antFemurMask=11,
+    medWbFemurMask=12,
+    latWbFemurMask=13,
+    medPostFemurMask=14,
+    latPostFemurMask=15,
+    mid_fem_y=None,
+    reference_image_input=os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "data", "right_knee_example.nrrd"
+    ),
+    ref_image_fem_bone_label=5,
+    reg_percent_sampling=0.1,
+    print_transform=False,
+):
+    """
+
+    Aligns the segmentation image to the reference image, splits the femur cartilage into subregions,
+    and then resamples the subregions back to the original image space.
+
+    Parameters:
+    ----------
+    seg_image_sitk: sitk.Image
+        The segmentation image to be processed.
+    wb_region_percent_dist: float, optional
+        The percentage distance used by the pipeline to determine the weight-bearing region, by default 0.6
+    femurLabel: int, optional
+        The label of the femur cartilage, by default 1
+    femurBoneLabel: int, optional
+        The label of the femur bone, by default 5
+    medTibiaLabel: int, optional
+        The label of the medial tibia cartilage, by default 2
+    latTibiaLabel: int, optional
+        The label of the lateral tibia cartilage, by default 3
+    antFemurMask: int, optional
+        The label of the anterior femur region, by default 11
+    medWbFemurMask: int, optional
+        The label of the medial weight-bearing femur region, by default 12
+    latWbFemurMask: int, optional
+        The label of the lateral weight-bearing femur region, by default 13
+    medPostFemurMask: int, optional
+        The label of the medial posterior femur region, by default 14
+    latPostFemurMask: int, optional
+        The label of the lateral posterior femur region, by default 15
+    mid_fem_y: int, optional
+        The y-coordinate of the midpoint of the femoral cartilage, by default None
+    reference_image_input: str or sitk.Image, optional
+        The reference image to align the segmentation to, by default the right knee example image
+    ref_image_fem_bone_label: int, optional
+        The label of the femur bone in the reference image, by default 5
+    reg_percent_sampling: float, optional
+        The percentage of voxels to sample for registration, by default 0.1
+    print_transform: bool, optional
+        Whether to print the transform parameters, by default False
+
+    Returns:
+    --------
+    sitk.Image
+        The processed segmentation image with subregions aligned to the reference image.
+
+    Notes:
+    This function wraps get_cartilage_subregions by:
+        1. Reading in the reference image from a file if a filepath is provided, and then binarizing it to include only the femur bone (label=femurBoneLabel).
+        2. Determining knee laterality on seg_image_sitk using the medial and lateral tibial cartilage labels.
+            If the new knee is left, it flips the binarized reference image along the medial/lateral axis.
+        3. Performing a similarity registration using only the femur bone as the moving image.
+            The moving image is created by thresholding seg_image_sitk to only keep the femur bone.
+        4. Resampling the full segmentation (seg_image_sitk) into the aligned (reference) space using the computed transform.
+        5. Running the existing get_cartilage_subregions on the aligned segmentation array. This is the main point, we want to
+        break cartilage into subregions when the 3D array is aligned along the knee anatomical axes.
+        6. Inversely resampling the processed subregions back to the original image space.
+        7. For any voxel originally identified as femoral cartilage (using femurLabel) that does not directly carry a valid subregion label upon inverse resampling,
+            assigning it the nearest valid label via a distance transform that uses the image spacing.
+    """
+    # If the reference image is given as a filename, read it
+    if isinstance(reference_image_input, str):
+        reference_image = sitk.ReadImage(reference_image_input)
+    else:
+        reference_image = reference_image_input
+
+    # Binarize the reference image to keep only the femur bone (label=femurBoneLabel)
+    binary_reference = sitk.BinaryThreshold(
+        reference_image,
+        lowerThreshold=ref_image_fem_bone_label,
+        upperThreshold=ref_image_fem_bone_label,
+        insideValue=1,
+        outsideValue=0,
+    )
+    # Cast the binary reference to Float32 for registration.
+    binary_reference = sitk.Cast(binary_reference, sitk.sitkFloat32)
+
+    # Step 1: Determine knee laterality using the tibial cartilage labels in seg_image_sitk.
+    label_stats = sitk.LabelShapeStatisticsImageFilter()
+    label_stats.Execute(seg_image_sitk)
+    try:
+        med_centroid = np.array(label_stats.GetCentroid(medTibiaLabel))
+        lat_centroid = np.array(label_stats.GetCentroid(latTibiaLabel))
+    except Exception as e:
+        raise ValueError(
+            "Could not compute centroids for tibial labels. Ensure they are present in segmentation."
+        ) from e
+
+    # For a right knee, we expect the lateral tibia to have a higher x-coordinate than the medial tibia.
+    is_right_knee = lat_centroid[0] < med_centroid[0]
+
+    # If the new knee is left (i.e. not right), flip the binary reference image along the medial/lateral axis.
+    if not is_right_knee:
+        binary_ref_array = sitk.GetArrayFromImage(binary_reference)
+        # flip array along the med/lat axis
+        binary_ref_array = np.flip(binary_ref_array, axis=0)
+        binary_reference_flipped = sitk.GetImageFromArray(binary_ref_array)
+        binary_reference_flipped.CopyInformation(binary_reference)
+        binary_reference = binary_reference_flipped
+
+    # Step 2: Create a moving image from seg_image_sitk that includes only the femur bone.
+    moving_femur = sitk.BinaryThreshold(
+        seg_image_sitk,
+        lowerThreshold=femurBoneLabel,
+        upperThreshold=femurBoneLabel,
+        insideValue=1,
+        outsideValue=0,
+    )
+    # Cast the moving image to Float32 for registration as well.
+    moving_femur = sitk.Cast(moving_femur, sitk.sitkFloat32)
+
+    # Step 3: Register the moving femur to the binary reference image using a similarity transform.
+    registration_method = sitk.ImageRegistrationMethod()
+    initial_transform = sitk.CenteredTransformInitializer(
+        binary_reference,
+        moving_femur,
+        sitk.Similarity3DTransform(),
+        sitk.CenteredTransformInitializerFilter.MOMENTS,
+    )
+    registration_method.SetInitialTransform(initial_transform, inPlace=False)
+    registration_method.SetMetricAsMeanSquares()
+    registration_method.SetInterpolator(sitk.sitkNearestNeighbor)
+    registration_method.SetMetricSamplingPercentage(reg_percent_sampling)
+    # registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0,
+    #                                                              minStep=1e-4,
+    #                                                              numberOfIterations=200,
+    #                                                              gradientMagnitudeTolerance=1e-6)
+    registration_method.SetOptimizerAsGradientDescent(
+        learningRate=1.0,
+        numberOfIterations=200,
+        convergenceMinimumValue=1e-6,
+        convergenceWindowSize=10,
+    )
+    final_transform = registration_method.Execute(binary_reference, moving_femur)
+
+    if print_transform:
+        # get the transform parameters
+        print(np.array(final_transform.GetParameters()).reshape(-1, 3).T)
+    # Step 4: Resample the full segmentation into the aligned (reference) space using the computed transform.
+    resampler = sitk.ResampleImageFilter()
+    resampler.SetReferenceImage(binary_reference)
+    resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+    resampler.SetTransform(final_transform)
+    aligned_seg_image = resampler.Execute(seg_image_sitk)
+    aligned_seg_array = sitk.GetArrayFromImage(aligned_seg_image)
+
+    troch_notch_y, troch_notch_x = getAnteriorOfWeightBearing(
+        sitk.GetArrayViewFromImage(aligned_seg_image), femurIndex=femurLabel
+    )
+    loc_fem_z, loc_fem_y, loc_fem_x = np.where(
+        sitk.GetArrayViewFromImage(aligned_seg_image) == femurLabel
+    )
+    post_femur_slice = np.max(loc_fem_x)
+    posterior_wb_slice = np.round(
+        (post_femur_slice - troch_notch_x) * wb_region_percent_dist + troch_notch_x
+    ).astype(int)
+
+    # Get midpoint of femoral cartilage in the inferior/superior direction
+    fem_y_midpoint = np.round(np.mean(loc_fem_y)).astype(int)
+
+    # Step 5: Run the existing get_cartilage_subregions on the aligned segmentation array.
+    subregion_array = get_cartilage_subregions(
+        aligned_seg_array,
+        anteriorWBslice=troch_notch_x,
+        posteriorWBslice=posterior_wb_slice,
+        trochY=troch_notch_y,
+        femurLabel=femurLabel,
+        medTibiaLabel=medTibiaLabel,
+        latTibiaLabel=latTibiaLabel,
+        antFemurMask=antFemurMask,
+        medWbFemurMask=medWbFemurMask,
+        latWbFemurMask=latWbFemurMask,
+        medPostFemurMask=medPostFemurMask,
+        latPostFemurMask=latPostFemurMask,
+        mid_fem_y=mid_fem_y,
+    )
+
+    # Create a SimpleITK image from subregion_array in the aligned space.
+    subregion_image_aligned = sitk.GetImageFromArray(subregion_array)
+    subregion_image_aligned.CopyInformation(binary_reference)
+
+    # Step 6: Inversely resample the processed subregion segmentation back to the original image space.
+    inverse_transform = final_transform.GetInverse()
+    resampler_back = sitk.ResampleImageFilter()
+    resampler_back.SetReferenceImage(seg_image_sitk)
+    resampler_back.SetInterpolator(sitk.sitkNearestNeighbor)
+    resampler_back.SetTransform(inverse_transform)
+    subregion_image_original = resampler_back.Execute(subregion_image_aligned)
+
+    # Step 7: For every voxel in the original femoral cartilage region that did not receive a valid subregion label,
+    # assign it the nearest valid label via a distance transform that uses the image spacing.
+    orig_seg_array = sitk.GetArrayFromImage(seg_image_sitk)
+    processed_seg_array = sitk.GetArrayFromImage(subregion_image_original)
+
+    # everywhere that was not femur cartilage in original, set to the
+    # values from the original seg_image_sitk (orig_seg_array)
+    processed_seg_array[orig_seg_array != femurLabel] = orig_seg_array[orig_seg_array != femurLabel]
+
+    # Define the valid femoral cartilage subregion labels.
+    valid_labels = {
+        antFemurMask,
+        medWbFemurMask,
+        latWbFemurMask,
+        medPostFemurMask,
+        latPostFemurMask,
+    }
+    fem_cart_mask = orig_seg_array == femurLabel
+    valid_mask = np.isin(processed_seg_array, list(valid_labels))
+
+    # Create the missing mask and find its indices.
+    missing_mask = fem_cart_mask & (~valid_mask)
+    missing_voxel_coords = np.nonzero(missing_mask)
+    fixed_array = processed_seg_array.copy()
+
+    # Only compute the distance transform if there are missing voxels.
+    if missing_voxel_coords[0].size > 0:
+        # Get the physical spacing (SimpleITK spacing is in x,y,z order)
+        spacing = seg_image_sitk.GetSpacing()
+        # Convert spacing to numpy array ordering (z, y, x)
+        sampling = (spacing[2], spacing[1], spacing[0])
+        distance, indices = ndi.distance_transform_edt(
+            ~valid_mask, sampling=sampling, return_indices=True
+        )
+        nearest_z = indices[0][missing_voxel_coords]
+        nearest_y = indices[1][missing_voxel_coords]
+        nearest_x = indices[2][missing_voxel_coords]
+        fixed_array[missing_voxel_coords] = processed_seg_array[nearest_z, nearest_y, nearest_x]
+
+    final_subregion_image = sitk.GetImageFromArray(fixed_array)
+    final_subregion_image.CopyInformation(seg_image_sitk)
+
+    return final_subregion_image
