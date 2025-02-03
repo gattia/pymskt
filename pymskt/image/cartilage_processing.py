@@ -1,7 +1,9 @@
 import os
 import warnings
+from tempfile import gettempdir
 
 import numpy as np
+import requests
 import SimpleITK as sitk
 from scipy import ndimage as ndi
 
@@ -725,9 +727,39 @@ def get_aligned_cartilage_subregions(
         7. For any voxel originally identified as femoral cartilage (using femurLabel) that does not directly carry a valid subregion label upon inverse resampling,
             assigning it the nearest valid label via a distance transform that uses the image spacing.
     """
-    # If the reference image is given as a filename, read it
     if isinstance(reference_image_input, str):
-        reference_image = sitk.ReadImage(reference_image_input)
+        if not os.path.exists(reference_image_input):
+            # Use temp directory for downloaded assets
+            data_dir = os.path.join(gettempdir(), "pymskt_data")
+            os.makedirs(data_dir, exist_ok=True)
+
+            dest_path = os.path.join(data_dir, "right_knee_example.nrrd")
+
+            if not os.path.exists(dest_path):
+                try:
+                    url = "https://github.com/gattia/pymskt/raw/main/data/right_knee_example.nrrd"
+                    response = requests.get(url, timeout=10)
+                    response.raise_for_status()
+
+                    with open(dest_path, "wb") as f:
+                        f.write(response.content)
+                except requests.exceptions.RequestException as e:
+                    raise RuntimeError(
+                        f"Failed to download reference image: {str(e)}\n"
+                        "You can manually download it from:\n"
+                        f"{url}\n"
+                        f"and place it at: {dest_path}"
+                    ) from e
+
+            reference_image_input = dest_path
+
+        try:
+            reference_image = sitk.ReadImage(reference_image_input)
+        except RuntimeError as e:
+            raise RuntimeError(
+                f"Failed to load reference image at {reference_image_input}\n"
+                "The file may be corrupted. Try deleting it to trigger a re-download."
+            ) from e
     else:
         reference_image = reference_image_input
 
