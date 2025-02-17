@@ -190,3 +190,49 @@ def safely_delete_tmp_file(location, filename):
                 pass
         else:
             print(f"Failed to delete {file_path} after multiple attempts.")
+
+
+def gaussian_kernel(X, Y, sigma=1.0):
+    """
+    Compute a Gaussian kernel between all rows of X and Y.
+    If the Cython implementation is available (from pymskt.cython.cython_functions), it will be used.
+    Otherwise, a pure Python implementation is used.
+
+    Parameters:
+        X (numpy.ndarray): Input array of shape (n, d)
+        Y (numpy.ndarray): Input array of shape (m, d)
+        sigma (float, optional): Standard deviation for the Gaussian kernel. Default is 1.0.
+
+    Returns:
+        numpy.ndarray: A (n x m) kernel matrix where each row is normalized to sum to 1.
+    """
+    try:
+        # Attempt to use the Cython version if available
+        import pymskt.cython_functions as cython_functions
+
+        return cython_functions.gaussian_kernel(X, Y, sigma)
+    except (ImportError, AttributeError):
+        # Fall back to a pure Python implementation
+        print("Using pure Python implementation of gaussian_kernel")
+        print("if slow performance, try installing with Cython version")
+    n, d = X.shape
+    m, d2 = Y.shape
+    if d != d2:
+        raise ValueError("X and Y must have the same number of columns")
+
+    # Compute the Gaussian multiplier
+    multiplier = 1 / (sigma**d * ((2 * np.pi) ** (d / 2)))
+    two_sigma2 = 2 * sigma**2
+
+    kernel = np.zeros((n, m))
+    for i in range(n):
+        for j in range(m):
+            diff = X[i] - Y[j]
+            sqnorm = np.dot(diff, diff)
+            kernel[i, j] = multiplier * np.exp(-sqnorm / two_sigma2)
+
+    # Normalize each row so that the entries sum to 1
+    row_sums = kernel.sum(axis=1, keepdims=True)
+    # Avoid division by zero
+    row_sums[row_sums == 0] = 1
+    return kernel / row_sums

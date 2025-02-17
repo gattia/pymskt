@@ -7,7 +7,7 @@ import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
-from pymskt.cython_functions import gaussian_kernel
+from pymskt.utils import gaussian_kernel
 from pymskt.mesh.utils import (
     get_intersect,
     get_obb_surface,
