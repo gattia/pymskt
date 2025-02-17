@@ -781,6 +781,7 @@ def get_aligned_cartilage_subregions(
         med_centroid = np.array(label_stats.GetCentroid(medTibiaLabel))
         lat_centroid = np.array(label_stats.GetCentroid(latTibiaLabel))
     except Exception as e:
+        print(e)
         raise ValueError(
             "Could not compute centroids for tibial labels. Ensure they are present in segmentation."
         ) from e
