@@ -1,20 +1,12 @@
-import os
-import time
-from turtle import distance
-
 import numpy as np
 import point_cloud_utils as pcu
 import pyacvd
 import pymeshfix as mf
 import pyvista as pv
-import SimpleITK as sitk
 import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
-import pymskt.image as pybtimage
-import pymskt.mesh.createMesh as createMesh
-import pymskt.mesh.meshTransform as meshTransform
 from pymskt.cython_functions import gaussian_kernel
 from pymskt.mesh.utils import (
     get_intersect,
