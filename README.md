@@ -29,7 +29,7 @@ pyMSKT is an open-source library for performing quantitative analyses of the mus
     cd pymskt
     
     # CREATE ENVIRONMENT:
-    conda env create -n mskt
+    conda create -n mskt
     conda activate mskt
 
     # INSTALLING DEPENDENCIES
