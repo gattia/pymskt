@@ -250,6 +250,7 @@ def break_cartilage_into_superficial_deep(
     return_rel_depth=False,
     deep_label=100,
     superficial_label=200,
+    sdf_method="vtk", # "pcu" or "vtk"
 ):
     """
     Break the cartilage into superficial and deep regions based on the relative depth
@@ -275,6 +276,8 @@ def break_cartilage_into_superficial_deep(
         The label to assign to the superficial regions, by default 200.
     """
     from pymskt.mesh import Mesh
+    
+    bone_mesh.compute_normals(auto_orient_normals=True, inplace=True)
 
     # the seg_image might be in the bone_mesh, or provided as input. Check, and raise
     # errors if its not provided.
@@ -352,14 +355,59 @@ def break_cartilage_into_superficial_deep(
     articular_cart_distances = []
     for surface in articular_surfaces:
         articular_cart_distances.append(
-            abs(Mesh(surface).get_sdf_pts(voxel_coords_world, method="vtk"))
+            abs(Mesh(surface).get_sdf_pts(voxel_coords_world, method=sdf_method))
         )
     articular_cart_distances = np.min(articular_cart_distances, axis=0)
 
-    bone_distance = bone_mesh.get_sdf_pts(voxel_coords_world, method="vtk")
-    bone_distance[bone_distance < 0] = 0
+    bone_distance = bone_mesh.get_sdf_pts(voxel_coords_world, method=sdf_method)
+    # bone_distance[bone_distance < 0] = 0 # Clip negative distances (inside bone) to 0
+
+    # === DEBUG: Log distance statistics ===
+    try:
+        # Use standard logging for library code
+        import logging
+        lib_logger = logging.getLogger('pymskt.mesh.meshCartilage')
+
+        finite_bone_dist = bone_distance[np.isfinite(bone_distance)]
+        if finite_bone_dist.size > 0:
+             lib_logger.debug(f"Bone distance stats: Min={np.min(finite_bone_dist):.4f}, Max={np.max(finite_bone_dist):.4f}, Mean={np.mean(finite_bone_dist):.4f}, Median={np.median(finite_bone_dist):.4f}")
+        else:
+             lib_logger.warning("No finite bone distance values found.")
+        
+        finite_articular_dist = articular_cart_distances[np.isfinite(articular_cart_distances)]
+        if finite_articular_dist.size > 0:
+             lib_logger.debug(f"Articular distance stats: Min={np.min(finite_articular_dist):.4f}, Max={np.max(finite_articular_dist):.4f}, Mean={np.mean(finite_articular_dist):.4f}, Median={np.median(finite_articular_dist):.4f}")
+        else:
+             lib_logger.warning("No finite articular distance values found.")
+
+    except Exception as dbg_e:
+        lib_logger.error(f"Error calculating distance stats: {dbg_e}")
+    # === END DEBUG ===
 
     rel_depth = bone_distance / (bone_distance + articular_cart_distances)
+    
+    # print the dype of bone_distance and articular_cart_distances
+    print(f"bone_distance dtype: {bone_distance.dtype}")
+    print(f"articular_cart_distances dtype: {articular_cart_distances.dtype}")
+    print(f"rel_depth dtype: {rel_depth.dtype}")
+
+    # === DEBUG: Log relative depth statistics ===
+    try:
+        # Ignore potential NaNs or Infs from division by zero if distances are zero
+        finite_rel_depth = rel_depth[np.isfinite(rel_depth)]
+        if finite_rel_depth.size > 0:
+            min_rd = np.min(finite_rel_depth)
+            max_rd = np.max(finite_rel_depth)
+            mean_rd = np.mean(finite_rel_depth)
+            median_rd = np.median(finite_rel_depth)
+            # Use standard logging for library code
+            lib_logger = logging.getLogger('pymskt.mesh.meshCartilage')
+            lib_logger.debug(f"Relative depth stats: Min={min_rd:.4f}, Max={max_rd:.4f}, Mean={mean_rd:.4f}, Median={median_rd:.4f}")
+        else:
+             lib_logger.warning("No finite relative depth values found.")
+    except Exception as dbg_e:
+        lib_logger.error(f"Error calculating relative depth stats: {dbg_e}")
+    # === END DEBUG ===
 
     # combine the existing seg labels into a single label
     # then break that into superficial and deep based on the rel_depth threshold.
@@ -378,8 +426,14 @@ def break_cartilage_into_superficial_deep(
 
     new_seg_image = sitk.GetImageFromArray(new_seg_array)
     new_seg_image.CopyInformation(seg_image)
+    
+    rel_depth = bone_distance
+    rel_depth_array = np.zeros_like(seg_arr, dtype=np.float32)
+    rel_depth_array[voxel_coords[:, 0], voxel_coords[:, 1], voxel_coords[:, 2]] = rel_depth
+    rel_depth_image = sitk.GetImageFromArray(rel_depth_array)
+    rel_depth_image.CopyInformation(seg_image)
 
     if return_rel_depth:
-        return new_seg_image, rel_depth
+        return new_seg_image, rel_depth_image
     else:
         return new_seg_image

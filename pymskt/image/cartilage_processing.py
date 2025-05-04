@@ -627,15 +627,14 @@ def combine_depth_region_segs(orig_seg, depth_segs):
         # if happens to be 0,1,2 then convert to 0,100,200
         if np.unique(depth_seg).tolist() == [0, 1, 2]:
             depth_seg = depth_seg * 100
-        # assert that depth_seg only has 3 unique values (0, 100, 200)
-        assert np.unique(depth_seg).tolist() == [
-            0,
-            100,
-            200,
-        ], "depth_segs must only contain the values 0, 100, 200"
+        # assert that depth_seg only has allowed values (0, 100, 200)
+        unique_labels = np.unique(depth_seg)
+        allowed_labels = {0, 100, 200}
+        assert set(unique_labels).issubset(allowed_labels), \
+            f"depth_segs must only contain values within {allowed_labels}. Found: {unique_labels}"
+        
         # could do += but this might end up with higher values in a voxel if
         # the same two masks are accidentally added twice.
-        # this is safer in the event that there are duplicates in the depth_segs provided.
         new_seg_combined[depth_seg == 100] = 100
         new_seg_combined[depth_seg == 200] = 200
 

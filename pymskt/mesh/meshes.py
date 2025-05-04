@@ -372,10 +372,16 @@ class Mesh(pv.PolyData):
         Returns:
             np.ndarray: (n_pts, ) array of SDFs
         """
-        if method == "pcu":
-            sdfs = pcu_sdf(pts, self)
-        elif method == "vtk":
+        if method == "vtk":
             sdfs = vtk_sdf(pts, self)
+        elif method == "pcu":
+            # use point-cloud-utils
+            # pcu is faster than vtk for large # of points
+            # Ensure pts are C-contiguous (default) for the call to pcu_sdf
+            # The fix for pcu internal error is in meshTools.py (asfortranarray for vertices)
+            sdfs = pcu_sdf(np.ascontiguousarray(pts), self) 
+        else:
+            raise ValueError(f"method {method} not recognized")
 
         return sdfs
 
