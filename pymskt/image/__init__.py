@@ -1,6 +1,10 @@
 from . import cartilage_processing
 from .main import *
-from .meniscus_processing import subdivide_meniscus_regions, verify_and_correct_meniscus_sides, verify_and_correct_meniscus_sides_sitk
+from .meniscus_processing import (
+    subdivide_meniscus_regions,
+    verify_and_correct_meniscus_sides,
+    verify_and_correct_meniscus_sides_sitk,
+)
 from .t2 import *
 
 __all__ = [

@@ -7,7 +7,6 @@ import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
 
-from pymskt.utils import gaussian_kernel
 from pymskt.mesh.utils import (
     get_intersect,
     get_obb_surface,
@@ -15,7 +14,7 @@ from pymskt.mesh.utils import (
     is_hit,
     vtk_deep_copy,
 )
-from pymskt.utils import l2n, n2l, safely_delete_tmp_file
+from pymskt.utils import gaussian_kernel, l2n, n2l, safely_delete_tmp_file
 
 epsilon = 1e-7
 

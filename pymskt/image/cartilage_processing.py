@@ -630,9 +630,10 @@ def combine_depth_region_segs(orig_seg, depth_segs):
         # assert that depth_seg only has allowed values (0, 100, 200)
         unique_labels = np.unique(depth_seg)
         allowed_labels = {0, 100, 200}
-        assert set(unique_labels).issubset(allowed_labels), \
-            f"depth_segs must only contain values within {allowed_labels}. Found: {unique_labels}"
-        
+        assert set(unique_labels).issubset(
+            allowed_labels
+        ), f"depth_segs must only contain values within {allowed_labels}. Found: {unique_labels}"
+
         # could do += but this might end up with higher values in a voxel if
         # the same two masks are accidentally added twice.
         new_seg_combined[depth_seg == 100] = 100

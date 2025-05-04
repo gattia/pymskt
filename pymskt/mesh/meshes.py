@@ -379,7 +379,7 @@ class Mesh(pv.PolyData):
             # pcu is faster than vtk for large # of points
             # Ensure pts are C-contiguous (default) for the call to pcu_sdf
             # The fix for pcu internal error is in meshTools.py (asfortranarray for vertices)
-            sdfs = pcu_sdf(np.ascontiguousarray(pts), self) 
+            sdfs = pcu_sdf(np.ascontiguousarray(pts), self)
         else:
             raise ValueError(f"method {method} not recognized")
 
