@@ -20,6 +20,9 @@ ipydatawidgets < 4.3.3
 
 cycpd
 
+# needed for t2 mapping
+nibabel
+
 # pyfocusr
 # matplotlib
 # itkwidgets

@@ -1,5 +1,4 @@
 import os
-from asyncore import write
 
 import pyvista as pv
 import vtk
