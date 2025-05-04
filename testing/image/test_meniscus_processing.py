@@ -45,6 +45,7 @@ def segmentation_data():
     except Exception as e:
         pytest.fail(f"Failed to load or process test data {SEG_FILEPATH}: {e}")
 
+
 def _check_masks(seg_array, med_mask, lat_mask, med_lbl, lat_lbl):
     """Helper function for common mask assertions."""
     assert isinstance(med_mask, np.ndarray) and med_mask.dtype == bool
@@ -116,6 +117,7 @@ def test_verify_meniscus_tibial_centroid(segmentation_data):
     _check_plane_split(med_mask, center_split, ML_AXIS, med_side_is_positive)
     _check_plane_split(lat_mask, center_split, ML_AXIS, not med_side_is_positive)
 
+
 def test_verify_meniscus_cartilage_midpoint(segmentation_data):
     """Test the 'cartilage_midpoint' method."""
     img, arr = segmentation_data
@@ -140,6 +142,7 @@ def test_verify_meniscus_cartilage_midpoint(segmentation_data):
 
     _check_plane_split(med_mask, center_split, ML_AXIS, med_side_is_positive)
     _check_plane_split(lat_mask, center_split, ML_AXIS, not med_side_is_positive)
+
 
 def test_verify_meniscus_cartilage_distance(segmentation_data):
     """Test the 'cartilage_distance' method."""
@@ -166,6 +169,7 @@ def test_verify_meniscus_cartilage_distance(segmentation_data):
     # Check if total number of medial/lateral voxels is reasonable?
     assert med_mask.sum() > 0
     assert lat_mask.sum() > 0
+
 
 @pytest.mark.skip("Logistic meniscus method is not implemented yet.")
 def test_verify_meniscus_logistic(segmentation_data):
@@ -209,6 +213,7 @@ def test_verify_meniscus_logistic(segmentation_data):
     #
     # _check_plane_split(med_mask, center_split, ML_AXIS, med_side_is_positive)
     # _check_plane_split(lat_mask, center_split, ML_AXIS, not med_side_is_positive)
+
 
 def test_verify_meniscus_split_combined_tibial_centroid(segmentation_data):
     """Test splitting a combined meniscus label using 'tibial_centroid'."""
@@ -286,6 +291,7 @@ def test_verify_meniscus_split_combined(segmentation_data):
     # Assert that the split matches the original segmentation masks
     assert np.all(med_mask == original_med_mask), "Split medial mask differs from original"
     assert np.all(lat_mask == original_lat_mask), "Split lateral mask differs from original"
+
 
 def test_verify_meniscus_correct_mislabels(segmentation_data):
     """Test correction of mislabeled voxels near the boundary using various methods."""

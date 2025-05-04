@@ -4,12 +4,6 @@ from tempfile import gettempdir
 
 import numpy as np
 import requests
-import os
-import warnings
-from tempfile import gettempdir
-
-import numpy as np
-import requests
 import SimpleITK as sitk
 from scipy import ndimage as ndi
 
