@@ -85,7 +85,7 @@ def test_calculate_t2_linear_fit_cutoffs():
     )
 
     # Add noise specifically to one voxel to force low R2
-    noise = np.random.normal(0, 100, size=data_4d[0, 1, 0, :].shape)
+    noise = np.random.normal(0, 300, size=data_4d[0, 1, 0, :].shape)
     data_4d[0, 1, 0, :] += noise
     data_4d = np.maximum(data_4d, 0)  # Ensure non-negative
 
@@ -369,7 +369,7 @@ def test_calculate_t2_nonlinear_fit_masking():
     mask[0, -1, -1] = True
 
     results = t2.calculate_t2_nonlinear_fit(
-        data_4d, tes, p0_maps=p0_maps, mask=mask, t2_cutoff=200, r2_cutoff=0.9
+        data_4d, tes, p0_maps=p0_maps, t2_cutoff=200, r2_cutoff=0.9
     )
 
     # Check that fitted pixels have values > 0

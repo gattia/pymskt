@@ -281,7 +281,7 @@ def test_t2dataloader_load_numpy():
 # Tests for T2DataLoader (Data Loading)
 # ====================================
 
-
+@pytest.mark.skip(reason="Requires PAR/REC test data")
 def test_t2dataloader_parrec():
     """Test T2DataLoader with PAR/REC input type."""
     # Check if the test data exists
