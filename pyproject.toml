@@ -110,5 +110,9 @@ skip = ["*-win32", "*i686", "*aarch64", "*ppc64le", "*s390x", "*musllinux*"]
 # https://github.com/pypa/setuptools_scm/
 # [tool.setuptools_scm]
 
+[tool.pytest.ini_options]
+# Configure pytest options
+addopts = "-v"
+
 [tool.coverage]
 run.omit = ["testing/*", "*/*_test.py"]

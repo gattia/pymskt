@@ -39,7 +39,7 @@ docs:
 
 test:
 	set -e
-	pytest
+	PYTHONWARNINGS=ignore::ResourceWarning pytest
 
 lint:
 	set -e
