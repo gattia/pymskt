@@ -5,6 +5,7 @@ import numpy as np
 import SimpleITK as sitk
 import vtk
 from vtk.util.numpy_support import numpy_to_vtk
+import math
 
 
 def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
@@ -198,7 +199,7 @@ def crop_bone_based_on_width(
         med_lat_width_bone_mm / seg_image.GetSpacing()[::-1][np_inf_sup_axis]
     ) * percent_width_to_crop_height
 
-    inf_sup_crop_in_pixels = int(round(inf_sup_crop_in_pixels))
+    inf_sup_crop_in_pixels = int(math.ceil(inf_sup_crop_in_pixels))
 
     # determine distal/proximal crop in pixels depending on if
     # cropping distal or proximal (tibia/femur)
