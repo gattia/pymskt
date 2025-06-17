@@ -1397,16 +1397,17 @@ class BoneMesh(Mesh):
         # So, adding this functionality to the processing steps before the bone mesh is created
         if crop_percent is not None:
             self._crop_percent = crop_percent
-        if (self._crop_percent is not None) and (
-            ("femur" in self._bone) or ("tibia" in self._bone) or ("fibula" in self._bone)
-        ):
+
+        if self._crop_percent is not None:
             if "femur" in self._bone:
                 bone_crop_distal = True
             elif ("tibia" in self._bone) or ("fibula" in self._bone):
                 bone_crop_distal = False
             else:
                 raise Exception(
-                    'var bone should be "femur" or "tiba" got: {} instead'.format(self._bone)
+                    'var bone should be "femur",  "tiba", or "fibula" got: {} instead'.format(
+                        self._bone
+                    )
                 )
 
             self._seg_image = crop_bone_based_on_width(
@@ -1419,12 +1420,6 @@ class BoneMesh(Mesh):
                     if ((self._bone == "fibula") and (self._tibia_idx is not None))
                     else None
                 ),
-            )
-        elif self._crop_percent is not None:
-            warnings.warn(
-                f"Trying to crop bone, but {self._bone} specified and only bones `femur` "
-                + "or `tibia` currently supported for cropping. If using another bone, consider "
-                + "making a pull request. If cropping not desired, set `crop_percent=None`.",
             )
 
         super().create_mesh(
