@@ -5,6 +5,7 @@ import pyvista as pv
 import vtk
 
 from pymskt.mesh.meshTools import transfer_mesh_scalars_get_weighted_average_n_closest
+from pymskt.mesh.meshTransform import create_transform, get_linear_transform_matrix
 
 try:
     import pyfocusr
@@ -54,10 +55,16 @@ def get_icp_transform(source, target, max_n_iter=1000, n_landmarks=1000, reg_mod
         icp.GetLandmarkTransform().SetModeToSimilarity()
     icp.SetMaximumNumberOfIterations(max_n_iter)
     icp.StartByMatchingCentroidsOn()
+    icp.SetMaximumNumberOfLandmarks(n_landmarks)
     icp.Modified()
     icp.Update()
-    icp.SetMaximumNumberOfLandmarks(n_landmarks)
-    return icp
+
+    # there was a bug where the ICP transform was getting overwritten to identity
+    # after it was applied once to a mesh. Converting to own base transform seems to fix this.
+    transform_array = get_linear_transform_matrix(icp)
+    transform = create_transform(transform_array)
+
+    return transform
 
 
 def cpd_register(

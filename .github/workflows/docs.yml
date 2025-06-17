@@ -34,7 +34,7 @@ jobs:
       - name: Package documentation
         run: tar --directory docs/ -hcf artifact.tar .
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: github-pages
           path: ./artifact.tar

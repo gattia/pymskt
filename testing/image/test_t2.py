@@ -369,7 +369,7 @@ def test_calculate_t2_nonlinear_fit_masking():
     mask[0, -1, -1] = True
 
     results = t2.calculate_t2_nonlinear_fit(
-        data_4d, tes, p0_maps=p0_maps, t2_cutoff=200, r2_cutoff=0.9
+        data_4d, tes, p0_maps=p0_maps, mask=mask, t2_cutoff=200, r2_cutoff=0.9
     )
 
     # Check that fitted pixels have values > 0
