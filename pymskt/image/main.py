@@ -187,31 +187,35 @@ def crop_bone_based_on_width(
         loc_bone = np.where(seg_array == idx_crop_on)
     else:
         loc_bone = np.where(seg_array == bone_idx)
-        
-    # compute med/lat width in mm 
+
+    # compute med/lat width in mm
     med_lat_width_bone_mm = (
         np.max(loc_bone[np_med_lat_axis]) - np.min(loc_bone[np_med_lat_axis])
     ) * seg_image.GetSpacing()[::-1][np_med_lat_axis]
-    
+
     # compute inf/sup crop in pixels
     inf_sup_crop_in_pixels = (
         med_lat_width_bone_mm / seg_image.GetSpacing()[::-1][np_inf_sup_axis]
     ) * percent_width_to_crop_height
-    
+
     # determine distal/proximal crop in pixels depending on if
     # cropping distal or proximal (tibia/femur)
     if bone_crop_distal is True:
-        # bone_distal_idx = np.max(loc_bone[np_inf_sup_axis])
-        bone_distal_idx = seg_array.shape[np_inf_sup_axis] - 1
+        # use real distal idx to set crop..
+        bone_distal_idx = np.max(loc_bone[np_inf_sup_axis])
         bone_proximal_idx = bone_distal_idx - inf_sup_crop_in_pixels
         if bone_proximal_idx < 1:
             bone_proximal_idx = 1
+        # then set distal idx to be the max idx to not crop other bones.
+        bone_distal_idx = seg_array.shape[np_inf_sup_axis] - 1
     elif bone_crop_distal is False:
-        # bone_proximal_idx = np.min(loc_bone[np_inf_sup_axis])
-        bone_proximal_idx = 1
+        # use real proximal idx to set crop..
+        bone_proximal_idx = np.min(loc_bone[np_inf_sup_axis])
         bone_distal_idx = bone_proximal_idx + inf_sup_crop_in_pixels
         if bone_distal_idx > seg_array.shape[np_inf_sup_axis]:
             bone_distal_idx = seg_array.shape[np_inf_sup_axis] - 1
+        # then set proximal idx to be the min idx to not crop other bones.
+        bone_proximal_idx = 1
 
     max_inf_sup_idx = max(bone_distal_idx, bone_proximal_idx)
     min_inf_sup_idx = min(bone_distal_idx, bone_proximal_idx)
@@ -221,7 +225,7 @@ def crop_bone_based_on_width(
     # parameter. Now, we are applying that cropping to the bone_idx.
     if idx_crop_on is not None:
         loc_bone = np.where(seg_array == bone_idx)
-    
+
     idx_bone_to_keep = np.where(
         (loc_bone[np_inf_sup_axis] > min_inf_sup_idx)
         & (loc_bone[np_inf_sup_axis] < max_inf_sup_idx)
