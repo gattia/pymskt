@@ -1275,6 +1275,7 @@ class BoneMesh(Mesh):
         list_articular_surfaces=None,
         crop_percent=None,
         bone="femur",
+        tibia_idx=None,
     ):
         """
         Class initialization
@@ -1312,6 +1313,7 @@ class BoneMesh(Mesh):
         self._list_cartilage_meshes = list_cartilage_meshes
         self._list_cartilage_labels = list_cartilage_labels
         self._list_articular_surfaces = list_articular_surfaces
+        self._tibia_idx = tibia_idx
 
         super().__init__(
             mesh=mesh,
@@ -1396,11 +1398,11 @@ class BoneMesh(Mesh):
         if crop_percent is not None:
             self._crop_percent = crop_percent
         if (self._crop_percent is not None) and (
-            ("femur" in self._bone) or ("tibia" in self._bone)
+            ("femur" in self._bone) or ("tibia" in self._bone) or ("fibula" in self._bone)
         ):
             if "femur" in self._bone:
                 bone_crop_distal = True
-            elif "tibia" in self._bone:
+            elif ("tibia" in self._bone) or ("fibula" in self._bone):
                 bone_crop_distal = False
             else:
                 raise Exception(
@@ -1412,11 +1414,12 @@ class BoneMesh(Mesh):
                 self._label_idx,
                 percent_width_to_crop_height=self._crop_percent,
                 bone_crop_distal=bone_crop_distal,
+                idx_crop_on=self._tibia_idx if ((self._bone == "fibula") and (self._tibia_idx is not None)) else None,
             )
         elif self._crop_percent is not None:
             warnings.warn(
-                f"Trying to crop bone, but {self._bone} specified and only bones `femur`",
-                "or `tibia` currently supported for cropping. If using another bone, consider",
+                f"Trying to crop bone, but {self._bone} specified and only bones `femur` " +
+                "or `tibia` currently supported for cropping. If using another bone, consider " +
                 "making a pull request. If cropping not desired, set `crop_percent=None`.",
             )
 
