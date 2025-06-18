@@ -1,3 +1,4 @@
+import math
 import os
 from typing import Optional
 
@@ -5,7 +6,6 @@ import numpy as np
 import SimpleITK as sitk
 import vtk
 from vtk.util.numpy_support import numpy_to_vtk
-import math
 
 
 def set_vtk_image_origin(vtk_image, new_origin=(0, 0, 0)):
@@ -207,12 +207,13 @@ def crop_bone_based_on_width(
         bone_distal_idx = seg_array.shape[np_inf_sup_axis] - 1
         bone_distal_idx_ = np.max(loc_bone[np_inf_sup_axis])
         bone_proximal_idx = max(bone_distal_idx_ - inf_sup_crop_in_pixels, 1)
-        
+
     elif bone_crop_distal is False:
         bone_proximal_idx = 1
         bone_proximal_idx_ = np.min(loc_bone[np_inf_sup_axis])
-        bone_distal_idx = min(bone_proximal_idx_ + inf_sup_crop_in_pixels, seg_array.shape[np_inf_sup_axis] - 1)
-    
+        bone_distal_idx = min(
+            bone_proximal_idx_ + inf_sup_crop_in_pixels, seg_array.shape[np_inf_sup_axis] - 1
+        )
 
     # if cropping idx_crop_on not none... then change loc_bone to use bone_idx
     # the idea is that we determined the cropping (above) using the idx_crop_on
@@ -220,11 +221,10 @@ def crop_bone_based_on_width(
     if idx_crop_on is not None:
         loc_bone = np.where(seg_array == bone_idx)
 
-    inside = (
-        (loc_bone[np_inf_sup_axis] >= bone_proximal_idx)
-        & (loc_bone[np_inf_sup_axis] <= bone_distal_idx)
+    inside = (loc_bone[np_inf_sup_axis] >= bone_proximal_idx) & (
+        loc_bone[np_inf_sup_axis] <= bone_distal_idx
     )
-    
+
     loc_bone_to_remove = tuple(idx[~inside] for idx in loc_bone)
 
     seg_array[loc_bone_to_remove] = value_to_reassign
