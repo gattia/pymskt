@@ -199,17 +199,19 @@ def crop_bone_based_on_width(
         med_lat_width_bone_mm / seg_image.GetSpacing()[::-1][np_inf_sup_axis]
     ) * percent_width_to_crop_height
 
-    inf_sup_crop_in_pixels = int(math.ceil(inf_sup_crop_in_pixels))
+    # inf_sup_crop_in_pixels = int(round(inf_sup_crop_in_pixels))
 
     # determine distal/proximal crop in pixels depending on if
     # cropping distal or proximal (tibia/femur)
     if bone_crop_distal is True:
-        bone_proximal_idx = max(np.max(loc_bone[np_inf_sup_axis]) - inf_sup_crop_in_pixels, 1)
         bone_distal_idx = seg_array.shape[np_inf_sup_axis] - 1
+        bone_distal_idx_ = np.max(loc_bone[np_inf_sup_axis])
+        bone_proximal_idx = max(bone_distal_idx_ - inf_sup_crop_in_pixels, 1)
+        
     elif bone_crop_distal is False:
         bone_proximal_idx = 1
-        bone_distal_idx = min(np.min(loc_bone[np_inf_sup_axis]) + inf_sup_crop_in_pixels, seg_array.shape[np_inf_sup_axis] - 1)
-
+        bone_proximal_idx_ = np.min(loc_bone[np_inf_sup_axis])
+        bone_distal_idx = min(bone_proximal_idx_ + inf_sup_crop_in_pixels, seg_array.shape[np_inf_sup_axis] - 1)
     
 
     # if cropping idx_crop_on not none... then change loc_bone to use bone_idx

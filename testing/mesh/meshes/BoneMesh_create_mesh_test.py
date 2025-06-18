@@ -7,8 +7,8 @@ from pymskt.utils import testing
 
 SEG_IMAGE_PATH = "data/right_knee_example.nrrd"
 SEG_IMAGE = sitk.ReadImage(SEG_IMAGE_PATH)
-MESH_FEMUR_CROPPED = mskt.mesh.io.read_vtk("data/femur_cropped_cartilage_thick_roi_full_pts.vtk")
-MESH_TIBIA_CROPPED = mskt.mesh.io.read_vtk("data/tibia_smoothed_image_cropped.vtk")
+MESH_FEMUR_CROPPED = mskt.mesh.io.read_vtk("data/femur_cropped_test.vtk")
+MESH_TIBIA_CROPPED = mskt.mesh.io.read_vtk("data/tibia_cropped_test.vtk")
 
 from pymskt import ATOL, RTOL
 

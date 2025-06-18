@@ -108,7 +108,7 @@ The saved file can be viewed in many mesh viewers such as [3D Slicer](https://ww
 ```python
 from itkwidgets import view
 
-view(geometries=[femur.mesh])
+view(geometries=[femur])
 ```
 
 ![](/images/femur_itkwidgets.png)
@@ -139,7 +139,7 @@ AP_arrow = get_arrow(femur_acs.ap_axis, origin=femur_acs.origin )
 IS_arrow = get_arrow(femur_acs.is_axis, origin=femur_acs.origin)
 ML_arrow = get_arrow(femur_acs.ml_axis, origin=femur_acs.origin)
 
-view(geometries=[femur.mesh, AP_arrow, IS_arrow, ML_arrow])
+view(geometries=[femur, AP_arrow, IS_arrow, ML_arrow])
 ```
 |*Anatomical Coordinate System - Cartilage Thickness* | *Anatomical Coordinate System - Cartilage Subregions* |
 |:---:       |:---:        |

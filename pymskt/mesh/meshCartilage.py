@@ -110,7 +110,7 @@ def remove_cart_in_bone(cartilage_mesh, bone_mesh):
 
     # Create a copy of the cartilage mesh
     cart_copy = cartilage_mesh.copy()
-    cart_copy.mesh = pv.PolyData(cart_copy.mesh)
+    # cart_copy.mesh = pv.PolyData(cart_copy.mesh)
 
     # Calculate the surface error
     cart_copy.calc_surface_error(bone_mesh)
@@ -130,7 +130,7 @@ def remove_cart_in_bone(cartilage_mesh, bone_mesh):
     if cart_type == "Mesh":
         return cart_copy
     else:  # 'pyvista' or 'vtk'
-        return cart_copy.mesh
+        return cart_copy
 
 
 def remove_isolated_cells(input_mesh):
