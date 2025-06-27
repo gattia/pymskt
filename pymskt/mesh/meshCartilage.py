@@ -313,6 +313,11 @@ def break_cartilage_into_superficial_deep(
         for cartilage_mesh in bone_mesh.list_cartilage_meshes:
             cartilage_mesh.resample_surface(clusters=resample_cartilage_surface)
 
+    # fix normals of cartilage mesh & fix mesh
+    for cart_mesh in bone_mesh.list_cartilage_meshes:
+        cart_mesh.fix_mesh()
+        cart_mesh.compute_normals(auto_orient_normals=True, inplace=True)
+
     # if the articular surfaces don't exist yet, create them.
     if bone_mesh.list_articular_surfaces is None:
         bone_mesh.extract_articular_surfaces()
