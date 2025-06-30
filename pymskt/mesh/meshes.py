@@ -397,8 +397,8 @@ class Mesh(pv.PolyData):
                 )
             )
 
-        distances1 = np.abs(pcu_sdf(self.point_coords, other_mesh.mesh))
-        distances2 = np.abs(pcu_sdf(other_mesh.point_coords, self.mesh))
+        distances1 = np.abs(pcu_sdf(self.point_coords, other_mesh))
+        distances2 = np.abs(pcu_sdf(other_mesh.point_coords, self))
 
         assd = (np.sum(distances1) + np.sum(distances2)) / (len(distances1) + len(distances2))
 
@@ -643,9 +643,6 @@ class Mesh(pv.PolyData):
         if (return_transform is True) & (return_transformed_mesh is True):
             raise Exception("Cannot return both transformed mesh and transform")
 
-        if type(other_mesh) in (pymskt.mesh.meshes.BoneMesh, pymskt.mesh.meshes.Mesh):
-            other_mesh = other_mesh.mesh
-
         # Setup the source & target meshes based on `as_source``
         if as_source is True:
             source = self
@@ -724,11 +721,7 @@ class Mesh(pv.PolyData):
         """
         n_scalars_at_start = self._n_scalars
 
-        if isinstance(other_mesh, Mesh):
-            other_mesh = other_mesh.mesh
-        elif isinstance(other_mesh, vtk.vtkPolyData):
-            pass
-        else:
+        if not isinstance(other_mesh, (vtk.vtkPolyData, Mesh)):
             raise TypeError(
                 f"other_mesh must be type `pymskt.mesh.Mesh` or `vtk.vtkPolyData` and received: {type(other_mesh)}"
             )
@@ -820,9 +813,6 @@ class Mesh(pv.PolyData):
 
         # iterate over meshes and add their thicknesses to the thicknesses list.
         for other_mesh in list_other_meshes:
-            if isinstance(other_mesh, Mesh):
-                other_mesh = other_mesh.mesh
-
             node_data = get_distance_other_surface_at_points(
                 self,
                 other_mesh,
@@ -1902,14 +1892,14 @@ class BoneMesh(Mesh):
     def list_articular_surfaces(self, new_list_articular_surfaces):
         if isinstance(new_list_articular_surfaces, list):
             for surface in new_list_articular_surfaces:
-                if isinstance(surface, (pv.PolyData, vtk.vtkPolyData)):
-                    surface = pymskt.mesh.Mesh(mesh=surface)
-                elif isinstance(surface, pymskt.mesh.meshes.Mesh):
-                    pass
-                else:
-                    raise TypeError(
-                        f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
-                    )
+                if not isinstance(surface, Mesh):
+                    if isinstance(surface, (pv.PolyData, vtk.vtkPolyData)):
+                        surface = pymskt.mesh.Mesh(mesh=surface)
+                    else:
+                        raise TypeError(
+                            f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
+                        )
+
         elif isinstance(
             new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)
         ):
