@@ -3,10 +3,11 @@ import point_cloud_utils as pcu
 import pyacvd
 import pymeshfix as mf
 import pyvista as pv
+import scipy.stats
 import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
-import scipy.stats
+
 from pymskt.mesh.utils import (
     get_intersect,
     get_obb_surface,
@@ -692,7 +693,13 @@ def smooth_scalars_from_second_mesh_onto_base(
 
 
 def transfer_mesh_scalars_get_weighted_average_n_closest(
-    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False, max_dist=None, categorical=None
+    new_mesh,
+    old_mesh,
+    n=3,
+    return_mesh=False,
+    create_new_mesh=False,
+    max_dist=None,
+    categorical=None,
 ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
@@ -713,7 +720,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
     n : int, optional
         The number of closest nodes that we want to get weighed average of, by default 3
     categorical : bool, dict, or None, optional
-        Specify whether scalars should be treated as categorical. If None (default), 
+        Specify whether scalars should be treated as categorical. If None (default),
         auto-detects based on data type per array. If bool, applies to all arrays.
         If dict, keys should be array names with bool values.
 
@@ -740,7 +747,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         np.copy(vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name)))
         for array_name in array_names
     ]
-    
+
     # Handle categorical parameter - auto-detect if None, or create per-array flags
     if categorical is None:
         # Auto-detect categorical for each array based on data type
@@ -761,7 +768,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
                 categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
     else:
         raise ValueError("categorical must be None, bool, or dict")
-    
+
     # print('len scalars_old_mesh', len(scalars_old_mesh))
     # scalars_old_mesh = np.copy(vtk_to_numpy(old_mesh.GetPointData().GetScalars()))
     for new_mesh_pt_idx in range(new_mesh.GetNumberOfPoints()):
@@ -784,7 +791,7 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         if len(list_scalars) == 0:
             # no points within max_dist, skip (which leaves the scalar(s) at zero)
             continue
-        
+
         # Process each array individually based on its categorical flag
         arr = np.asarray(list_scalars)
         for array_idx, array_name in enumerate(array_names):
