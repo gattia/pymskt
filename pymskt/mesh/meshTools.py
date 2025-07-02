@@ -720,11 +720,6 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         each node that includes the scalar values transfered (smoothed) from the `old_mesh`.
     """
 
-    if categorical is True:
-        print("categorical is True")
-    else:
-        print("categorical is False")
-
     kDTree = vtk.vtkKdTreePointLocator()
     kDTree.SetDataSet(old_mesh)
     kDTree.BuildLocator()
