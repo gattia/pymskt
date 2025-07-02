@@ -6,7 +6,7 @@ import pyvista as pv
 import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
-
+import scipy.stats
 from pymskt.mesh.utils import (
     get_intersect,
     get_obb_surface,
@@ -692,7 +692,7 @@ def smooth_scalars_from_second_mesh_onto_base(
 
 
 def transfer_mesh_scalars_get_weighted_average_n_closest(
-    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False, max_dist=None
+    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False, max_dist=None, categorical=False
 ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
@@ -719,6 +719,11 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         A dict of the scalar values with keys = scalar names and the scalar value for
         each node that includes the scalar values transfered (smoothed) from the `old_mesh`.
     """
+
+    if categorical is True:
+        print("categorical is True")
+    else:
+        print("categorical is False")
 
     kDTree = vtk.vtkKdTreePointLocator()
     kDTree.SetDataSet(old_mesh)
@@ -757,19 +762,30 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         if len(list_scalars) == 0:
             # no points within max_dist, skip (which leaves the scalar(s) at zero)
             continue
-
-        total_distance = np.sum(distance_weighting)
-        normalized_value = (
-            np.sum(
-                np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
-                axis=0,
+        
+        if categorical:
+            # Mode along each array (each label array for this new point)
+            arr = np.asarray(list_scalars)
+            # mode returns mode value and count, axis=0 gets mode for each array_name
+            mode_vals, _ = scipy.stats.mode(arr, axis=0, keepdims=False)
+            for array_idx, array_name in enumerate(array_names):
+                new_scalars[array_name][new_mesh_pt_idx] = mode_vals[0, array_idx] if mode_vals.ndim > 1 else mode_vals[array_idx]
+        else:
+            total_distance = np.sum(distance_weighting)
+            normalized_value = (
+                np.sum(
+                    np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
+                    axis=0,
+                )
+                / total_distance
             )
-            / total_distance
-        )
+            for array_idx, array_name in enumerate(array_names):
+                new_scalars[array_name][new_mesh_pt_idx] = normalized_value[array_idx]
 
-        for array_idx, array_name in enumerate(array_names):
-            new_scalars[array_name][new_mesh_pt_idx] = normalized_value[array_idx]
     if return_mesh is False:
+        if categorical:
+            for array_name in new_scalars:
+                new_scalars[array_name] = new_scalars[array_name].astype(int)
         return new_scalars
     else:
         if create_new_mesh is True:

@@ -687,6 +687,7 @@ class Mesh(pv.PolyData):
         idx_coords_to_smooth_base=None,
         idx_coords_to_smooth_other=None,
         set_non_smoothed_scalars_to_zero=True,
+        categorical=None, 
     ):
         """
         Convenience function to enable easy transfer scalars from another mesh to the current.
@@ -718,6 +719,11 @@ class Mesh(pv.PolyData):
             If `weighted_avg` False, list of indices from `other_mesh` to use in transfer, by default None
         set_non_smoothed_scalars_to_zero : bool, optional
             Should all other indices (not included in idx_coords_to_smooth_other) be set to 0, by default True
+        categorical : categorical : bool or None, optional
+            Should the scalars be treated as categorical (i.e., mode for label transfer instead of weighted mean)?
+            If None (default), will be automatically determined based on the data type of the input scalar array:
+            integer types will be treated as categorical, and floating-point types as continuous.
+            Set explicitly to True or False to override this behavior.
         """
         n_scalars_at_start = self._n_scalars
 
@@ -746,9 +752,23 @@ class Mesh(pv.PolyData):
         if len(orig_scalars_name) != len(new_scalars_name):
             raise ValueError("orig_scalars_name and new_scalars_name must have the same length")
 
+        if categorical is None:
+            # Auto-detect from the first scalar (if multiple, you can loop)
+            scalar_array_name = orig_scalars_name[0] if isinstance(orig_scalars_name, list) else orig_scalars_name
+            # Try both pyvista and numpy array access
+            if hasattr(other_mesh, 'point_data'):
+                arr = other_mesh.point_data[scalar_array_name]
+            else:
+                arr = other_mesh[scalar_array_name]
+
+            if np.issubdtype(arr.dtype, np.integer):
+                categorical = True
+            else:
+                categorical = False
+
         if weighted_avg is True:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
-                self, other_mesh, n=n_closest, max_dist=max_dist
+                self, other_mesh, n=n_closest, max_dist=max_dist, categorical=categorical
             )
         else:
             raise Exception("Gaussian smoothing only implemented for active scalars")
