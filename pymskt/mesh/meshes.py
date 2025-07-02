@@ -687,6 +687,7 @@ class Mesh(pv.PolyData):
         idx_coords_to_smooth_base=None,
         idx_coords_to_smooth_other=None,
         set_non_smoothed_scalars_to_zero=True,
+        categorical=None,
     ):
         """
         Convenience function to enable easy transfer scalars from another mesh to the current.
@@ -718,6 +719,11 @@ class Mesh(pv.PolyData):
             If `weighted_avg` False, list of indices from `other_mesh` to use in transfer, by default None
         set_non_smoothed_scalars_to_zero : bool, optional
             Should all other indices (not included in idx_coords_to_smooth_other) be set to 0, by default True
+        categorical : bool, dict, list, or None, optional
+            Specify whether scalars should be treated as categorical. If None (default),
+            auto-detects based on data type per array. If bool, applies to all scalars.
+            If dict, keys should be scalar names with bool values.
+            If list, should have same length as orig_scalars_name with bool values.
         """
         n_scalars_at_start = self._n_scalars
 
@@ -746,9 +752,44 @@ class Mesh(pv.PolyData):
         if len(orig_scalars_name) != len(new_scalars_name):
             raise ValueError("orig_scalars_name and new_scalars_name must have the same length")
 
+        # Handle categorical parameter for the specific scalars being transferred
+        if categorical is None:
+            # Auto-detect categorical for each scalar being transferred
+            categorical_flags = {}
+            for scalar_name in orig_scalars_name:
+                if hasattr(other_mesh, "point_data"):
+                    arr = other_mesh.point_data[scalar_name]
+                else:
+                    arr = vtk_to_numpy(other_mesh.GetPointData().GetArray(scalar_name))
+                categorical_flags[scalar_name] = np.issubdtype(arr.dtype, np.integer)
+        elif isinstance(categorical, bool):
+            # Apply same categorical flag to all scalars being transferred
+            categorical_flags = {scalar_name: categorical for scalar_name in orig_scalars_name}
+        elif isinstance(categorical, (list, tuple)):
+            # List of categorical flags, one per scalar
+            if len(categorical) != len(orig_scalars_name):
+                raise ValueError("categorical list must have same length as orig_scalars_name")
+            categorical_flags = {
+                scalar_name: cat_flag
+                for scalar_name, cat_flag in zip(orig_scalars_name, categorical)
+            }
+        elif isinstance(categorical, dict):
+            # Dictionary of categorical flags
+            categorical_flags = categorical.copy()
+            # Fill in missing scalars with auto-detection
+            for scalar_name in orig_scalars_name:
+                if scalar_name not in categorical_flags:
+                    if hasattr(other_mesh, "point_data"):
+                        arr = other_mesh.point_data[scalar_name]
+                    else:
+                        arr = vtk_to_numpy(other_mesh.GetPointData().GetArray(scalar_name))
+                    categorical_flags[scalar_name] = np.issubdtype(arr.dtype, np.integer)
+        else:
+            raise ValueError("categorical must be None, bool, list, or dict")
+
         if weighted_avg is True:
             transferred_scalars = transfer_mesh_scalars_get_weighted_average_n_closest(
-                self, other_mesh, n=n_closest, max_dist=max_dist
+                self, other_mesh, n=n_closest, max_dist=max_dist, categorical=categorical_flags
             )
         else:
             raise Exception("Gaussian smoothing only implemented for active scalars")
