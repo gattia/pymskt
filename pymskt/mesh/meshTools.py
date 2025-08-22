@@ -789,6 +789,8 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         if len(list_scalars) == 0:
             # no points within max_dist, skip (which leaves the scalar(s) at zero)
             continue
+        # compute the total distance
+        total_distance = np.sum(distance_weighting)
 
         # Process each array individually based on its categorical flag
         arr = np.asarray(list_scalars)
@@ -804,7 +806,6 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
                     new_scalars[array_name][new_mesh_pt_idx] = chosen_label
             else:
                 # Weighted average for continuous data
-                total_distance = np.sum(distance_weighting)
                 normalized_value = (
                     np.sum(arr[:, array_idx] * np.asarray(distance_weighting)) / total_distance
                 )
