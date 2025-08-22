@@ -692,7 +692,13 @@ def smooth_scalars_from_second_mesh_onto_base(
 
 
 def transfer_mesh_scalars_get_weighted_average_n_closest(
-    new_mesh, old_mesh, n=3, return_mesh=False, create_new_mesh=False, max_dist=None
+    new_mesh,
+    old_mesh,
+    n=3,
+    return_mesh=False,
+    create_new_mesh=False,
+    max_dist=None,
+    categorical=None,
 ):
     """
     Transfer scalars from old_mesh to new_mesh using the weighted-average of the `n` closest
@@ -712,6 +718,10 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         `smooth_scalars_from_second_mesh_onto_base`
     n : int, optional
         The number of closest nodes that we want to get weighed average of, by default 3
+    categorical : bool, dict, or None, optional
+        Specify whether scalars should be treated as categorical. If None (default),
+        auto-detects based on data type per array. If bool, applies to all arrays.
+        If dict, keys should be array names with bool values.
 
     Returns
     -------
@@ -735,6 +745,28 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         np.copy(vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name)))
         for array_name in array_names
     ]
+
+    # Handle categorical parameter - auto-detect if None, or create per-array flags
+    if categorical is None:
+        # Auto-detect categorical for each array based on data type
+        categorical_flags = {}
+        for array_name in array_names:
+            arr = vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))
+            categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
+    elif isinstance(categorical, bool):
+        # Apply same categorical flag to all arrays
+        categorical_flags = {array_name: categorical for array_name in array_names}
+    elif isinstance(categorical, dict):
+        # Use provided per-array flags
+        categorical_flags = categorical.copy()
+        # Fill in missing arrays with auto-detection
+        for array_name in array_names:
+            if array_name not in categorical_flags:
+                arr = vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))
+                categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
+    else:
+        raise ValueError("categorical must be None, bool, or dict")
+
     # print('len scalars_old_mesh', len(scalars_old_mesh))
     # scalars_old_mesh = np.copy(vtk_to_numpy(old_mesh.GetPointData().GetScalars()))
     for new_mesh_pt_idx in range(new_mesh.GetNumberOfPoints()):
@@ -757,19 +789,33 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         if len(list_scalars) == 0:
             # no points within max_dist, skip (which leaves the scalar(s) at zero)
             continue
-
+        # compute the total distance
         total_distance = np.sum(distance_weighting)
-        normalized_value = (
-            np.sum(
-                np.asarray(list_scalars) * np.expand_dims(np.asarray(distance_weighting), axis=1),
-                axis=0,
-            )
-            / total_distance
-        )
 
+        # Process each array individually based on its categorical flag
+        arr = np.asarray(list_scalars)
         for array_idx, array_name in enumerate(array_names):
-            new_scalars[array_name][new_mesh_pt_idx] = normalized_value[array_idx]
+            if categorical_flags[array_name]:
+                # Distance-weighted voting for categorical data
+                array_values = arr[:, array_idx]
+                if len(array_values) > 0:
+                    label_weights = defaultdict(float)
+                    for label, weight in zip(array_values, distance_weighting):
+                        label_weights[int(label)] += weight
+                    chosen_label = max(label_weights, key=label_weights.get)
+                    new_scalars[array_name][new_mesh_pt_idx] = chosen_label
+            else:
+                # Weighted average for continuous data
+                normalized_value = (
+                    np.sum(arr[:, array_idx] * np.asarray(distance_weighting)) / total_distance
+                )
+                new_scalars[array_name][new_mesh_pt_idx] = normalized_value
+
     if return_mesh is False:
+        # Convert only categorical arrays to int, preserve float arrays as float
+        for array_name in array_names:
+            if categorical_flags[array_name]:
+                new_scalars[array_name] = new_scalars[array_name].astype(int)
         return new_scalars
     else:
         if create_new_mesh is True:
@@ -779,6 +825,9 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
             # this just makes a reference to the existing new_mesh in memory.
             new_mesh_ = new_mesh
         for array_name, scalars in new_scalars.items():
+            # Convert only categorical arrays to int before creating VTK array
+            if categorical_flags[array_name]:
+                scalars = scalars.astype(int)
             new_array = numpy_to_vtk(scalars)
             new_array.SetName(array_name)
             new_mesh_.GetPointData().AddArray(new_array)
