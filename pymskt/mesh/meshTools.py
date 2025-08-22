@@ -3,7 +3,6 @@ import point_cloud_utils as pcu
 import pyacvd
 import pymeshfix as mf
 import pyvista as pv
-import scipy.stats
 import vtk
 from scipy.spatial import cKDTree
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
