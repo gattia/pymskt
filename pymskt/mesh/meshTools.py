@@ -730,7 +730,6 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         A dict of the scalar values with keys = scalar names and the scalar value for
         each node that includes the scalar values transfered (smoothed) from the `old_mesh`.
     """
-    from collections import defaultdict
 
     kDTree = vtk.vtkKdTreePointLocator()
     kDTree.SetDataSet(old_mesh)
