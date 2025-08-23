@@ -139,11 +139,9 @@ class Mesh(pv.PolyData):
         self._label_idx = label_idx
         self._min_n_pixels = min_n_pixels
         self._mesh_scalars = []
-        self._n_scalars = 0
         self._list_applied_transforms = []
 
-        if self.n_points > 0:
-            self.load_mesh_scalars()
+        # Note: scalar_names and n_scalars are now computed properties
 
     def copy(self, deep=True):
         """
@@ -260,7 +258,6 @@ class Mesh(pv.PolyData):
         )
         self.deep_copy(mesh_)
 
-        self.load_mesh_scalars()
         safely_delete_tmp_file(tempfile.gettempdir(), tmp_filename)
 
     def save_mesh(self, filepath, write_binary=False):
@@ -421,15 +418,8 @@ class Mesh(pv.PolyData):
         return compute_assd_between_point_clouds(self.point_coords, point_cloud)
 
     def load_mesh_scalars(self):
-        """
-        Retrieve scalar names from mesh & store as Mesh attribute.
-        """
-        n_scalars = self.GetPointData().GetNumberOfArrays()
-        array_names = [
-            self.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_scalars)
-        ]
-        self._scalar_names = array_names
-        self._n_scalars = n_scalars
+        """Back-compat: no-op now that these are computed."""
+        return None
 
     # def add_mesh_scalars(self, scalar_name, scalar_array):
     #     """
@@ -725,8 +715,6 @@ class Mesh(pv.PolyData):
             If dict, keys should be scalar names with bool values.
             If list, should have same length as orig_scalars_name with bool values.
         """
-        n_scalars_at_start = self._n_scalars
-
         if not isinstance(other_mesh, (vtk.vtkPolyData, Mesh)):
             raise TypeError(
                 f"other_mesh must be type `pymskt.mesh.Mesh` or `vtk.vtkPolyData` and received: {type(other_mesh)}"
@@ -806,7 +794,6 @@ class Mesh(pv.PolyData):
         for scalars_idx, scalars_name in enumerate(orig_scalars_name):
             self.point_data[new_scalars_name[scalars_idx]] = transferred_scalars[scalars_name]
 
-        self.load_mesh_scalars()
         return transferred_scalars
 
     def calc_distance_to_other_mesh(
@@ -868,7 +855,6 @@ class Mesh(pv.PolyData):
         distance_scalars.SetName(name)
         self.GetPointData().AddArray(distance_scalars)
         self.set_active_scalars(name)
-        self.load_mesh_scalars()  # Re load mesh scalars to include the newly calculated distances.
 
     def calc_surface_error(self, other_mesh, new_scalar_name="surface_error"):
         """
@@ -911,7 +897,6 @@ class Mesh(pv.PolyData):
         cell_data_to_points.SetPassCellData(False)
         cell_data_to_points.Update()
         self.deep_copy(pv.PolyData(cell_data_to_points.GetOutput()))
-        self.load_mesh_scalars()
 
     @property
     def seg_image(self):
@@ -995,6 +980,7 @@ class Mesh(pv.PolyData):
         """
         self.points = new_point_coords
 
+    # Canonical public API for scalars retrieval
     @property
     def scalar_names(self):
         """
@@ -1005,7 +991,8 @@ class Mesh(pv.PolyData):
         list
             List of strings containing the names of the scalars in the mesh
         """
-        return self._scalar_names
+        pd = self.GetPointData()
+        return [pd.GetArray(i).GetName() for i in range(pd.GetNumberOfArrays())]
 
     @property
     def n_scalars(self):
@@ -1017,7 +1004,16 @@ class Mesh(pv.PolyData):
         int
             Number of scalars in the mesh
         """
-        return self._n_scalars
+        return self.GetPointData().GetNumberOfArrays()
+
+    # Back-compat "private" aliases for scalars (read-only)
+    @property
+    def _scalar_names(self):
+        return self.scalar_names
+
+    @property
+    def _n_scalars(self):
+        return self.n_scalars
 
     # @property
     # def scalar(self, scalar_name):
@@ -1051,7 +1047,6 @@ class Mesh(pv.PolyData):
         """
 
         self.point_data[scalar_name] = scalar_array
-        self.load_mesh_scalars()  # Do this because it also updates the number of scalars.
 
     def remove_scalar(self, scalar_name):
         """
@@ -1063,7 +1058,6 @@ class Mesh(pv.PolyData):
             Name of scalar array
         """
         del self.point_data[scalar_name]
-        self.load_mesh_scalars()
 
     @property
     def path_seg_image(self):
