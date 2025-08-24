@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import numpy as np
 import point_cloud_utils as pcu
 import pyacvd
@@ -738,34 +740,93 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
     array_names = [
         old_mesh.GetPointData().GetArray(array_idx).GetName() for array_idx in range(n_arrays)
     ]
-    new_scalars = {}
-    for array_name in array_names:
-        new_scalars[array_name] = np.zeros(new_mesh.GetNumberOfPoints())
-    scalars_old_mesh = [
+
+    # Flatten all arrays and track their original shapes
+    original_arrays = [
         np.copy(vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name)))
         for array_name in array_names
     ]
+    array_shapes = {}  # Track original shapes for reshaping later
+    flattened_scalars = []  # All arrays flattened to 1D per point
+    flat_to_original = []  # Map flat index back to (array_idx, component_idx)
 
-    # Handle categorical parameter - auto-detect if None, or create per-array flags
+    for array_idx, (array_name, arr) in enumerate(zip(array_names, original_arrays)):
+        array_shapes[array_name] = arr.shape[1:] if arr.ndim > 1 else ()
+
+        if arr.ndim == 1:
+            # Scalar array - just add as-is
+            flattened_scalars.append(arr)
+            flat_to_original.append((array_idx, None))
+        else:
+            # Vector/tensor array - flatten components
+            n_components = arr.shape[1] if arr.ndim == 2 else np.prod(arr.shape[1:])
+            arr_reshaped = arr.reshape(arr.shape[0], n_components)
+            for comp_idx in range(n_components):
+                flattened_scalars.append(arr_reshaped[:, comp_idx])
+                flat_to_original.append((array_idx, comp_idx))
+
+    # Initialize output arrays with correct shapes
+    new_scalars = {}
+    for array_name in array_names:
+        if array_shapes[array_name]:
+            # Vector/tensor - initialize with full shape
+            new_scalars[array_name] = np.zeros(
+                (new_mesh.GetNumberOfPoints(),) + array_shapes[array_name]
+            )
+        else:
+            # Scalar - initialize as 1D
+            new_scalars[array_name] = np.zeros(new_mesh.GetNumberOfPoints())
+
+    # Use flattened arrays for processing (this makes the rest of the code work unchanged)
+    scalars_old_mesh = flattened_scalars
+    flat_array_names = [f"flat_{i}" for i in range(len(flattened_scalars))]
+
+    # Handle categorical parameter for flattened arrays
     if categorical is None:
-        # Auto-detect categorical for each array based on data type
+        # Auto-detect categorical for each original array, then expand to flattened components
         categorical_flags = {}
-        for array_name in array_names:
-            arr = vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))
-            categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
-    elif isinstance(categorical, bool):
-        # Apply same categorical flag to all arrays
-        categorical_flags = {array_name: categorical for array_name in array_names}
-    elif isinstance(categorical, dict):
-        # Use provided per-array flags
-        categorical_flags = categorical.copy()
-        # Fill in missing arrays with auto-detection
-        for array_name in array_names:
-            if array_name not in categorical_flags:
-                arr = vtk_to_numpy(old_mesh.GetPointData().GetArray(array_name))
+        for array_name, arr in zip(array_names, original_arrays):
+            # Only scalar arrays can be categorical - vectors are automatically continuous
+            if arr.ndim > 1:
+                categorical_flags[array_name] = False
+            else:
                 categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
+    elif isinstance(categorical, bool):
+        # Apply same categorical flag to all arrays, but validate vectors
+        categorical_flags = {}
+        for array_name, arr in zip(array_names, original_arrays):
+            if categorical and arr.ndim > 1:
+                raise ValueError(
+                    f"Array '{array_name}' is a vector ({arr.shape}) and cannot be treated as categorical"
+                )
+            categorical_flags[array_name] = categorical
+    elif isinstance(categorical, dict):
+        # Use provided per-array flags, but validate vectors
+        categorical_flags = categorical.copy()
+        # Fill in missing arrays with auto-detection and validate
+        for array_name, arr in zip(array_names, original_arrays):
+            if array_name in categorical_flags and categorical_flags[array_name] and arr.ndim > 1:
+                raise ValueError(
+                    f"Array '{array_name}' is a vector ({arr.shape}) and cannot be treated as categorical"
+                )
+            if array_name not in categorical_flags:
+                if arr.ndim > 1:
+                    categorical_flags[array_name] = False
+                else:
+                    categorical_flags[array_name] = np.issubdtype(arr.dtype, np.integer)
     else:
         raise ValueError("categorical must be None, bool, or dict")
+
+    # Create flattened categorical flags - each flattened component inherits from its parent array
+    flat_categorical_flags = {}
+    for flat_idx, (orig_array_idx, comp_idx) in enumerate(flat_to_original):
+        orig_array_name = array_names[orig_array_idx]
+        flat_categorical_flags[flat_array_names[flat_idx]] = categorical_flags[orig_array_name]
+
+    # Create temporary flat output arrays for processing
+    flat_new_scalars = {}
+    for flat_name in flat_array_names:
+        flat_new_scalars[flat_name] = np.zeros(new_mesh.GetNumberOfPoints())
 
     # print('len scalars_old_mesh', len(scalars_old_mesh))
     # scalars_old_mesh = np.copy(vtk_to_numpy(old_mesh.GetPointData().GetScalars()))
@@ -792,24 +853,46 @@ def transfer_mesh_scalars_get_weighted_average_n_closest(
         # compute the total distance
         total_distance = np.sum(distance_weighting)
 
-        # Process each array individually based on its categorical flag
+        # Process each flattened array - this is the original logic that now works!
         arr = np.asarray(list_scalars)
-        for array_idx, array_name in enumerate(array_names):
-            if categorical_flags[array_name]:
+        for flat_idx, flat_name in enumerate(flat_array_names):
+            if flat_categorical_flags[flat_name]:
                 # Distance-weighted voting for categorical data
-                array_values = arr[:, array_idx]
+                array_values = arr[:, flat_idx]
                 if len(array_values) > 0:
                     label_weights = defaultdict(float)
                     for label, weight in zip(array_values, distance_weighting):
                         label_weights[int(label)] += weight
                     chosen_label = max(label_weights, key=label_weights.get)
-                    new_scalars[array_name][new_mesh_pt_idx] = chosen_label
+                    flat_new_scalars[flat_name][new_mesh_pt_idx] = chosen_label
             else:
                 # Weighted average for continuous data
                 normalized_value = (
-                    np.sum(arr[:, array_idx] * np.asarray(distance_weighting)) / total_distance
+                    np.sum(arr[:, flat_idx] * np.asarray(distance_weighting)) / total_distance
                 )
-                new_scalars[array_name][new_mesh_pt_idx] = normalized_value
+                flat_new_scalars[flat_name][new_mesh_pt_idx] = normalized_value
+
+    # Reshape flattened results back to original array structures
+    for flat_idx, (orig_array_idx, comp_idx) in enumerate(flat_to_original):
+        orig_array_name = array_names[orig_array_idx]
+        flat_name = flat_array_names[flat_idx]
+
+        if comp_idx is None:
+            # Scalar array - direct assignment
+            new_scalars[orig_array_name] = flat_new_scalars[flat_name]
+        else:
+            # Vector/tensor array - assign to specific component
+            if array_shapes[orig_array_name] == (3,):  # Common case: 3D vectors
+                new_scalars[orig_array_name][:, comp_idx] = flat_new_scalars[flat_name]
+            else:
+                # General case: reshape component index back to original structure
+                orig_shape = array_shapes[orig_array_name]
+                flat_shape = (new_mesh.GetNumberOfPoints(), np.prod(orig_shape))
+                reshaped = new_scalars[orig_array_name].reshape(flat_shape)
+                reshaped[:, comp_idx] = flat_new_scalars[flat_name]
+                new_scalars[orig_array_name] = reshaped.reshape(
+                    (new_mesh.GetNumberOfPoints(),) + orig_shape
+                )
 
     if return_mesh is False:
         # Convert only categorical arrays to int, preserve float arrays as float
