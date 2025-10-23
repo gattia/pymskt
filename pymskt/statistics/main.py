@@ -623,6 +623,7 @@ def registration_step(
     ref_mesh_eigenmap_as_reference,
     kwargs,
     verbose,
+    log_path=None,
 ):
     tic = time.time()
     # This is a helper function to allow for multiprocessing to work
@@ -655,12 +656,11 @@ def registration_step(
             verbose=verbose,
             kwargs=kwargs,
         )
-        print(registered_pt_coords)
         if registered_pt_coords is None:
             # if the registered_pt_coords is None, then there was an error reading the mesh
             # so just return None for everything.
             with open(
-                "/dataNAS/people/aagatti/projects/OAI_Segmentation/CVPR_Data_Curation/ssm_registrations/output.log",
+                os.path.join(log_path, "output.log"),
                 "a",
             ) as f:
                 # add a line to the log file of the mesh that errored
