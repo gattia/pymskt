@@ -519,6 +519,69 @@ def get_distance_other_surface_at_points(
     return np.asarray(distance_data, dtype=float)
 
 
+def get_distance_other_surface_at_points_along_unit_vector(
+    surface,
+    other_surface,
+    unit_vector,
+    ray_cast_length=20.0,
+    percent_ray_length_opposite_direction=0.25,
+    no_distance_filler=0.0,
+):  # Could be nan??
+    """
+    Get distance to other surface at points along a unit vector. If no intersection is found, 
+    the filler value is returned (default is 0.0).
+
+    Parameters
+    ----------
+    surface : Mesh
+        Mesh containing vtk.vtkPolyData - get distance to other surface at points along a unit vector
+    other_surface : Mesh
+        Mesh containing vtk.vtkPolyData - the other surface to get distance to
+    unit_vector : np.ndarray
+        Unit vector along which to get distance to other surface
+    ray_cast_length : float, optional
+        Length (mm) of ray to cast from surface to other surface when trying to find distance, by default 20.0
+    percent_ray_length_opposite_direction : float, optional
+        How far to project ray inside of the surface. This is done just in case the other surface
+        ends up slightly inside of (or coincident with) the surface, by default 0.25
+    no_distance_filler : float, optional
+        Value to use if no intersection is found, by default 0.0
+
+    Returns
+    -------
+    np.ndarray
+        n_points x 1 array of the distance to the other surface at each point on the surface
+    """
+
+    points = surface.GetPoints()
+    obb_other_surface = get_obb_surface(other_surface)
+    
+    assert np.isclose(np.linalg.norm(unit_vector), 1.0), "Unit vector must be a unit vector"
+
+    distance_data = []
+    # Loop through all points
+    for idx in range(points.GetNumberOfPoints()):
+        point = points.GetPoint(idx)
+
+        end_point_ray = n2l(l2n(point) + ray_cast_length * unit_vector)
+        start_point_ray = n2l(
+            l2n(point) + ray_cast_length * percent_ray_length_opposite_direction * -unit_vector
+        )
+
+        # Check if there are any intersections for the given ray
+        if is_hit(obb_other_surface, start_point_ray, end_point_ray):  # intersections were found
+            # Retrieve coordinates of intersection points and intersected cell ids
+            points_intersect, cell_ids_intersect = get_intersect(
+                obb_other_surface, start_point_ray, end_point_ray
+            )
+            distance_data.append(np.sqrt(np.sum(np.square(l2n(point) - l2n(points_intersect[0])))))
+
+
+        else:
+            distance_data.append(no_distance_filler)
+
+    return np.asarray(distance_data, dtype=float)
+
 def set_mesh_physical_point_coords(mesh, new_points):
     """
     Convenience function to update the x/y/z point coords of a mesh
