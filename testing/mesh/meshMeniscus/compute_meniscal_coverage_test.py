@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 from pymskt.mesh import MeniscusMesh, Mesh
-from pymskt.mesh.mesh_meniscus import compute_meniscal_coverage_si_ray
+from pymskt.mesh.mesh_meniscus import compute_meniscal_coverage
 
 
 def test_coverage_synthetic_data():
