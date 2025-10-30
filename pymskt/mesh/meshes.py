@@ -1399,9 +1399,15 @@ class BoneMesh(Mesh):
             self.dict_cartilage_labels.copy() if self.dict_cartilage_labels else None
         )
         copy_.list_articular_surfaces = self.list_articular_surfaces
-        copy_._meniscus_meshes = self._meniscus_meshes.copy()
-        copy_._meniscal_outcomes = self._meniscal_outcomes
-        copy_._meniscal_cart_labels = self._meniscal_cart_labels
+        copy_._meniscus_meshes = (
+            self._meniscus_meshes.copy() if self._meniscus_meshes else {}
+        )
+        copy_._meniscal_outcomes = (
+            self._meniscal_outcomes.copy() if self._meniscal_outcomes else None
+        )
+        copy_._meniscal_cart_labels = (
+            self._meniscal_cart_labels.copy() if self._meniscal_cart_labels else None
+        )
         return copy_
 
     def create_mesh(
