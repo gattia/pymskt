@@ -12,7 +12,6 @@ TODO: Implement tests for:
 - Edge cases: empty compartments, missing meniscus data
 """
 
-import numpy as np
 
 
 
