@@ -150,6 +150,40 @@ An example of how the cartilage thickness values are computed:
 
 ![](/images/cartilage_thickness_analysis.png)
 
+### Meniscal Analysis
+
+Compute meniscal extrusion and coverage metrics:
+
+```python
+import pymskt as mskt
+
+# Create tibia with cartilage labels
+tibia = mskt.mesh.BoneMesh(
+    path_seg_image='tibia.nrrd',
+    label_idx=6,
+    dict_cartilage_labels={'medial': 2, 'lateral': 3}
+)
+tibia.create_mesh()
+tibia.calc_cartilage_thickness()
+tibia.assign_cartilage_regions()
+
+# Create meniscus meshes
+med_meniscus = mskt.mesh.Mesh(path_seg_image='tibia.nrrd', label_idx=10)
+med_meniscus.create_mesh()
+
+lat_meniscus = mskt.mesh.Mesh(path_seg_image='tibia.nrrd', label_idx=9)
+lat_meniscus.create_mesh()
+
+# Set menisci (labels auto-inferred from dict_cartilage_labels)
+tibia.set_menisci(medial_meniscus=med_meniscus, lateral_meniscus=lat_meniscus)
+
+# Access metrics (auto-computes on first access)
+print(f"Medial extrusion: {tibia.med_men_extrusion:.2f} mm")
+print(f"Medial coverage: {tibia.med_men_coverage:.1f}%")
+print(f"Lateral extrusion: {tibia.lat_men_extrusion:.2f} mm")
+print(f"Lateral coverage: {tibia.lat_men_coverage:.1f}%")
+```
+
 
 # Development / Contributing
 General information for contributing can be found [here](https://github.com/gattia/pymskt/blob/main/CONTRIBUTING.md)
