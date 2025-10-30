@@ -471,7 +471,7 @@ def _get_distance_with_directions(
         Array of distances for each point
     """
     distance_data = []
-    
+
     for idx in range(points.GetNumberOfPoints()):
         point = points.GetPoint(idx)
         direction = directions[idx]
@@ -529,7 +529,9 @@ def get_distance_other_surface_at_points(
     point_normals = normals.GetOutput().GetPointData().GetNormals()
 
     # Extract normals as numpy array
-    directions = np.array([point_normals.GetTuple(idx) for idx in range(points.GetNumberOfPoints())])
+    directions = np.array(
+        [point_normals.GetTuple(idx) for idx in range(points.GetNumberOfPoints())]
+    )
 
     return _get_distance_with_directions(
         points,
@@ -575,7 +577,7 @@ def get_distance_other_surface_at_points_along_unit_vector(
     """
     points = surface.GetPoints()
     obb_other_surface = get_obb_surface(other_surface)
-    
+
     unit_vector = np.asarray(unit_vector)
     assert np.isclose(np.linalg.norm(unit_vector), 1.0), "unit_vector must have magnitude 1.0"
 
@@ -591,6 +593,7 @@ def get_distance_other_surface_at_points_along_unit_vector(
         percent_ray_length_opposite_direction,
         no_distance_filler,
     )
+
 
 def set_mesh_physical_point_coords(mesh, new_points):
     """

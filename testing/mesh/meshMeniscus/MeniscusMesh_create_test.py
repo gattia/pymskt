@@ -11,6 +11,7 @@ TODO: Implement tests for:
 
 import numpy as np
 import pytest
+
 from pymskt.mesh import MeniscusMesh
 
 
@@ -27,7 +28,3 @@ def test_meniscus_type_property():
 def test_meniscus_type_validation():
     """TODO: Test that invalid meniscus_type values raise ValueError."""
     pass
-
-
-
-

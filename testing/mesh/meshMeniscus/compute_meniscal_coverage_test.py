@@ -14,7 +14,8 @@ TODO: Implement tests for:
 
 import numpy as np
 import pytest
-from pymskt.mesh import Mesh, MeniscusMesh
+
+from pymskt.mesh import MeniscusMesh, Mesh
 from pymskt.mesh.mesh_meniscus import compute_meniscal_coverage_si_ray
 
 
@@ -46,7 +47,3 @@ def test_coverage_area_calculation():
 def test_coverage_si_tolerance():
     """TODO: Test coverage with different SI tolerance values."""
     pass
-
-
-
-
