@@ -12,7 +12,7 @@ import os
 import numpy as np
 import pytest
 
-from pymskt.mesh import BoneMesh, MeniscusMesh, Mesh
+from pymskt.mesh import BoneMesh, Mesh
 from pymskt.mesh.mesh_meniscus import compute_meniscal_extrusion
 
 # ============================================================================
