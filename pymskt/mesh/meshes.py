@@ -853,7 +853,10 @@ class Mesh(pv.PolyData):
 
             elif isinstance(direction, (np.ndarray, list, tuple)):
                 direction = np.array(direction)
-                direction = direction / np.linalg.norm(direction)
+                norm = np.linalg.norm(direction)
+                if norm == 0:
+                    raise ValueError("direction vector must have non-zero magnitude for normalization.")
+                direction = direction / norm
                 node_data = get_distance_other_surface_at_points_along_unit_vector(
                     self,
                     other_mesh,
