@@ -360,7 +360,12 @@ def _get_single_compartment_coverage(
     area_cart_men = tibia_cart_men.area
 
     # Calculate coverage percentage
-    percent_cart_men_coverage = (area_cart_men / area_cart) * 100 if area_cart > 0 else 0.0
+    if area_cart == 0:
+        raise ValueError(
+            f"Cartilage region is empty (area = 0) for compartment '{side_name}'. "
+            "Cannot compute meniscal coverage. This likely indicates invalid input data."
+        )
+    percent_cart_men_coverage = (area_cart_men / area_cart) * 100
 
     return {
         f"{side_name}_cart_men_coverage": percent_cart_men_coverage,
