@@ -15,7 +15,6 @@ TODO: Implement tests for:
 import numpy as np
 import pytest
 
-from pymskt.mesh import MeniscusMesh, Mesh
 
 
 def test_coverage_synthetic_data():
