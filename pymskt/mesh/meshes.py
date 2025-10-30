@@ -2305,9 +2305,6 @@ class BoneMesh(Mesh):
             )
 
         # Determine which menisci to compute for
-        has_medial = "medial" in self._meniscus_meshes
-        has_lateral = "lateral" in self._meniscus_meshes
-
         # Get labels (from parameters or cached values)
         # Both labels are ALWAYS required for axes computation
         if medial_cart_label is None:
