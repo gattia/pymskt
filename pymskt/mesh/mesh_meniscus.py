@@ -164,7 +164,7 @@ def compute_tibia_axes(
 
     # Compute AP axis as cross product
     # NOTE: AP axis direction is not always same (front vs back)
-    # without inputting side (right.left). So, left it just as a general axis.
+    # without inputting side (right/left). So, left it just as a general axis.
     ap_axis = np.cross(ml_axis, is_axis)
     ap_axis = ap_axis / np.linalg.norm(ap_axis)
 
