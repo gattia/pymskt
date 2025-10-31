@@ -13,8 +13,6 @@ TODO: Implement tests for:
 """
 
 
-
-
 def test_coverage_synthetic_data():
     """TODO: Test coverage calculation with synthetic tibia and meniscus meshes."""
     pass
