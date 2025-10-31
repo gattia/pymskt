@@ -40,9 +40,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13, ubuntu-latest]
-        #TODO: Fix macos-12 to be macos-latest. Issue with using latest (arm?) and point cloud utils install. . 
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        os: [macos-14, ubuntu-latest]
+        # Updated from macos-13 to macos-14 (Apple Silicon) due to macos-13 deprecation (Dec 2025)
+        # Dropped Python 3.8 support (EOL Oct 2024) due to ITK/NumPy compatibility issues
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
       - uses: actions/checkout@v4

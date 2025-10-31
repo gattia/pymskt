@@ -32,6 +32,7 @@ from pymskt.mesh.meshTools import (
     gaussian_smooth_surface_scalars,
     get_cartilage_properties_at_points,
     get_distance_other_surface_at_points,
+    get_distance_other_surface_at_points_along_unit_vector,
     get_largest_connected_component,
     get_mesh_edge_lengths,
     get_mesh_physical_point_coords,
@@ -802,6 +803,7 @@ class Mesh(pv.PolyData):
         ray_cast_length=10.0,
         percent_ray_length_opposite_direction=0.25,
         name="thickness (mm)",
+        direction=None,
     ):
         """
         Using bone mesh (`_mesh`) and the list of cartilage meshes (`list_cartilage_meshes`)
@@ -841,12 +843,33 @@ class Mesh(pv.PolyData):
 
         # iterate over meshes and add their thicknesses to the thicknesses list.
         for other_mesh in list_other_meshes:
-            node_data = get_distance_other_surface_at_points(
-                self,
-                other_mesh,
-                ray_cast_length=ray_cast_length,
-                percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
-            )
+            if direction is None:
+                node_data = get_distance_other_surface_at_points(
+                    self,
+                    other_mesh,
+                    ray_cast_length=ray_cast_length,
+                    percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
+                )
+
+            elif isinstance(direction, (np.ndarray, list, tuple)):
+                direction = np.array(direction)
+                norm = np.linalg.norm(direction)
+                if norm == 0:
+                    raise ValueError(
+                        "direction vector must have non-zero magnitude for normalization."
+                    )
+                direction = direction / norm
+                node_data = get_distance_other_surface_at_points_along_unit_vector(
+                    self,
+                    other_mesh,
+                    unit_vector=direction,
+                    ray_cast_length=ray_cast_length,
+                    percent_ray_length_opposite_direction=percent_ray_length_opposite_direction,
+                )
+            else:
+                raise ValueError(
+                    f"direction must be a numpy array, list, or tuple and received: {type(direction)}"
+                )
 
             distances += node_data
 
@@ -1297,6 +1320,7 @@ class BoneMesh(Mesh):
         min_n_pixels=5000,
         list_cartilage_meshes=None,
         list_cartilage_labels=None,
+        dict_cartilage_labels=None,
         list_articular_surfaces=None,
         crop_percent=None,
         bone="femur",
@@ -1325,6 +1349,11 @@ class BoneMesh(Mesh):
         list_cartilage_labels : list, optional
             List of `int` values that represent the different cartilage
             regions of interest appropriate for a single bone, by default None
+        dict_cartilage_labels : dict, optional
+            Dictionary mapping cartilage region names to label values.
+            For tibia: {'medial': 2, 'lateral': 3}.
+            This enables cleaner API for meniscal analysis without repeatedly
+            specifying labels, by default None
         crop_percent : float, optional
             Proportion value to crop long-axis of bone so it is proportional
             to the width of the bone for standardization purposes, by default 1.0
@@ -1332,13 +1361,19 @@ class BoneMesh(Mesh):
             String indicating what bone is being analyzed so that cropping
             can be applied appropriatey. {'femur', 'tibia'}, by default 'femur'.
             Patella is not an option because we do not need to crop for the patella.
+        tibia_idx : int, optional
+            Label index for tibia in segmentation (for registrations), by default None
         """
         self._crop_percent = crop_percent
         self._bone = bone
         self._list_cartilage_meshes = list_cartilage_meshes
         self._list_cartilage_labels = list_cartilage_labels
+        self._dict_cartilage_labels = dict_cartilage_labels
         self._list_articular_surfaces = list_articular_surfaces
         self._tibia_idx = tibia_idx
+        self._meniscus_meshes = {}  # Dictionary to store medial/lateral menisci
+        self._meniscal_outcomes = None  # Cache for computed meniscal metrics
+        self._meniscal_cart_labels = None  # Cache cartilage labels used for computation
 
         super().__init__(
             mesh=mesh,
@@ -1362,7 +1397,13 @@ class BoneMesh(Mesh):
         copy_.bone = self.bone
         copy_.list_cartilage_meshes = self.list_cartilage_meshes
         copy_.list_cartilage_labels = self.list_cartilage_labels
+        copy_.dict_cartilage_labels = (
+            self.dict_cartilage_labels.copy() if self.dict_cartilage_labels else None
+        )
         copy_.list_articular_surfaces = self.list_articular_surfaces
+        copy_._meniscus_meshes = self._meniscus_meshes.copy()
+        copy_._meniscal_outcomes = self._meniscal_outcomes
+        copy_._meniscal_cart_labels = self._meniscal_cart_labels
         return copy_
 
     def create_mesh(
@@ -1477,7 +1518,8 @@ class BoneMesh(Mesh):
         """
 
         self._list_cartilage_meshes = []
-        for cart_label_idx in self._list_cartilage_labels:
+        # Use property to handle both list_cartilage_labels and dict_cartilage_labels
+        for cart_label_idx in self.list_cartilage_labels:
             seg_array_view = sitk.GetArrayViewFromImage(self._seg_image)
             n_pixels_with_cart = np.sum(seg_array_view == cart_label_idx)
             if n_pixels_with_cart == 0:
@@ -1556,9 +1598,10 @@ class BoneMesh(Mesh):
             self._list_cartilage_labels = list_cartilage_labels
 
         # If no cartilage stuff provided, then cant do this function - raise exception.
-        if (self._list_cartilage_meshes is None) & (self._list_cartilage_labels is None):
+        # Check using property to handle both list_cartilage_labels and dict_cartilage_labels
+        if (self._list_cartilage_meshes is None) & (self.list_cartilage_labels is None):
             raise Exception(
-                "No cartilage meshes or list of cartilage labels are provided!  - These can be provided either to the class function `calc_cartilage_thickness` directly, or can be specified at the time of instantiating the `BoneMesh` class."
+                "No cartilage meshes or list of cartilage labels are provided!  - These can be provided either to the class function `calc_cartilage_thickness` directly, or can be specified at the time of instantiating the `BoneMesh` class via list_cartilage_labels or dict_cartilage_labels."
             )
 
         # if cartilage meshes don't exist yet, then make them.
@@ -1951,12 +1994,24 @@ class BoneMesh(Mesh):
         Convenience function to get the list of labels for cartilage tissues associated
         with this bone.
 
+        If list_cartilage_labels was not explicitly set but dict_cartilage_labels was,
+        this will return the values from dict_cartilage_labels in order.
+
         Returns
         -------
         list
             list of `int`s for the cartilage tissues associated with this bone.
         """
-        return self._list_cartilage_labels
+        # If explicit list provided, use it
+        if self._list_cartilage_labels is not None:
+            return self._list_cartilage_labels
+
+        # Fall back to values from dict if available
+        if self._dict_cartilage_labels is not None:
+            return list(self._dict_cartilage_labels.values())
+
+        # Neither provided
+        return None
 
     @list_cartilage_labels.setter
     def list_cartilage_labels(self, new_list_cartilage_labels):
@@ -1980,6 +2035,38 @@ class BoneMesh(Mesh):
                 new_list_cartilage_labels,
             ]
         self._list_cartilage_labels = new_list_cartilage_labels
+
+    @property
+    def dict_cartilage_labels(self):
+        """
+        Get the dictionary mapping cartilage region names to label values.
+
+        Returns
+        -------
+        dict or None
+            Dictionary mapping region names (e.g., 'medial', 'lateral') to label values.
+            Returns None if not set.
+        """
+        return self._dict_cartilage_labels
+
+    @dict_cartilage_labels.setter
+    def dict_cartilage_labels(self, new_dict_cartilage_labels):
+        """
+        Set the dictionary mapping cartilage region names to label values.
+
+        Parameters
+        ----------
+        new_dict_cartilage_labels : dict or None
+            Dictionary mapping region names to label values.
+            For tibia: {'medial': 2, 'lateral': 3}
+        """
+        if new_dict_cartilage_labels is not None and not isinstance(
+            new_dict_cartilage_labels, dict
+        ):
+            raise TypeError(
+                f"dict_cartilage_labels must be a dict or None, got {type(new_dict_cartilage_labels)}"
+            )
+        self._dict_cartilage_labels = new_dict_cartilage_labels
 
     @property
     def crop_percent(self):
@@ -2040,3 +2127,375 @@ class BoneMesh(Mesh):
         if not isinstance(new_bone, str):
             raise TypeError(f"New bone provided is type {type(new_bone)} - expected `str`")
         self._bone = new_bone
+
+    # ============================================================================
+    # Meniscus Analysis Methods (Tibia-specific)
+    # NOTE: Could be refactored into TibiaMesh class inheriting from BoneMesh
+    # ============================================================================
+
+    def set_menisci(
+        self,
+        medial_meniscus=None,
+        medial_cart_label=None,
+        lateral_meniscus=None,
+        lateral_cart_label=None,
+        scalar_array_name="labels",
+    ):
+        """
+        Associate meniscus meshes and cartilage labels for meniscal analysis.
+
+        This method stores references to meniscus meshes and their corresponding
+        cartilage labels. You can set one or both menisci, but BOTH cartilage labels
+        must be provided because tibial axes computation requires both cartilage regions.
+
+        If dict_cartilage_labels was set during initialization, labels can be
+        automatically inferred and don't need to be explicitly provided.
+
+        Parameters
+        ----------
+        medial_meniscus : MeniscusMesh or Mesh, optional
+            Medial meniscus mesh, by default None
+        medial_cart_label : int or float, optional
+            Label value for medial tibial cartilage region. If None, uses value
+            from dict_cartilage_labels['medial'] if available.
+        lateral_meniscus : MeniscusMesh or Mesh, optional
+            Lateral meniscus mesh, by default None
+        lateral_cart_label : int or float, optional
+            Label value for lateral tibial cartilage region. If None, uses value
+            from dict_cartilage_labels['lateral'] if available.
+        scalar_array_name : str, optional
+            Name of scalar array containing region labels, by default 'labels'
+
+        Raises
+        ------
+        ValueError
+            If no menisci are provided or if cartilage labels cannot be determined
+
+        Examples
+        --------
+        >>> # With dict_cartilage_labels set at initialization
+        >>> tibia = BoneMesh(
+        ...     path_seg_image='tibia.nrrd', label_idx=6,
+        ...     dict_cartilage_labels={'medial': 2, 'lateral': 3}
+        ... )
+        >>> tibia.set_menisci(
+        ...     medial_meniscus=med_men,
+        ...     lateral_meniscus=lat_men
+        ... )  # Labels auto-inferred!
+
+        >>> # Or provide labels explicitly (overrides dict_cartilage_labels)
+        >>> tibia.set_menisci(
+        ...     medial_meniscus=med_men, medial_cart_label=2,
+        ...     lateral_meniscus=lat_men, lateral_cart_label=3
+        ... )
+        """
+        # Must provide at least one meniscus
+        if medial_meniscus is None and lateral_meniscus is None:
+            raise ValueError("At least one meniscus must be provided")
+
+        # Try to get labels from dict_cartilage_labels if not explicitly provided
+        if medial_cart_label is None and self._dict_cartilage_labels:
+            medial_cart_label = self._dict_cartilage_labels.get("medial")
+        if lateral_cart_label is None and self._dict_cartilage_labels:
+            lateral_cart_label = self._dict_cartilage_labels.get("lateral")
+
+        # Both cartilage labels are required for axes computation
+        if medial_cart_label is None or lateral_cart_label is None:
+            raise ValueError(
+                "Both medial_cart_label and lateral_cart_label must be provided. "
+                "Tibial axes computation requires both cartilage regions, even if only "
+                "one meniscus is being analyzed. Either provide them explicitly or set "
+                "dict_cartilage_labels={'medial': X, 'lateral': Y} during initialization."
+            )
+
+        # Store menisci
+        if medial_meniscus is not None:
+            self._meniscus_meshes["medial"] = medial_meniscus
+        if lateral_meniscus is not None:
+            self._meniscus_meshes["lateral"] = lateral_meniscus
+
+        # Store labels (always store both since both are required)
+        self._meniscal_cart_labels = {
+            "medial": medial_cart_label,
+            "lateral": lateral_cart_label,
+            "scalar_array_name": scalar_array_name,
+        }
+
+        # Clear cached outcomes when menisci/labels are updated
+        self._meniscal_outcomes = None
+
+    def compute_meniscal_outcomes(
+        self,
+        medial_cart_label=None,
+        lateral_cart_label=None,
+        scalar_array_name=None,
+        middle_percentile_range=0.1,
+        ray_cast_length=20.0,
+        force_recompute=False,
+    ):
+        """
+        Compute meniscal extrusion and coverage metrics.
+
+        This method computes extrusion (how far meniscus extends beyond
+        cartilage rim) and coverage (percentage of cartilage covered by meniscus)
+        for menisci that have been set via set_menisci(). Can compute for one
+        or both compartments depending on what was set.
+
+        Parameters
+        ----------
+        medial_cart_label : int or float, optional
+            Label value for medial tibial cartilage region.
+            If None, uses label from set_menisci() call.
+        lateral_cart_label : int or float, optional
+            Label value for lateral tibial cartilage region.
+            If None, uses label from set_menisci() call.
+        scalar_array_name : str, optional
+            Name of scalar array containing region labels.
+            If None, uses value from set_menisci() call, by default 'labels'
+        middle_percentile_range : float, optional
+            Fraction of AP range to use for extrusion measurement, by default 0.1
+        ray_cast_length : float, optional
+            Length of rays to cast for coverage analysis, by default 20.0 mm
+        force_recompute : bool, optional
+            Force recomputation even if cached results exist, by default False
+
+        Returns
+        -------
+        dict
+            Dictionary containing meniscal metrics for available compartments:
+            - 'medial_extrusion_mm': medial extrusion distance (mm) [if medial set]
+            - 'lateral_extrusion_mm': lateral extrusion distance (mm) [if lateral set]
+            - 'medial_coverage_percent': medial coverage percentage [if medial set]
+            - 'lateral_coverage_percent': lateral coverage percentage [if lateral set]
+            - 'medial_covered_area_mm2': medial covered area (mm²) [if medial set]
+            - 'lateral_covered_area_mm2': lateral covered area (mm²) [if lateral set]
+            - 'medial_total_area_mm2': total medial cartilage area (mm²) [if medial set]
+            - 'lateral_total_area_mm2': total lateral cartilage area (mm²) [if lateral set]
+            - 'ml_axis': medial-lateral axis vector
+            - 'ap_axis': anterior-posterior axis vector
+            - 'is_axis': inferior-superior axis vector
+
+        Raises
+        ------
+        ValueError
+            If no menisci are set or if required labels cannot be determined
+
+        Examples
+        --------
+        >>> # Set menisci with labels, then compute
+        >>> tibia.set_menisci(
+        ...     medial_meniscus=med_men, medial_cart_label=2,
+        ...     lateral_meniscus=lat_men, lateral_cart_label=3
+        ... )
+        >>> results = tibia.compute_meniscal_outcomes()
+        >>> print(f"Medial extrusion: {results['medial_extrusion_mm']:.2f} mm")
+
+        >>> # Or provide labels explicitly
+        >>> results = tibia.compute_meniscal_outcomes(
+        ...     medial_cart_label=2, lateral_cart_label=3
+        ... )
+        """
+        # Return cached results if available and not forcing recompute
+        if self._meniscal_outcomes is not None and not force_recompute:
+            return self._meniscal_outcomes
+
+        # Check that at least one meniscus is set
+        if not self._meniscus_meshes:
+            raise ValueError(
+                "No menisci have been set. Use set_menisci() to associate meniscus "
+                "meshes and cartilage labels before computing outcomes."
+            )
+
+        # Determine which menisci to compute for
+        # Get labels (from parameters or cached values)
+        # Both labels are ALWAYS required for axes computation
+        if medial_cart_label is None:
+            if self._meniscal_cart_labels and "medial" in self._meniscal_cart_labels:
+                medial_cart_label = self._meniscal_cart_labels["medial"]
+            else:
+                raise ValueError(
+                    "medial_cart_label must be provided either in compute_meniscal_outcomes() "
+                    "or previously in set_menisci(). Both cartilage labels are required for "
+                    "tibial axes computation, even if only one meniscus is being analyzed."
+                )
+
+        if lateral_cart_label is None:
+            if self._meniscal_cart_labels and "lateral" in self._meniscal_cart_labels:
+                lateral_cart_label = self._meniscal_cart_labels["lateral"]
+            else:
+                raise ValueError(
+                    "lateral_cart_label must be provided either in compute_meniscal_outcomes() "
+                    "or previously in set_menisci(). Both cartilage labels are required for "
+                    "tibial axes computation, even if only one meniscus is being analyzed."
+                )
+
+        # Get scalar array name
+        if scalar_array_name is None:
+            if self._meniscal_cart_labels and "scalar_array_name" in self._meniscal_cart_labels:
+                scalar_array_name = self._meniscal_cart_labels["scalar_array_name"]
+            else:
+                scalar_array_name = "labels"
+
+        # Import analysis functions
+        from pymskt.mesh.mesh_meniscus import analyze_meniscal_metrics
+
+        # Always use the combined analysis function
+        # It will handle single meniscus cases by only computing metrics for present menisci
+        self._meniscal_outcomes = analyze_meniscal_metrics(
+            tibia_mesh=self,
+            medial_meniscus_mesh=self._meniscus_meshes.get("medial"),
+            lateral_meniscus_mesh=self._meniscus_meshes.get("lateral"),
+            medial_cart_label=medial_cart_label,
+            lateral_cart_label=lateral_cart_label,
+            scalar_array_name=scalar_array_name,
+            middle_percentile_range=middle_percentile_range,
+            ray_cast_length=ray_cast_length,
+        )
+
+        return self._meniscal_outcomes
+
+    @property
+    def med_men_extrusion(self):
+        """
+        Get medial meniscal extrusion value in mm.
+
+        Automatically computes outcomes on first access if not already computed.
+        Positive values indicate meniscus extends beyond cartilage rim.
+
+        Returns
+        -------
+        float
+            Medial meniscal extrusion distance in mm
+
+        Raises
+        ------
+        ValueError
+            If menisci haven't been set or if medial meniscus was not included
+
+        Examples
+        --------
+        >>> tibia.set_menisci(medial_meniscus=med_men, lateral_meniscus=lat_men)
+        >>> print(f"Medial extrusion: {tibia.med_men_extrusion:.2f} mm")  # Auto-computes!
+        """
+        # Auto-compute on first access if not already computed
+        if self._meniscal_outcomes is None:
+            try:
+                self.compute_meniscal_outcomes()
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot compute meniscal outcomes automatically: {str(e)}\n"
+                    "Ensure menisci are set via set_menisci() with appropriate labels."
+                )
+
+        if "medial_extrusion_mm" not in self._meniscal_outcomes:
+            raise ValueError("Medial meniscus was not included in the analysis")
+        return self._meniscal_outcomes["medial_extrusion_mm"]
+
+    @property
+    def lat_men_extrusion(self):
+        """
+        Get lateral meniscal extrusion value in mm.
+
+        Automatically computes outcomes on first access if not already computed.
+        Positive values indicate meniscus extends beyond cartilage rim.
+
+        Returns
+        -------
+        float
+            Lateral meniscal extrusion distance in mm
+
+        Raises
+        ------
+        ValueError
+            If menisci haven't been set or if lateral meniscus was not included
+
+        Examples
+        --------
+        >>> tibia.set_menisci(medial_meniscus=med_men, lateral_meniscus=lat_men)
+        >>> print(f"Lateral extrusion: {tibia.lat_men_extrusion:.2f} mm")  # Auto-computes!
+        """
+        # Auto-compute on first access if not already computed
+        if self._meniscal_outcomes is None:
+            try:
+                self.compute_meniscal_outcomes()
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot compute meniscal outcomes automatically: {str(e)}\n"
+                    "Ensure menisci are set via set_menisci() with appropriate labels."
+                )
+
+        if "lateral_extrusion_mm" not in self._meniscal_outcomes:
+            raise ValueError("Lateral meniscus was not included in the analysis")
+        return self._meniscal_outcomes["lateral_extrusion_mm"]
+
+    @property
+    def med_men_coverage(self):
+        """
+        Get medial meniscal coverage percentage.
+
+        Automatically computes outcomes on first access if not already computed.
+
+        Returns
+        -------
+        float
+            Percentage of medial cartilage covered by meniscus
+
+        Raises
+        ------
+        ValueError
+            If menisci haven't been set or if medial meniscus was not included
+
+        Examples
+        --------
+        >>> tibia.set_menisci(medial_meniscus=med_men, lateral_meniscus=lat_men)
+        >>> print(f"Medial coverage: {tibia.med_men_coverage:.1f}%")  # Auto-computes!
+        """
+        # Auto-compute on first access if not already computed
+        if self._meniscal_outcomes is None:
+            try:
+                self.compute_meniscal_outcomes()
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot compute meniscal outcomes automatically: {str(e)}\n"
+                    "Ensure menisci are set via set_menisci() with appropriate labels."
+                )
+
+        if "medial_coverage_percent" not in self._meniscal_outcomes:
+            raise ValueError("Medial meniscus was not included in the analysis")
+        return self._meniscal_outcomes["medial_coverage_percent"]
+
+    @property
+    def lat_men_coverage(self):
+        """
+        Get lateral meniscal coverage percentage.
+
+        Automatically computes outcomes on first access if not already computed.
+
+        Returns
+        -------
+        float
+            Percentage of lateral cartilage covered by meniscus
+
+        Raises
+        ------
+        ValueError
+            If menisci haven't been set or if lateral meniscus was not included
+
+        Examples
+        --------
+        >>> tibia.set_menisci(medial_meniscus=med_men, lateral_meniscus=lat_men)
+        >>> print(f"Lateral coverage: {tibia.lat_men_coverage:.1f}%")  # Auto-computes!
+        """
+        # Auto-compute on first access if not already computed
+        if self._meniscal_outcomes is None:
+            try:
+                self.compute_meniscal_outcomes()
+            except Exception as e:
+                raise ValueError(
+                    f"Cannot compute meniscal outcomes automatically: {str(e)}\n"
+                    "Ensure menisci are set via set_menisci() with appropriate labels."
+                )
+
+        if "lateral_coverage_percent" not in self._meniscal_outcomes:
+            raise ValueError("Lateral meniscus was not included in the analysis")
+        return self._meniscal_outcomes["lateral_coverage_percent"]

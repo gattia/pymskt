@@ -439,84 +439,160 @@ def get_cartilage_properties_at_points(
         )
 
 
+def _get_distance_with_directions(
+    points,
+    obb_other_surface,
+    directions,
+    ray_cast_length=20.0,
+    percent_ray_length_opposite_direction=0.25,
+    no_distance_filler=0.0,
+):
+    """
+    Private helper function to compute distances by ray casting along specified directions.
+
+    Parameters
+    ----------
+    points : vtk.vtkPoints
+        Points from the surface mesh
+    obb_other_surface : vtk.vtkOBBTree
+        OBB tree for the other surface
+    directions : np.ndarray
+        Array of direction vectors (n_points x 3) for ray casting
+    ray_cast_length : float
+        Length of ray to cast
+    percent_ray_length_opposite_direction : float
+        How far to project ray in opposite direction
+    no_distance_filler : float
+        Value to use when no intersection is found
+
+    Returns
+    -------
+    np.ndarray
+        Array of distances for each point
+    """
+    distance_data = []
+
+    for idx in range(points.GetNumberOfPoints()):
+        point = points.GetPoint(idx)
+        direction = directions[idx]
+
+        end_point_ray = n2l(l2n(point) + ray_cast_length * direction)
+        start_point_ray = n2l(
+            l2n(point) - ray_cast_length * percent_ray_length_opposite_direction * direction
+        )
+
+        # Check if there are any intersections for the given ray
+        if is_hit(obb_other_surface, start_point_ray, end_point_ray):
+            # Retrieve coordinates of intersection points and intersected cell ids
+            points_intersect, cell_ids_intersect = get_intersect(
+                obb_other_surface, start_point_ray, end_point_ray
+            )
+            distance_data.append(np.sqrt(np.sum(np.square(l2n(point) - l2n(points_intersect[0])))))
+        else:
+            distance_data.append(no_distance_filler)
+
+    return np.asarray(distance_data, dtype=float)
+
+
 def get_distance_other_surface_at_points(
     surface,
     other_surface,
     ray_cast_length=20.0,
     percent_ray_length_opposite_direction=0.25,
     no_distance_filler=0.0,
-):  # Could be nan??
+):
     """
-    Extract cartilage outcomes (T2 & thickness) at all points on bone surface.
+    Get distance to another surface by projecting along surface normals at each point.
 
     Parameters
     ----------
-    surface_bone : BoneMesh
-        Bone mesh containing vtk.vtkPolyData - get outcomes for nodes (vertices) on
-        this mesh
-    surface_cartilage : CartilageMesh
-        Cartilage mesh containing vtk.vtkPolyData - for obtaining cartilage outcomes.
-    t2_vtk_image : vtk.vtkImageData, optional
-        vtk object that contains our Cartilage T2 data, by default None
-    seg_vtk_image : vtk.vtkImageData, optional
-        vtk object that contains the segmentation mask(s) to help assign
-        labels to bone surface (e.g., most common), by default None
+    surface : Mesh
+        Mesh containing vtk.vtkPolyData - get distance from this surface
+    other_surface : Mesh
+        Mesh containing vtk.vtkPolyData - the other surface to get distance to
     ray_cast_length : float, optional
-        Length (mm) of ray to cast from bone surface when trying to find cartilage (inner &
-        outter shell), by default 20.0
+        Length (mm) of ray to cast from surface when trying to find distance, by default 20.0
     percent_ray_length_opposite_direction : float, optional
-        How far to project ray inside of the bone. This is done just in case the cartilage
-        surface ends up slightly inside of (or coincident with) the bone surface, by default 0.25
-    no_thickness_filler : float, optional
-        Value to use instead of thickness (if no cartilage), by default 0.
-    no_t2_filler : float, optional
-        Value to use instead of T2 (if no cartilage), by default 0.
-    no_seg_filler : int, optional
-        Value to use if no segmentation label available (because no cartilage?), by default 0
-    line_resolution : int, optional
-        Number of points to have along line, by default 100
+        How far to project ray in opposite direction. This is done just in case the other
+        surface ends up slightly inside of (or coincident with) the surface, by default 0.25
+    no_distance_filler : float, optional
+        Value to use when no intersection is found, by default 0.0
 
     Returns
     -------
-    list
-        Will return list of data for:
-            Cartilage thickness
-            Mean T2 at each point on bone
-            Most common cartilage label at each point on bone (normal to surface).
+    np.ndarray
+        Array of distances (n_points,) to the other surface at each point
     """
-
     normals = get_surface_normals(surface)
     points = surface.GetPoints()
     obb_other_surface = get_obb_surface(other_surface)
     point_normals = normals.GetOutput().GetPointData().GetNormals()
 
-    distance_data = []
-    # Loop through all points
-    for idx in range(points.GetNumberOfPoints()):
-        point = points.GetPoint(idx)
-        normal = point_normals.GetTuple(idx)
+    # Extract normals as numpy array
+    directions = np.array(
+        [point_normals.GetTuple(idx) for idx in range(points.GetNumberOfPoints())]
+    )
 
-        end_point_ray = n2l(l2n(point) + ray_cast_length * l2n(normal))
-        start_point_ray = n2l(
-            l2n(point) + ray_cast_length * percent_ray_length_opposite_direction * (-l2n(normal))
-        )
+    return _get_distance_with_directions(
+        points,
+        obb_other_surface,
+        directions,
+        ray_cast_length,
+        percent_ray_length_opposite_direction,
+        no_distance_filler,
+    )
 
-        # Check if there are any intersections for the given ray
-        if is_hit(obb_other_surface, start_point_ray, end_point_ray):  # intersections were found
-            # Retrieve coordinates of intersection points and intersected cell ids
-            points_intersect, cell_ids_intersect = get_intersect(
-                obb_other_surface, start_point_ray, end_point_ray
-            )
-            #         points
-            # if len(points_intersect) == 1:
-            distance_data.append(np.sqrt(np.sum(np.square(l2n(point) - l2n(points_intersect[0])))))
-            # else:
-            # distance_data.append(no_distance_filler)
 
-        else:
-            distance_data.append(no_distance_filler)
+def get_distance_other_surface_at_points_along_unit_vector(
+    surface,
+    other_surface,
+    unit_vector,
+    ray_cast_length=20.0,
+    percent_ray_length_opposite_direction=0.25,
+    no_distance_filler=0.0,
+):
+    """
+    Get distance to another surface by projecting along a specified unit vector direction.
 
-    return np.asarray(distance_data, dtype=float)
+    Parameters
+    ----------
+    surface : Mesh
+        Mesh containing vtk.vtkPolyData - get distance from this surface
+    other_surface : Mesh
+        Mesh containing vtk.vtkPolyData - the other surface to get distance to
+    unit_vector : np.ndarray or list
+        Unit vector (3D) along which to project rays for distance calculation
+    ray_cast_length : float, optional
+        Length (mm) of ray to cast from surface when trying to find distance, by default 20.0
+    percent_ray_length_opposite_direction : float, optional
+        How far to project ray in the opposite direction. This is done just in case the other surface
+        ends up slightly inside of (or coincident with) the surface, by default 0.25
+    no_distance_filler : float, optional
+        Value to use when no intersection is found, by default 0.0
+
+    Returns
+    -------
+    np.ndarray
+        Array of distances (n_points,) to the other surface at each point
+    """
+    points = surface.GetPoints()
+    obb_other_surface = get_obb_surface(other_surface)
+
+    unit_vector = np.asarray(unit_vector)
+    assert np.isclose(np.linalg.norm(unit_vector), 1.0), "unit_vector must have magnitude 1.0"
+
+    # Create array of identical direction vectors for all points
+    n_points = points.GetNumberOfPoints()
+    directions = np.tile(unit_vector, (n_points, 1))
+
+    return _get_distance_with_directions(
+        points,
+        obb_other_surface,
+        directions,
+        ray_cast_length,
+        percent_ray_length_opposite_direction,
+        no_distance_filler,
+    )
 
 
 def set_mesh_physical_point_coords(mesh, new_points):
