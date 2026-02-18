@@ -1500,12 +1500,22 @@ def pcu_sdf(pts, mesh):
         np.ndarray: (n_pts, ) array of SDFs
     """
 
-    # return sdfs
     faces, points = get_faces_vertices(mesh,
                                         points_dtype=np.float64,
                                         faces_dtype=np.int32)
     pts = _as_c_contig(pts, np.float64)
+
+    # PCU returns incorrect SDF values when given a single query point.
+    # Work around by duplicating the point so PCU sees n >= 2.
+    single_point = pts.shape[0] == 1
+    if single_point:
+        pts = np.vstack([pts, pts])
+
     sdfs, face_ids, bary = pcu.signed_distance_to_mesh(pts, points, faces)
+
+    if single_point:
+        sdfs = sdfs[:1]
+
     return sdfs
 
 
