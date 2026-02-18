@@ -163,6 +163,8 @@ class ProcrustesRegistration:
         multiprocessing=True,
         num_processes=None,
         remove_temp_icp=True,
+        icp_register_first=True,  # Get bones/objects into roughly the same alignment first
+        icp_registration_mode="similarity",  # "rigid", "similarity" (rigid + isotropic scaling), or "affine"
         **kwargs,
     ):
         self.path_ref_mesh = path_ref_mesh
@@ -194,7 +196,8 @@ class ProcrustesRegistration:
         # to apply a "warp" of the ref/mean mesh to make it
         # EXCETION - if we are registering a secondary bone in a joint model
         # E.g., for registering tibia/patella in knee model.
-        self.kwargs["icp_register_first"] = True
+        self.kwargs["icp_register_first"] = icp_register_first
+        self.kwargs["icp_registration_mode"] = icp_registration_mode
         if registering_secondary_bone is False:
             self.kwargs["icp_reg_target_to_source"] = True
         elif registering_secondary_bone is True:
