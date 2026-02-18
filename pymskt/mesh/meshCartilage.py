@@ -20,18 +20,37 @@ def remove_intersecting_vertices(mesh1, mesh2, ray_length=1.0, overlap_buffer=0.
     """
 
     # Compute point normals for mesh1
-    mesh1_normals = mesh1.compute_normals(point_normals=True, cell_normals=False)
+    mesh1.compute_normals(point_normals=True, cell_normals=False, inplace=True)
 
-    vertex_mask = np.ones(mesh1.n_points, dtype=bool)
+    # Build OBBTree ONCE for mesh2
+    obb_tree = vtk.vtkOBBTree()
+    obb_tree.SetDataSet(mesh2)
+    obb_tree.BuildLocator()
 
-    for idx, (vertex, normal) in enumerate(zip(mesh1.points, mesh1_normals.point_data["Normals"])):
+    mesh1_points = mesh1.points
+    mesh1_normals = mesh1.point_data["Normals"]
+    n_points = len(mesh1_points)
+
+    # Reusable VTK objects
+    points_intersect = vtk.vtkPoints()
+    cell_ids = vtk.vtkIdList()
+
+    vertex_mask = np.ones(n_points, dtype=bool)
+
+    for idx in range(n_points):
+        vertex = mesh1_points[idx]
+        normal = mesh1_normals[idx]
         start_point = vertex - overlap_buffer * normal
         end_point = vertex - ray_length * normal
 
-        intersections = mesh2.ray_trace(start_point, end_point)
+        # Clear and reuse
+        points_intersect.Reset()
+        cell_ids.Reset()
 
-        # If there's any intersection
-        if len(intersections[1]) > 0:
+        # Ray trace
+        obb_tree.IntersectWithLine(start_point, end_point, points_intersect, cell_ids)
+
+        if points_intersect.GetNumberOfPoints() > 0:
             vertex_mask[idx] = False
 
     print(f"number of intersections: {sum(~vertex_mask)}")
@@ -207,12 +226,19 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
     """
     list_articular_surfaces = []
 
+    bone_mesh.compute_normals(
+        point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True
+    )
+
     for cart_mesh in bone_mesh.list_cartilage_meshes:
+        cart_mesh.compute_normals(
+            point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True
+        )
         print(cart_mesh.point_coords.shape)
         print(bone_mesh.point_coords.shape)
         articular_surface = remove_intersecting_vertices(
-            pv.PolyData(cart_mesh.mesh),
-            pv.PolyData(bone_mesh.mesh),
+            cart_mesh,
+            bone_mesh,
             ray_length=ray_length,
         )
         assert isinstance(

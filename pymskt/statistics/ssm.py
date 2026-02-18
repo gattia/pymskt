@@ -43,6 +43,9 @@ class SSM:
         feature_norm_ignore_zero=True,
         feature_norm_include_pt_if_any_mesh_has_value=True,
         include_ref_mesh=True,
+        # ICP Registration Options
+        icp_register_first=True,  # Get bones/objects into roughly the same alignment first
+        icp_registration_mode="similarity",  # "rigid", "similarity" (rigid + isotropic scaling), or "affine"
         # Multiprocessing
         multiprocessing=True,
         num_processes=None,
@@ -74,6 +77,8 @@ class SSM:
         self.include_points_as_features = include_points_as_features
         self.save_registered_meshes = save_registered_meshes
         self.folder_save_registered_meshes = folder_save_registered_meshes
+        self.icp_register_first = icp_register_first
+        self.icp_registration_mode = icp_registration_mode
 
         self.n_meshes = len(self._list_mesh_paths) if self._list_mesh_paths is not None else 0
 
@@ -149,6 +154,8 @@ class SSM:
             vertex_features=self.vertex_features,
             multiprocessing=self.multiprocessing,
             num_processes=self.num_processes,
+            icp_register_first=self.icp_register_first,
+            icp_registration_mode=self.icp_registration_mode,
         )
 
         procrustes_reg.execute()
@@ -272,6 +279,8 @@ class SSM:
         dict_dump["n_spectral_features"] = self.n_spectral_features
         dict_dump["n_extra_spectral"] = self.n_extra_spectral
         dict_dump["include_points_as_features"] = self.include_points_as_features
+        dict_dump["icp_register_first"] = self.icp_register_first
+        dict_dump["icp_registration_mode"] = self.icp_registration_mode
 
         dict_dump["list_mesh_locations"] = self._list_mesh_paths
 
@@ -333,6 +342,8 @@ class SSM:
         self.n_spectral_features = dict_model_params["n_spectral_features"]
         self.n_extra_spectral = dict_model_params["n_extra_spectral"]
         self.include_points_as_features = dict_model_params["include_points_as_features"]
+        self.icp_register_first = dict_model_params.get("icp_register_first", True)
+        self.icp_registration_mode = dict_model_params.get("icp_registration_mode", "similarity")
 
         self._list_mesh_paths = dict_model_params["list_mesh_locations"]
 
@@ -574,6 +585,8 @@ class SSM:
             n_extra_spectral=self.n_extra_spectral,
             include_points_as_features=self.include_points_as_features,
             transfer_scalars=True if self.vertex_features is not None else False,
+            icp_register_first=self.icp_register_first,
+            icp_registration_mode=self.icp_registration_mode,
             verbose=self.verbose,
         )
 

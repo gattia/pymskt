@@ -83,10 +83,34 @@ pyMSKT is an open-source library for performing quantitative analyses of the mus
     ```
 
 
-### To install itkwidgets (for visualization): 
+### Optional Dependencies
+
+#### itkwidgets (for visualization)
 If you are using jupyterlab instead of jupyter notebook, you also need to install an extension: 
 ```
 jupyter labextension install @jupyter-widgets/jupyterlab-manager jupyter-matplotlib jupyterlab-datawidgets itkwidgets
+```
+
+#### vtkbool (for boolean operations)
+For fast and robust mesh boolean operations (union, intersection, difference), install vtkbool:
+```bash
+conda install -c conda-forge vtkbool
+```
+
+**Note:** vtkbool is only available via conda, not pip. It provides fast boolean operations (~30s for complex meshes) and avoids the memory errors that occur with VTK's native boolean operations.
+
+Usage example:
+```python
+from pymskt.mesh import Mesh
+
+femur = Mesh('femur.stl')
+patella = Mesh('patella.stl')
+
+# Subtract patella from femur
+result = femur.boolean_difference(patella)
+# Or use standalone function
+from pymskt.mesh.meshTools import boolean_difference
+result = boolean_difference(femur, patella)
 ```
 
 # Examples

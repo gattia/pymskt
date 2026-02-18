@@ -118,6 +118,17 @@ def continuous_marching_cubes(
         return mc
 
 
+def flying_edges_surface_extraction(vtk_image_reader, threshold=0.5):
+    """
+    Extract surface using flying edges method.
+    """
+    fe = vtk.vtkFlyingEdges3D()
+    fe.SetInputConnection(vtk_image_reader.GetOutputPort())
+    fe.SetValue(0, threshold)
+    fe.Update()
+    return fe.GetOutput()
+
+
 def create_surface_mesh(
     seg_image,
     label_idx,
@@ -128,7 +139,8 @@ def create_surface_mesh(
     mc_threshold=0.5,
     filter_binary_image=True,
     set_seg_border_to_zeros=True,
-    use_discrete_marching_cubes=False,
+    surface_extraction_method="continuous_marching_cubes",
+    # use_discrete_marching_cubes=False,
 ):
     """
     Create surface mesh.
@@ -164,7 +176,7 @@ def create_surface_mesh(
     if set_seg_border_to_zeros is True:
         seg_image = msktimage.set_seg_border_to_zeros(seg_image, border_size=1)
 
-    if (use_discrete_marching_cubes is True) or (filter_binary_image is False):
+    if (surface_extraction_method == "discrete_marching_cubes") or (filter_binary_image is False):
         seg_image = msktimage.binarize_segmentation_image(seg_image, label_idx)
 
     else:
@@ -176,7 +188,7 @@ def create_surface_mesh(
         os.path.join(loc_tmp_save, tmp_filename), set_origin_zero=True
     )
     # create the mesh using continuous marching cubes applied to the smoothed binary image.
-    if use_discrete_marching_cubes is True:
+    if surface_extraction_method == "discrete_marching_cubes":
         mesh = discrete_marching_cubes(
             nrrd_reader,
             n_labels=1,
@@ -185,8 +197,12 @@ def create_surface_mesh(
             compute_normals_on=True,
             return_polydata=True,
         )
-    else:
+    elif surface_extraction_method == "continuous_marching_cubes":
         mesh = continuous_marching_cubes(nrrd_reader, threshold=mc_threshold)
+    elif surface_extraction_method == "flying_edges":
+        mesh = flying_edges_surface_extraction(nrrd_reader, threshold=mc_threshold)
+    else:
+        raise ValueError(f"Invalid surface extraction method: {surface_extraction_method}")
 
     if copy_image_transform is True:
         # copy image transofrm to the image to the mesh so that when viewed (e.g. in 3D Slicer) it is aligned with image

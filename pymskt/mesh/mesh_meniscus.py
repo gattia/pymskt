@@ -1,5 +1,5 @@
 """
-Meniscus mesh class and analysis functions for computing meniscal outcomes, 
+Meniscus mesh class and analysis functions for computing meniscal outcomes,
 including extrusion and coverage.
 
 This module provides functionality to analyze meniscal function using healthy cartilage
