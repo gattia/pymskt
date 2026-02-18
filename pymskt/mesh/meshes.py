@@ -25,6 +25,7 @@ from pymskt.mesh.meshCartilage import (
 )
 from pymskt.mesh.meshRegistration import cpd_register, get_icp_transform, non_rigidly_register
 from pymskt.mesh.meshTools import (
+    boolean_vtkbool,
     compute_assd_between_point_clouds,
     consistent_normals,
     decimate_mesh_pcu,
@@ -36,16 +37,15 @@ from pymskt.mesh.meshTools import (
     get_largest_connected_component,
     get_mesh_edge_lengths,
     get_mesh_physical_point_coords,
+    orient_surface,
     pcu_sdf,
     rand_sample_pts_mesh,
     resample_surface,
+    sanitize_for_boolean,
     smooth_scalars_from_second_mesh_onto_base,
     transfer_mesh_scalars_get_weighted_average_n_closest,
-    vtk_sdf,
-    boolean_vtkbool,
-    orient_surface,
-    sanitize_for_boolean,
     vtk_extract_largest,
+    vtk_sdf,
 )
 from pymskt.mesh.meshTransform import (
     SitkVtkTransformer,
@@ -161,13 +161,15 @@ class Mesh(pv.PolyData):
         # Create a new Mesh object from the copied PolyData to preserve Mesh type
         polydata_copy = super().copy(deep=deep)
         copy_ = Mesh(polydata_copy)
-        
+
         # Copy over custom attributes
         copy_._seg_image = self._seg_image
         copy_._path_seg_image = self._path_seg_image
         copy_._label_idx = self._label_idx
         copy_._min_n_pixels = self._min_n_pixels
-        copy_._list_applied_transforms = self._list_applied_transforms.copy() if deep else self._list_applied_transforms
+        copy_._list_applied_transforms = (
+            self._list_applied_transforms.copy() if deep else self._list_applied_transforms
+        )
 
         return copy_
 
@@ -234,11 +236,14 @@ class Mesh(pv.PolyData):
         Exception
             If no `_seg_image` or `path_seg_image` then we have no image to create mesh from.
         """
-        
+
         # use_discrete_marching_cubes is deprecated
         if use_discrete_marching_cubes is not None:
-            warnings.warn("use_discrete_marching_cubes is deprecated and is not doing anything.", DeprecationWarning)
-        
+            warnings.warn(
+                "use_discrete_marching_cubes is deprecated and is not doing anything.",
+                DeprecationWarning,
+            )
+
         # allow assigning label idx during mesh creation step.
         if label_idx is not None:
             self._label_idx = label_idx
@@ -495,7 +500,7 @@ class Mesh(pv.PolyData):
         """
         mesh_ = resample_surface(self.copy(), subdivisions=subdivisions, clusters=clusters)
         self.deep_copy(mesh_)
-    
+
     def extract_largest(self):
         """
         Extract the largest connected component of the mesh.
@@ -503,7 +508,7 @@ class Mesh(pv.PolyData):
         mesh_ = vtk_extract_largest(self.copy())
         self.deep_copy(mesh_)
         return self
-    
+
     def orient_surface(self):
         """
         Orient the surface of the mesh.
@@ -520,10 +525,10 @@ class Mesh(pv.PolyData):
     ):
         """
         Perform boolean operations using vtkbool library (fast and robust).
-        
+
         This is a fast alternative to VTK's triangle-based boolean operations
         that avoids memory errors and crashes. Requires vtkbool library.
-        
+
         Parameters
         ----------
         other_mesh : pyvista.PolyData or Mesh
@@ -535,28 +540,28 @@ class Mesh(pv.PolyData):
             Clean input meshes before operation, by default True
         triangulate_inputs : bool, optional
             Triangulate input meshes before operation, by default True
-            
+
         Returns
         -------
         Mesh
             Result mesh
-            
+
         Examples
         --------
         >>> # Subtract another mesh from this one
         >>> result = mesh.boolean_operation(other_mesh, op='difference')
-        >>> 
+        >>>
         >>> # Union with another mesh
         >>> combined = mesh.boolean_operation(other_mesh, op='union')
-        
+
         Notes
         -----
         Requires vtkbool: `conda install -c conda-forge vtkbool`
         """
-        
+
         mesh1 = sanitize_for_boolean(self.copy(), tolerance=1e-5)
         mesh2 = sanitize_for_boolean(other_mesh.copy(), tolerance=1e-5)
-        
+
         result = boolean_vtkbool(
             mesh1,
             mesh2,
@@ -564,52 +569,52 @@ class Mesh(pv.PolyData):
             clean_inputs=clean_inputs,
             triangulate_inputs=triangulate_inputs,
         )
-        
+
         return Mesh(result)
 
     def boolean_union(self, other_mesh, **kwargs):
         """
         Compute union with another mesh using vtkbool (fast).
-        
+
         Convenience wrapper for boolean_operation with op='union'.
-        
+
         Parameters
         ----------
         other_mesh : pyvista.PolyData or Mesh
             Mesh to union with
         **kwargs : dict
             Additional arguments passed to boolean_operation
-            
+
         Returns
         -------
         Mesh
             Union of the two meshes
-            
+
         Notes
         -----
         Requires vtkbool: `conda install -c conda-forge vtkbool`
         """
-        
+
         return self.boolean_operation(other_mesh, op="union", **kwargs)
 
     def boolean_difference(self, other_mesh, **kwargs):
         """
         Subtract another mesh from this mesh using vtkbool (fast).
-        
+
         Convenience wrapper for boolean_operation with op='difference'.
-        
+
         Parameters
         ----------
         other_mesh : pyvista.PolyData or Mesh
             Mesh to subtract
         **kwargs : dict
             Additional arguments passed to boolean_operation
-            
+
         Returns
         -------
         Mesh
             Result of this mesh minus other_mesh
-            
+
         Notes
         -----
         Requires vtkbool: `conda install -c conda-forge vtkbool`
@@ -619,21 +624,21 @@ class Mesh(pv.PolyData):
     def boolean_intersection(self, other_mesh, **kwargs):
         """
         Compute intersection with another mesh using vtkbool (fast).
-        
+
         Convenience wrapper for boolean_operation with op='intersection'.
-        
+
         Parameters
         ----------
         other_mesh : pyvista.PolyData or Mesh
             Mesh to intersect with
         **kwargs : dict
             Additional arguments passed to boolean_operation
-            
+
         Returns
         -------
         Mesh
             Intersection of the two meshes
-            
+
         Notes
         -----
         Requires vtkbool: `conda install -c conda-forge vtkbool`
@@ -1410,7 +1415,7 @@ class CartilageMesh(Mesh):
         # Get the base Mesh copy first, then convert to CartilageMesh
         mesh_copy = super().copy(deep=deep)
         copy_ = CartilageMesh(mesh_copy)
-        
+
         return copy_
 
 
@@ -1569,20 +1574,32 @@ class BoneMesh(Mesh):
         # Get the base Mesh copy first, then convert to BoneMesh
         mesh_copy = super().copy(deep=deep)
         copy_ = BoneMesh(mesh_copy)
-        
+
         # Copy BoneMesh-specific attributes
         copy_.crop_percent = self.crop_percent
         copy_.bone = self.bone
-        copy_.list_cartilage_meshes = self.list_cartilage_meshes.copy() if deep and self.list_cartilage_meshes else self.list_cartilage_meshes
-        copy_.list_cartilage_labels = self.list_cartilage_labels.copy() if deep and self.list_cartilage_labels else self.list_cartilage_labels
+        copy_.list_cartilage_meshes = (
+            self.list_cartilage_meshes.copy()
+            if deep and self.list_cartilage_meshes
+            else self.list_cartilage_meshes
+        )
+        copy_.list_cartilage_labels = (
+            self.list_cartilage_labels.copy()
+            if deep and self.list_cartilage_labels
+            else self.list_cartilage_labels
+        )
         copy_.dict_cartilage_labels = (
             self.dict_cartilage_labels.copy() if self.dict_cartilage_labels else None
         )
-        copy_.list_articular_surfaces = self.list_articular_surfaces.copy() if deep and self.list_articular_surfaces else self.list_articular_surfaces
+        copy_.list_articular_surfaces = (
+            self.list_articular_surfaces.copy()
+            if deep and self.list_articular_surfaces
+            else self.list_articular_surfaces
+        )
         copy_._meniscus_meshes = self._meniscus_meshes.copy()
         copy_._meniscal_outcomes = self._meniscal_outcomes
         copy_._meniscal_cart_labels = self._meniscal_cart_labels
-        
+
         return copy_
 
     def create_mesh(

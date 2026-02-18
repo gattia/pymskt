@@ -117,6 +117,7 @@ def continuous_marching_cubes(
     elif return_polydata is False:
         return mc
 
+
 def flying_edges_surface_extraction(vtk_image_reader, threshold=0.5):
     """
     Extract surface using flying edges method.
@@ -138,7 +139,7 @@ def create_surface_mesh(
     mc_threshold=0.5,
     filter_binary_image=True,
     set_seg_border_to_zeros=True,
-    surface_extraction_method='continuous_marching_cubes',
+    surface_extraction_method="continuous_marching_cubes",
     # use_discrete_marching_cubes=False,
 ):
     """
@@ -175,7 +176,7 @@ def create_surface_mesh(
     if set_seg_border_to_zeros is True:
         seg_image = msktimage.set_seg_border_to_zeros(seg_image, border_size=1)
 
-    if (surface_extraction_method == 'discrete_marching_cubes') or (filter_binary_image is False):
+    if (surface_extraction_method == "discrete_marching_cubes") or (filter_binary_image is False):
         seg_image = msktimage.binarize_segmentation_image(seg_image, label_idx)
 
     else:
@@ -187,7 +188,7 @@ def create_surface_mesh(
         os.path.join(loc_tmp_save, tmp_filename), set_origin_zero=True
     )
     # create the mesh using continuous marching cubes applied to the smoothed binary image.
-    if surface_extraction_method == 'discrete_marching_cubes':
+    if surface_extraction_method == "discrete_marching_cubes":
         mesh = discrete_marching_cubes(
             nrrd_reader,
             n_labels=1,
@@ -196,9 +197,9 @@ def create_surface_mesh(
             compute_normals_on=True,
             return_polydata=True,
         )
-    elif surface_extraction_method == 'continuous_marching_cubes':
+    elif surface_extraction_method == "continuous_marching_cubes":
         mesh = continuous_marching_cubes(nrrd_reader, threshold=mc_threshold)
-    elif surface_extraction_method == 'flying_edges':
+    elif surface_extraction_method == "flying_edges":
         mesh = flying_edges_surface_extraction(nrrd_reader, threshold=mc_threshold)
     else:
         raise ValueError(f"Invalid surface extraction method: {surface_extraction_method}")

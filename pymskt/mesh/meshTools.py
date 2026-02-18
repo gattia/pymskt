@@ -1289,6 +1289,7 @@ def fix_mesh(
     else:
         return new_object
 
+
 def vtk_extract_largest(poly: pv.PolyData) -> pv.PolyData:
     f = vtk.vtkPolyDataConnectivityFilter()
     f.SetInputData(poly)
@@ -1296,32 +1297,38 @@ def vtk_extract_largest(poly: pv.PolyData) -> pv.PolyData:
     f.Update()
     return pv.wrap(f.GetOutput()).clean()
 
+
 def mesh_health(poly: pv.PolyData):
-    fe_b = poly.extract_feature_edges(boundary_edges=True, feature_edges=False,
-                                      manifold_edges=False, non_manifold_edges=False)
-    fe_nm = poly.extract_feature_edges(boundary_edges=False, feature_edges=False,
-                                       manifold_edges=False, non_manifold_edges=True)
+    fe_b = poly.extract_feature_edges(
+        boundary_edges=True, feature_edges=False, manifold_edges=False, non_manifold_edges=False
+    )
+    fe_nm = poly.extract_feature_edges(
+        boundary_edges=False, feature_edges=False, manifold_edges=False, non_manifold_edges=True
+    )
     return dict(boundary_edges=fe_b.n_cells, nonmanifold_edges=fe_nm.n_cells)
 
 
 def orient_surface(poly: pv.PolyData, tolerance=1e-5) -> pv.PolyData:
-    #ensure its a polydata
+    # ensure its a polydata
     if not isinstance(poly, pv.PolyData):
         raise ValueError(f"Mesh is not a pyvista.PolyData object: {type(poly)}")
     # Ensure triangles & a clean shell first
     poly = poly.extract_surface().triangulate().clean(tolerance=tolerance, absolute=False)
-    watertight = mesh_health(poly)['boundary_edges'] == 0
+    watertight = mesh_health(poly)["boundary_edges"] == 0
     # Use vtkPolyDataNormals to ENFORCE consistent winding
     n = pv._vtk.vtkPolyDataNormals()
     n.SetInputData(poly)
-    n.ConsistencyOn()          # flips triangle order to be consistent
-    n.SetAutoOrientNormals(bool(watertight))    # or Off if you prefer to preserve a known outward direction
-    n.SplittingOff()           # avoid creating new edges
-    n.ComputePointNormalsOn() # keep it simple (cell orientation is key)
+    n.ConsistencyOn()  # flips triangle order to be consistent
+    n.SetAutoOrientNormals(
+        bool(watertight)
+    )  # or Off if you prefer to preserve a known outward direction
+    n.SplittingOff()  # avoid creating new edges
+    n.ComputePointNormalsOn()  # keep it simple (cell orientation is key)
     n.ComputeCellNormalsOn()
     n.Update()
     out = pv.wrap(n.GetOutput())
     return out
+
 
 def sanitize_for_boolean(poly: pv.PolyData, tolerance=1e-5, fill_holes_size=2.0) -> pv.PolyData:
     """
@@ -1329,7 +1336,7 @@ def sanitize_for_boolean(poly: pv.PolyData, tolerance=1e-5, fill_holes_size=2.0)
     """
     if not isinstance(poly, pv.PolyData):
         raise ValueError(f"Mesh is not a pyvista.PolyData object: {type(poly)}")
-    
+
     # 1) triangles + merge near-duplicates
     poly = poly.extract_surface().triangulate()
     poly = poly.clean(absolute=False, tolerance=tolerance)
@@ -1358,10 +1365,8 @@ def _as_c_contig(a, dtype):
         a = np.ascontiguousarray(a)
     return a
 
-def get_faces_vertices(mesh,
-                       points_dtype=np.float64,
-                       faces_dtype=np.int32,
-                       clean=True):
+
+def get_faces_vertices(mesh, points_dtype=np.float64, faces_dtype=np.int32, clean=True):
     """
     Return faces (N,3) int32 and points (M,3) float64, both C-contiguous,
     ready for PCU. Robust to VTK 8/9 layouts, non-tri cells, and degenerates.
@@ -1377,11 +1382,11 @@ def get_faces_vertices(mesh,
     # drop degenerate / out-of-range faces
     n_pts = p.shape[0]
     valid = (
-        (f[:,0] != f[:,1]) &
-        (f[:,0] != f[:,2]) &
-        (f[:,1] != f[:,2]) &
-        (f.min(axis=1) >= 0) &
-        (f.max(axis=1) < n_pts)
+        (f[:, 0] != f[:, 1])
+        & (f[:, 0] != f[:, 2])
+        & (f[:, 1] != f[:, 2])
+        & (f.min(axis=1) >= 0)
+        & (f.max(axis=1) < n_pts)
     )
     if not np.all(valid):
         f = f[valid]
@@ -1432,7 +1437,9 @@ def project_point_onto_line(P0, P1, P2):
     return P_proj
 
 
-def meshfix_pcu(obj, resolution=50000, project_onto_surface=True, points_dtype=np.float64, faces_dtype=np.int32):
+def meshfix_pcu(
+    obj, resolution=50000, project_onto_surface=True, points_dtype=np.float64, faces_dtype=np.int32
+):
     """
     this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
     """
@@ -1441,7 +1448,9 @@ def meshfix_pcu(obj, resolution=50000, project_onto_surface=True, points_dtype=n
     points_wt, faces_wt = pcu.make_mesh_watertight(points, faces, resolution)
 
     # add a column of 3s to faces_wt (vtk uses this to know how many points to use for each face)
-    faces_wt = np.hstack((np.ones((faces_wt.shape[0], 1), dtype=faces_dtype) * 3, faces_wt)).astype(faces_dtype)
+    faces_wt = np.hstack((np.ones((faces_wt.shape[0], 1), dtype=faces_dtype) * 3, faces_wt)).astype(
+        faces_dtype
+    )
 
     if project_onto_surface is True:
         # project points onto original mesh
@@ -1512,14 +1521,18 @@ def consistent_normals(mesh, points_dtype=np.float64, faces_dtype=np.int32):
     # get consistent normals
     faces_consitent, _ = pcu.orient_mesh_faces(faces)
     # add a column of 3s to faces_consitent (vtk uses this to know how many points to use for each face)
-    faces_consitent = np.hstack((np.ones((faces_consitent.shape[0], 1), dtype=faces_dtype) * 3, faces_consitent)).astype(faces_dtype)
+    faces_consitent = np.hstack(
+        (np.ones((faces_consitent.shape[0], 1), dtype=faces_dtype) * 3, faces_consitent)
+    ).astype(faces_dtype)
     # create new mesh
     new_mesh = pv.PolyData(points, faces_consitent)
 
     return new_mesh
 
 
-def rand_sample_pts_mesh(mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32):
+def rand_sample_pts_mesh(
+    mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32
+):
     """
     Randomly sample points from a mesh
     """
@@ -1576,9 +1589,7 @@ def pcu_sdf(pts, mesh):
         np.ndarray: (n_pts, ) array of SDFs
     """
 
-    faces, points = get_faces_vertices(mesh,
-                                        points_dtype=np.float64,
-                                        faces_dtype=np.int32)
+    faces, points = get_faces_vertices(mesh, points_dtype=np.float64, faces_dtype=np.int32)
     pts = _as_c_contig(pts, np.float64)
 
     # PCU returns incorrect SDF values when given a single query point.
@@ -1683,7 +1694,9 @@ def decimate_mesh_pcu(mesh, percent_orig_faces=0.5, points_dtype=np.float64, fac
     print(type(points_), points_.shape)
     print(type(faces_), faces_.shape)
 
-    faces_ = np.hstack((np.ones((faces_.shape[0], 1), dtype=faces_dtype) * 3, faces_)).astype(faces_dtype)
+    faces_ = np.hstack((np.ones((faces_.shape[0], 1), dtype=faces_dtype) * 3, faces_)).astype(
+        faces_dtype
+    )
 
     new_mesh = pv.PolyData(points_, faces_)
 
@@ -1729,15 +1742,16 @@ def get_mesh_edge_lengths(mesh):
 # Boolean Operations using vtkbool library (fast and robust)
 # =====================================================================
 
+
 def _check_vtkbool_installed():
     """
     Check if vtkbool is installed and provide installation instructions if not.
-    
+
     Returns
     -------
     bool
         True if vtkbool is installed
-        
+
     Raises
     ------
     ImportError
@@ -1745,16 +1759,17 @@ def _check_vtkbool_installed():
     """
     try:
         import vtkbool  # noqa: F401
+
         return True
     except ImportError:
         raise ImportError(
-            "\n" + "="*70 + "\n"
+            "\n" + "=" * 70 + "\n"
             "vtkbool is required for boolean operations but is not installed.\n\n"
             "Install it using conda (NOT pip):\n"
             "  conda install -c conda-forge vtkbool\n\n"
             "Note: vtkbool is only available via conda, not pip.\n"
             "More info at: https://github.com/zippy84/vtkbool"
-            "="*70
+            "=" * 70
         )
 
 
@@ -1768,10 +1783,10 @@ def boolean_vtkbool(
 ):
     """
     Perform boolean operations on meshes using the vtkbool library.
-    
+
     This is a fast and robust method for mesh boolean operations that avoids
     the memory errors and crashes of VTK's native boolean operations.
-    
+
     Parameters
     ----------
     mesh1 : pyvista.PolyData or vtk.vtkPolyData
@@ -1797,23 +1812,23 @@ def boolean_vtkbool(
         - 'difference'/'difference2': returns the minuend mesh unchanged
         - 'intersection': returns an empty mesh
         - 'union': performs the operation anyway (meshes combined without overlap)
-        
+
     Returns
     -------
     pyvista.PolyData
         Result of the boolean operation
-        
+
     Examples
     --------
     >>> # Subtract patella from femur
     >>> result = boolean_vtkbool(femur, patella, op='difference')
-    >>> 
+    >>>
     >>> # Union of two bone meshes
     >>> combined = boolean_vtkbool(mesh_a, mesh_b, op='union')
-    >>> 
+    >>>
     >>> # Intersection
     >>> overlap = boolean_vtkbool(mesh_a, mesh_b, op='intersection')
-    
+
     Notes
     -----
     - Requires vtkbool library: `conda install -c conda-forge vtkbool`
@@ -1821,14 +1836,14 @@ def boolean_vtkbool(
     - Input meshes must be triangulated (done automatically if triangulate_inputs=True)
     - More robust than VTK's native boolean operations
     - Intersection check uses SDF to avoid boolean operations on non-overlapping meshes
-    
+
     Raises
     ------
     ImportError
         If vtkbool is not installed
     ValueError
         If invalid operation specified
-        
+
     See Also
     --------
     boolean_union : Convenience wrapper for union
@@ -1837,36 +1852,36 @@ def boolean_vtkbool(
     """
     # Check vtkbool is installed
     _check_vtkbool_installed()
-    
+
     # Import vtkbool only when needed
     from vtkbool.vtkBool import vtkPolyDataBooleanFilter
-    
+
     # Convert to PyVista if needed
     if not isinstance(mesh1, pv.PolyData):
         mesh1 = pv.wrap(mesh1)
     if not isinstance(mesh2, pv.PolyData):
         mesh2 = pv.wrap(mesh2)
-    
+
     # Copy to avoid modifying originals
     m1 = mesh1.copy()
     m2 = mesh2.copy()
-    
+
     # Clean inputs if requested
     if clean_inputs:
         m1 = m1.clean()
         m2 = m2.clean()
-    
+
     # Triangulate if requested
     if triangulate_inputs:
         m1 = m1.triangulate()
         m2 = m2.triangulate()
-    
+
     # Check if meshes actually intersect
     if check_intersection:
         # Compute SDF from mesh2 points to mesh1
         sdf_m2_to_m1 = pcu_sdf(m2.points, m1)
         min_sdf = np.min(sdf_m2_to_m1)
-        
+
         # If min_sdf > 0, meshes don't intersect (all mesh2 points are outside mesh1)
         if min_sdf > 0:
             if op in ("difference", "a_minus_b"):
@@ -1883,12 +1898,12 @@ def boolean_vtkbool(
                 # No intersection, so just combine the meshes using + operator
                 # This is much faster than running the boolean filter
                 return m1 + m2
-    
+
     # Create boolean filter
     bf = vtkPolyDataBooleanFilter()
     bf.SetInputData(0, m1)
     bf.SetInputData(1, m2)
-    
+
     # Set operation mode
     if op == "union":
         bf.SetOperModeToUnion()
@@ -1903,22 +1918,22 @@ def boolean_vtkbool(
             f"Invalid operation '{op}'. Must be 'union', 'intersection', "
             "'difference', or 'difference2'"
         )
-    
+
     # Execute operation
     bf.Update()
-    
+
     # Get result and convert to PyVista
     result = pv.wrap(bf.GetOutput())
-    
+
     return result
 
 
 def boolean_union(mesh1, mesh2, **kwargs):
     """
     Compute union of two meshes using vtkbool (A ∪ B).
-    
+
     Convenience wrapper for boolean_vtkbool with op='union'.
-    
+
     Parameters
     ----------
     mesh1 : pyvista.PolyData
@@ -1927,16 +1942,16 @@ def boolean_union(mesh1, mesh2, **kwargs):
         Second mesh
     **kwargs : dict
         Additional arguments passed to boolean_vtkbool
-        
+
     Returns
     -------
     pyvista.PolyData
         Union of the two meshes
-        
+
     Examples
     --------
     >>> result = boolean_union(mesh_a, mesh_b)
-    
+
     See Also
     --------
     boolean_vtkbool : Main function with full documentation
@@ -1947,9 +1962,9 @@ def boolean_union(mesh1, mesh2, **kwargs):
 def boolean_difference(mesh1, mesh2, **kwargs):
     """
     Subtract mesh2 from mesh1 using vtkbool (A - B).
-    
+
     Convenience wrapper for boolean_vtkbool with op='difference'.
-    
+
     Parameters
     ----------
     mesh1 : pyvista.PolyData
@@ -1958,16 +1973,16 @@ def boolean_difference(mesh1, mesh2, **kwargs):
         Mesh to subtract
     **kwargs : dict
         Additional arguments passed to boolean_vtkbool
-        
+
     Returns
     -------
     pyvista.PolyData
         Difference of the two meshes (mesh1 - mesh2)
-        
+
     Examples
     --------
     >>> result = boolean_difference(femur, patella)
-    
+
     See Also
     --------
     boolean_vtkbool : Main function with full documentation
@@ -1978,9 +1993,9 @@ def boolean_difference(mesh1, mesh2, **kwargs):
 def boolean_intersection(mesh1, mesh2, **kwargs):
     """
     Compute intersection of two meshes using vtkbool (A ∩ B).
-    
+
     Convenience wrapper for boolean_vtkbool with op='intersection'.
-    
+
     Parameters
     ----------
     mesh1 : pyvista.PolyData
@@ -1989,16 +2004,16 @@ def boolean_intersection(mesh1, mesh2, **kwargs):
         Second mesh
     **kwargs : dict
         Additional arguments passed to boolean_vtkbool
-        
+
     Returns
     -------
     pyvista.PolyData
         Intersection of the two meshes
-        
+
     Examples
     --------
     >>> result = boolean_intersection(mesh_a, mesh_b)
-    
+
     See Also
     --------
     boolean_vtkbool : Main function with full documentation

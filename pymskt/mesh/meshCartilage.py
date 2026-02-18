@@ -21,7 +21,7 @@ def remove_intersecting_vertices(mesh1, mesh2, ray_length=1.0, overlap_buffer=0.
 
     # Compute point normals for mesh1
     mesh1.compute_normals(point_normals=True, cell_normals=False, inplace=True)
-    
+
     # Build OBBTree ONCE for mesh2
     obb_tree = vtk.vtkOBBTree()
     obb_tree.SetDataSet(mesh2)
@@ -30,11 +30,11 @@ def remove_intersecting_vertices(mesh1, mesh2, ray_length=1.0, overlap_buffer=0.
     mesh1_points = mesh1.points
     mesh1_normals = mesh1.point_data["Normals"]
     n_points = len(mesh1_points)
-    
+
     # Reusable VTK objects
     points_intersect = vtk.vtkPoints()
     cell_ids = vtk.vtkIdList()
-    
+
     vertex_mask = np.ones(n_points, dtype=bool)
 
     for idx in range(n_points):
@@ -42,14 +42,14 @@ def remove_intersecting_vertices(mesh1, mesh2, ray_length=1.0, overlap_buffer=0.
         normal = mesh1_normals[idx]
         start_point = vertex - overlap_buffer * normal
         end_point = vertex - ray_length * normal
-        
+
         # Clear and reuse
         points_intersect.Reset()
         cell_ids.Reset()
-        
+
         # Ray trace
         obb_tree.IntersectWithLine(start_point, end_point, points_intersect, cell_ids)
-        
+
         if points_intersect.GetNumberOfPoints() > 0:
             vertex_mask[idx] = False
 
@@ -225,11 +225,15 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
         The number of largest regions to get, by default 1.
     """
     list_articular_surfaces = []
-    
-    bone_mesh.compute_normals(point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True)
+
+    bone_mesh.compute_normals(
+        point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True
+    )
 
     for cart_mesh in bone_mesh.list_cartilage_meshes:
-        cart_mesh.compute_normals(point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True)
+        cart_mesh.compute_normals(
+            point_normals=True, cell_normals=False, auto_orient_normals=True, inplace=True
+        )
         print(cart_mesh.point_coords.shape)
         print(bone_mesh.point_coords.shape)
         articular_surface = remove_intersecting_vertices(
