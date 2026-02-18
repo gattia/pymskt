@@ -15,7 +15,7 @@ build-backend = "setuptools.build_meta"
 name = "mskt"
 description = "vtk helper tools/functions for musculoskeletal analyses"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 keywords = ["python"]
 license = {text = "MIT"}
 authors = [
@@ -99,7 +99,8 @@ exclude = '''
 # Information needed for cibuildwheel
 [tool.cibuildwheel]
 # build options: https://cibuildwheel.readthedocs.io/en/stable/options/#build-selection
-build = ["cp37-*", "cp38-*", "cp39-*", "cp310-*"]
+# Dropped Python 3.7 and 3.8 support (EOL) due to dependency compatibility issues
+build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*"]
 skip = ["*-win32", "*i686", "*aarch64", "*ppc64le", "*s390x", "*musllinux*"]
 
 # testing info: https://cibuildwheel.readthedocs.io/en/stable/options/#testing

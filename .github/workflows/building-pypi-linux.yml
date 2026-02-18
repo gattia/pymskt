@@ -57,13 +57,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # macos-13 = intel mac runner
-        # macos-14 = apple silicon mac runner
-        os: [ubuntu-latest, windows-2022, macos-13]
-        # add macos-14 when apple silicon mac runners are available
-        # for all of the python versions. Seems like only 3.10 + is 
-        # available now, but is intended to be fixed: 
-        # https://github.com/actions/setup-python/issues/808
+        # macos-14 = Apple Silicon (arm64) runner
+        # macos-14-large = Intel (x86_64) runner
+        # Updated from macos-13 due to deprecation (Dec 2025)
+        # Using macos-14 for arm64 wheels and macos-14-large for Intel wheels
+        os: [ubuntu-latest, windows-2022, macos-14, macos-14-large]
     
     steps:
       - uses: actions/checkout@v4
