@@ -16,8 +16,8 @@ call rather than a single draw.
 """
 
 import numpy as np
-import pyvista as pv
 import pytest
+import pyvista as pv
 
 from pymskt.mesh import Mesh
 from pymskt.mesh.meshTools import pcu_random_seed, rand_sample_pts_mesh
