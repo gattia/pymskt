@@ -1530,19 +1530,43 @@ def consistent_normals(mesh, points_dtype=np.float64, faces_dtype=np.int32):
     return new_mesh
 
 
+def pcu_random_seed(seed):
+    """
+    Translate a user seed into one `point_cloud_utils` will honour.
+
+    pcu treats `random_seed=0` as "seed from the current time", not "seed 0" -- so a user
+    seed cannot be handed over directly. `seed=0` is the first seed most people try, and
+    passing it through would silently mean "unseeded".
+
+    Returns 0 (pcu's own unseeded sentinel) when `seed is None`, so the default behaviour
+    is unchanged; otherwise a non-zero 32-bit integer derived deterministically from `seed`.
+    """
+    if seed is None:
+        return 0
+    return int(np.random.default_rng(seed).integers(1, 2**31 - 1))
+
+
 def rand_sample_pts_mesh(
-    mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32
+    mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32, seed=None
 ):
     """
     Randomly sample points from a mesh
+
+    Args:
+        seed (int, optional): Makes the sampling reproducible. Defaults to None, which
+            samples differently on every call -- the historical behaviour.
     """
     # get faces and points
     faces, points = get_faces_vertices(mesh, points_dtype=points_dtype, faces_dtype=faces_dtype)
 
+    random_seed = pcu_random_seed(seed)
+
     if method == "random":
-        fid, bc = pcu.sample_mesh_random(points, faces, n_pts)
+        fid, bc = pcu.sample_mesh_random(points, faces, n_pts, random_seed=random_seed)
     elif method == "bluenoise":
-        fid, bc = pcu.sample_mesh_poisson_disk(points, faces, num_samples=n_pts)
+        fid, bc = pcu.sample_mesh_poisson_disk(
+            points, faces, num_samples=n_pts, random_seed=random_seed
+        )
 
     rand_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
 
