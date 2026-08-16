@@ -346,24 +346,43 @@ class Mesh(pv.PolyData):
         print(mesh_.n_points)
         self.deep_copy(mesh_)
 
-    def rand_surface_pts(self, n_pts=100_000, method="bluenoise"):
+    def rand_surface_pts(self, n_pts=100_000, method="bluenoise", seed=None):
         """
         Sample points from the surface of the mesh.
+
+        Args:
+            seed (int, optional): Makes the sampling reproducible. Defaults to None, which
+                samples differently on every call -- the historical behaviour.
         """
-        return rand_sample_pts_mesh(self, n_pts=n_pts, method=method)
+        return rand_sample_pts_mesh(self, n_pts=n_pts, method=method, seed=seed)
 
     def rand_pts_around_surface(
-        self, n_pts=100_000, surface_method="bluenoise", distribution="normal", sigma=1.0
+        self,
+        n_pts=100_000,
+        surface_method="bluenoise",
+        distribution="normal",
+        sigma=1.0,
+        seed=None,
     ):
         """
         Sample points around the surface of the mesh. For SDF sampling & neural implicit representation models.
-        """
-        if distribution == "normal":
-            rand_gen = np.random.default_rng().multivariate_normal
-        elif distribution == "laplace":
-            rand_gen = np.random.default_rng().laplace
 
-        base_pts = self.rand_surface_pts(n_pts=n_pts, method=surface_method)
+        Args:
+            seed (int, optional): Makes the sampling reproducible. Defaults to None, which
+                samples differently on every call -- the historical behaviour.
+
+        Notes:
+            Both draws here are seeded: the base surface points (via `rand_surface_pts`)
+            and the offsets applied to them. Seeding only one leaves the result random.
+        """
+        rng = np.random.default_rng(seed)
+
+        if distribution == "normal":
+            rand_gen = rng.multivariate_normal
+        elif distribution == "laplace":
+            rand_gen = rng.laplace
+
+        base_pts = self.rand_surface_pts(n_pts=n_pts, method=surface_method, seed=seed)
         mean = [0, 0, 0]
 
         if (distribution == "normal") and (sigma is not None):

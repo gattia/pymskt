@@ -1530,19 +1530,52 @@ def consistent_normals(mesh, points_dtype=np.float64, faces_dtype=np.int32):
     return new_mesh
 
 
+def pcu_random_seed(seed):
+    """
+    Derive a seed `point_cloud_utils` will honour, from one a user would write.
+
+    pcu's `random_seed` is not an ordinary seed argument, so a user seed cannot be passed
+    through. Three distinct problems, which is why this is a derivation and not a special
+    case:
+
+    - `random_seed=0` means "seed from the current time", not "seed 0". Passing a user's
+      0 through would silently mean "unseeded" -- and 0 is the first seed most people try.
+    - Remapping only 0 to some constant would make that constant collide with a real seed:
+      `if seed == 0: seed = 1` gives seeds 0 and 1 the same run.
+    - The binding is a 32-bit C++ signature and raises TypeError outside that range, so a
+      timestamp or a hash used as a seed fails.
+
+    Deriving a fresh non-zero 32-bit value from `seed` handles all three under one rule.
+    Negative seeds raise, inheriting numpy's contract rather than inventing another.
+
+    `None` maps to pcu's own 0 sentinel, leaving the unseeded default untouched.
+    """
+    if seed is None:
+        return 0
+    return int(np.random.default_rng(seed).integers(1, 2**31 - 1))
+
+
 def rand_sample_pts_mesh(
-    mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32
+    mesh, n_pts, method="bluenoise", points_dtype=np.float64, faces_dtype=np.int32, seed=None
 ):
     """
     Randomly sample points from a mesh
+
+    Args:
+        seed (int, optional): Makes the sampling reproducible. Defaults to None, which
+            samples differently on every call -- the historical behaviour.
     """
     # get faces and points
     faces, points = get_faces_vertices(mesh, points_dtype=points_dtype, faces_dtype=faces_dtype)
 
+    random_seed = pcu_random_seed(seed)
+
     if method == "random":
-        fid, bc = pcu.sample_mesh_random(points, faces, n_pts)
+        fid, bc = pcu.sample_mesh_random(points, faces, n_pts, random_seed=random_seed)
     elif method == "bluenoise":
-        fid, bc = pcu.sample_mesh_poisson_disk(points, faces, num_samples=n_pts)
+        fid, bc = pcu.sample_mesh_poisson_disk(
+            points, faces, num_samples=n_pts, random_seed=random_seed
+        )
 
     rand_pts = pcu.interpolate_barycentric_coords(faces, fid, bc, points)
 
