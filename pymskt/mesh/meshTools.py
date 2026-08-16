@@ -1532,14 +1532,23 @@ def consistent_normals(mesh, points_dtype=np.float64, faces_dtype=np.int32):
 
 def pcu_random_seed(seed):
     """
-    Translate a user seed into one `point_cloud_utils` will honour.
+    Derive a seed `point_cloud_utils` will honour, from one a user would write.
 
-    pcu treats `random_seed=0` as "seed from the current time", not "seed 0" -- so a user
-    seed cannot be handed over directly. `seed=0` is the first seed most people try, and
-    passing it through would silently mean "unseeded".
+    pcu's `random_seed` is not an ordinary seed argument, so a user seed cannot be passed
+    through. Three distinct problems, which is why this is a derivation and not a special
+    case:
 
-    Returns 0 (pcu's own unseeded sentinel) when `seed is None`, so the default behaviour
-    is unchanged; otherwise a non-zero 32-bit integer derived deterministically from `seed`.
+    - `random_seed=0` means "seed from the current time", not "seed 0". Passing a user's
+      0 through would silently mean "unseeded" -- and 0 is the first seed most people try.
+    - Remapping only 0 to some constant would make that constant collide with a real seed:
+      `if seed == 0: seed = 1` gives seeds 0 and 1 the same run.
+    - The binding is a 32-bit C++ signature and raises TypeError outside that range, so a
+      timestamp or a hash used as a seed fails.
+
+    Deriving a fresh non-zero 32-bit value from `seed` handles all three under one rule.
+    Negative seeds raise, inheriting numpy's contract rather than inventing another.
+
+    `None` maps to pcu's own 0 sentinel, leaving the unseeded default untouched.
     """
     if seed is None:
         return 0
