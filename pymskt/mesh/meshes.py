@@ -1712,7 +1712,7 @@ class BoneMesh(Mesh):
         )
 
     def create_cartilage_meshes(
-        self, image_smooth_var_cart=0.3125 / 2, marching_cubes_threshold=0.5
+        self, image_smooth_var_cart=0.3125 / 2, marching_cubes_threshold=0.5, fix_method="pcu"
     ):
         """
         Helper function to create the list of cartilage meshes from the list of cartilage
@@ -1725,6 +1725,9 @@ class BoneMesh(Mesh):
             marching cubes.
         marching_cubes_threshold : float
             Threshold value to create cartilage surface at from segmentation images.
+        fix_method : str or None, optional
+            Method passed to ``Mesh.fix_mesh`` after meshing ("pcu" or "meshfix"), by default
+            "pcu". ``None`` skips mesh fixing.
 
         Notes
         -----
@@ -1748,7 +1751,8 @@ class BoneMesh(Mesh):
                     smooth_image_var=image_smooth_var_cart,
                     marching_cubes_threshold=marching_cubes_threshold,
                 )
-                cart_mesh.fix_mesh("pcu")
+                if fix_method is not None:
+                    cart_mesh.fix_mesh(fix_method)
                 self._list_cartilage_meshes.append(cart_mesh)
 
     def extract_articular_surfaces(self, ray_length=10.0, smooth_iter=100, n_largest=1):
@@ -1766,7 +1770,7 @@ class BoneMesh(Mesh):
         """
 
         self._list_articular_surfaces = extract_articular_surface(
-            self, ray_length=10.0, smooth_iter=100, n_largest=1
+            self, ray_length=ray_length, smooth_iter=smooth_iter, n_largest=n_largest
         )
 
     def calc_cartilage_thickness(
@@ -1921,13 +1925,30 @@ class BoneMesh(Mesh):
         self.reverse_all_transforms()
 
     def break_cartilage_into_superficial_deep(
-        self, rel_depth_thresh=0.5, resample_cartilage_surface=None, return_rel_depth=False
+        self,
+        rel_depth_thresh=0.5,
+        resample_cartilage_surface=10_000,
+        return_rel_depth=False,
+        deep_label=100,
+        superficial_label=200,
+        sdf_method="vtk",
+        cartilage_fix_method="pcu",
+        resample_subdivisions=2,
     ):
+        """
+        Split the cartilage voxels of this bone into deep / superficial layers.
+        See :func:`pymskt.mesh.meshCartilage.break_cartilage_into_superficial_deep`.
+        """
         return break_cartilage_into_superficial_deep(
             self,
             rel_depth_thresh=rel_depth_thresh,
             resample_cartilage_surface=resample_cartilage_surface,
             return_rel_depth=return_rel_depth,
+            deep_label=deep_label,
+            superficial_label=superficial_label,
+            sdf_method=sdf_method,
+            cartilage_fix_method=cartilage_fix_method,
+            resample_subdivisions=resample_subdivisions,
         )
 
     def get_cart_thickness_mean(self, region_idx):
