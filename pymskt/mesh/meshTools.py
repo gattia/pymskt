@@ -1,3 +1,4 @@
+import inspect
 from collections import defaultdict
 
 import numpy as np
@@ -1219,7 +1220,14 @@ def resample_surface(mesh, subdivisions=2, clusters=10000, project_to_surface=Tr
     if subdivisions:
         clus.subdivide(subdivisions)
     clus.cluster(clusters)
-    new_mesh = clus.create_mesh(moveclus=False)
+    # pyacvd >= 0.3 projects the cluster centroids onto the surface inside create_mesh
+    # (moveclus=True) with a k=1000 nearest-neighbour search that dominates run time;
+    # pyacvd 0.2.x has no such step (and no such argument). Skip it in both cases and
+    # project below.
+    if "moveclus" in inspect.signature(clus.create_mesh).parameters:
+        new_mesh = clus.create_mesh(moveclus=False)
+    else:
+        new_mesh = clus.create_mesh()
 
     if project_to_surface:
         # linear subdivision does not change the surface, so project onto the (smaller)
