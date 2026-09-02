@@ -54,7 +54,7 @@ from pymskt.mesh.meshTransform import (
     create_transform,
     get_versor_from_transform,
 )
-from pymskt.mesh.utils import vtk_deep_copy
+from pymskt.mesh.utils import as_mesh, vtk_deep_copy
 from pymskt.utils import copy_image_transform_to_mesh, safely_delete_tmp_file
 
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT?
@@ -206,6 +206,7 @@ class Mesh(pv.PolyData):
         min_n_pixels=None,
         set_seg_border_to_zeros=True,
         use_discrete_marching_cubes=None,
+        crop_to_label=True,
     ):
         """
         Create a surface mesh from the classes `_seg_image`. If `_seg_image`
@@ -224,6 +225,10 @@ class Mesh(pv.PolyData):
         min_n_pixels : int, optional
             Minimum number of continuous pixels to include segmentation island
             in the surface mesh creation, by default None
+        crop_to_label : bool, optional
+            Smooth and mesh only the bounding box of the label (plus a margin covering the
+            Gaussian kernel) instead of the whole volume, by default True. The mesh is
+            identical; see `pymskt.mesh.createMesh.create_surface_mesh`.
 
         Raises
         ------
@@ -273,6 +278,7 @@ class Mesh(pv.PolyData):
             mc_threshold=marching_cubes_threshold,
             filter_binary_image=smooth_image,
             set_seg_border_to_zeros=set_seg_border_to_zeros,
+            crop_to_label=crop_to_label,
             # use_discrete_marching_cubes=use_discrete_marching_cubes,
         )
         self.deep_copy(mesh_)
@@ -423,16 +429,7 @@ class Mesh(pv.PolyData):
         return sdfs
 
     def get_assd_mesh(self, other_mesh):
-        if isinstance(other_mesh, Mesh):
-            pass
-        elif isinstance(other_mesh, (vtk.vtkPolyData, pv.PolyData, str)):
-            other_mesh = Mesh(other_mesh)
-        else:
-            raise TypeError(
-                "other_mesh must be of type Mesh, vtk.vtkPolyData, pv.PolyData, or str, and received: {}".format(
-                    type(other_mesh)
-                )
-            )
+        other_mesh = as_mesh(other_mesh, "other_mesh")
 
         distances1 = np.abs(pcu_sdf(self.point_coords, other_mesh))
         distances2 = np.abs(pcu_sdf(other_mesh.point_coords, self))
@@ -1076,17 +1073,7 @@ class Mesh(pv.PolyData):
         -------
         None
         """
-        # get point coordinates for other mesh
-        if isinstance(other_mesh, (vtk.vtkPolyData)):
-            other_mesh = Mesh(other_mesh)
-        elif isinstance(other_mesh, Mesh):
-            pass
-        else:
-            raise TypeError(
-                "other_mesh must be of type vtk.vtkPolyData or pymskt.mesh.Mesh and received: {}".format(
-                    type(other_mesh)
-                )
-            )
+        other_mesh = as_mesh(other_mesh, "other_mesh")
 
         # get sdf for other_pts
         sdf = other_mesh.get_sdf_pts(self.point_coords)
@@ -1629,6 +1616,7 @@ class BoneMesh(Mesh):
         label_idx=None,
         min_n_pixels=None,
         crop_percent=None,
+        crop_to_label=True,
     ):
         """
         This is an extension of `Mesh.create_mesh` that enables cropping of bones.
@@ -1656,6 +1644,9 @@ class BoneMesh(Mesh):
             in the surface mesh creation, by default None
         crop_percent : [type], optional
             [description], by default None
+        crop_to_label : bool, optional
+            Smooth and mesh only the bounding box of the label instead of the whole volume,
+            by default True. Same mesh; see `Mesh.create_mesh`.
 
         Raises
         ------
@@ -1709,10 +1700,11 @@ class BoneMesh(Mesh):
             marching_cubes_threshold=marching_cubes_threshold,
             label_idx=label_idx,
             min_n_pixels=min_n_pixels,
+            crop_to_label=crop_to_label,
         )
 
     def create_cartilage_meshes(
-        self, image_smooth_var_cart=0.3125 / 2, marching_cubes_threshold=0.5
+        self, image_smooth_var_cart=0.3125 / 2, marching_cubes_threshold=0.5, fix_method="pcu"
     ):
         """
         Helper function to create the list of cartilage meshes from the list of cartilage
@@ -1725,6 +1717,9 @@ class BoneMesh(Mesh):
             marching cubes.
         marching_cubes_threshold : float
             Threshold value to create cartilage surface at from segmentation images.
+        fix_method : str or None, optional
+            Method passed to ``Mesh.fix_mesh`` after meshing ("pcu" or "meshfix"), by default
+            "pcu". ``None`` skips mesh fixing.
 
         Notes
         -----
@@ -1748,7 +1743,8 @@ class BoneMesh(Mesh):
                     smooth_image_var=image_smooth_var_cart,
                     marching_cubes_threshold=marching_cubes_threshold,
                 )
-                cart_mesh.fix_mesh("pcu")
+                if fix_method is not None:
+                    cart_mesh.fix_mesh(fix_method)
                 self._list_cartilage_meshes.append(cart_mesh)
 
     def extract_articular_surfaces(self, ray_length=10.0, smooth_iter=100, n_largest=1):
@@ -1766,7 +1762,7 @@ class BoneMesh(Mesh):
         """
 
         self._list_articular_surfaces = extract_articular_surface(
-            self, ray_length=10.0, smooth_iter=100, n_largest=1
+            self, ray_length=ray_length, smooth_iter=smooth_iter, n_largest=n_largest
         )
 
     def calc_cartilage_thickness(
@@ -1921,13 +1917,30 @@ class BoneMesh(Mesh):
         self.reverse_all_transforms()
 
     def break_cartilage_into_superficial_deep(
-        self, rel_depth_thresh=0.5, resample_cartilage_surface=None, return_rel_depth=False
+        self,
+        rel_depth_thresh=0.5,
+        resample_cartilage_surface=10_000,
+        return_rel_depth=False,
+        deep_label=100,
+        superficial_label=200,
+        sdf_method="vtk",
+        cartilage_fix_method="meshfix",
+        resample_subdivisions=1,
     ):
+        """
+        Split the cartilage voxels of this bone into deep / superficial layers.
+        See :func:`pymskt.mesh.meshCartilage.break_cartilage_into_superficial_deep`.
+        """
         return break_cartilage_into_superficial_deep(
             self,
             rel_depth_thresh=rel_depth_thresh,
             resample_cartilage_surface=resample_cartilage_surface,
             return_rel_depth=return_rel_depth,
+            deep_label=deep_label,
+            superficial_label=superficial_label,
+            sdf_method=sdf_method,
+            cartilage_fix_method=cartilage_fix_method,
+            resample_subdivisions=resample_subdivisions,
         )
 
     def get_cart_thickness_mean(self, region_idx):
@@ -2183,25 +2196,19 @@ class BoneMesh(Mesh):
 
     @list_articular_surfaces.setter
     def list_articular_surfaces(self, new_list_articular_surfaces):
-        if isinstance(new_list_articular_surfaces, list):
-            for surface in new_list_articular_surfaces:
-                if not isinstance(surface, Mesh):
-                    if isinstance(surface, (pv.PolyData, vtk.vtkPolyData)):
-                        surface = pymskt.mesh.Mesh(mesh=surface)
-                    else:
-                        raise TypeError(
-                            f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
-                        )
-
-        elif isinstance(
-            new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)
-        ):
-            if isinstance(new_list_articular_surfaces, (pv.PolyData, vtk.vtkPolyData)):
-                new_list_articular_surfaces = pymskt.mesh.Mesh(mesh=new_list_articular_surfaces)
-            new_list_articular_surfaces = [
-                new_list_articular_surfaces,
-            ]
-        self._list_articular_surfaces = new_list_articular_surfaces
+        """
+        Set the articular surfaces: a Mesh / pyvista / vtk polydata, a list of them, or None.
+        Every item is stored as a `Mesh`.
+        """
+        if new_list_articular_surfaces is None:
+            self._list_articular_surfaces = None
+            return
+        if not isinstance(new_list_articular_surfaces, (list, tuple)):
+            new_list_articular_surfaces = [new_list_articular_surfaces]
+        self._list_articular_surfaces = [
+            as_mesh(surface, "Item in `list_articular_surfaces`")
+            for surface in new_list_articular_surfaces
+        ]
 
     @property
     def list_cartilage_labels(self):

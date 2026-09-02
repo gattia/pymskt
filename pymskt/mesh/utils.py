@@ -152,6 +152,25 @@ def get_obb_surface(surface):
     return obb
 
 
+def as_mesh(mesh, name="mesh"):
+    """
+    Return `mesh` as a :class:`pymskt.mesh.Mesh`.
+
+    A Mesh is returned unchanged; a pyvista / vtk polydata or a file path is wrapped in a
+    new Mesh (deep copy). Anything else raises ``TypeError`` naming `name`.
+    """
+    from pymskt.mesh import Mesh  # imported here to avoid a circular import
+
+    if isinstance(mesh, Mesh):
+        return mesh
+    if isinstance(mesh, (pv.PolyData, vtk.vtkPolyData, str)):
+        return Mesh(mesh)
+    raise TypeError(
+        f"{name} must be a pymskt.mesh.Mesh, pyvista.PolyData, vtk.vtkPolyData or a file path, "
+        f"not {type(mesh)}"
+    )
+
+
 def vtk_deep_copy(mesh):
     """
     "Deep" copy a vtk.vtkPolyData so that they are not connected in any way.

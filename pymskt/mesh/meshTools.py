@@ -1,3 +1,4 @@
+import inspect
 from collections import defaultdict
 
 import numpy as np
@@ -1120,7 +1121,76 @@ def gaussian_smooth_surface_scalars(
     return mesh
 
 
-def resample_surface(mesh, subdivisions=2, clusters=10000):
+def project_points_along_normals(points, normals, mesh, max_distance=None):
+    """
+    Move each point to the nearest intersection of the line through it (along +/- its
+    normal) with `mesh`. Points whose line does not intersect the mesh (within
+    `max_distance`, if given) are left in place.
+
+    This is the same projection pyacvd applies in ``Clustering.create_mesh(moveclus=True)``
+    but uses a BVH ray caster (point-cloud-utils) instead of a k=1000 nearest-neighbour
+    search, which is orders of magnitude faster for large meshes.
+
+    See also ``meshfix_pcu(project_onto_surface=True)``, which projects the remeshed
+    vertices onto the original surface with ``pcu.closest_points_on_mesh`` (nearest point,
+    not along a normal). The two do the same job with different rules; candidates for one
+    shared helper (gattia/pymskt#60).
+
+    Parameters
+    ----------
+    points : np.ndarray
+        (n, 3) points to project.
+    normals : np.ndarray
+        (n, 3) direction to search along for each point (need not be unit length; rows
+        with zero / non-finite length are left in place).
+    mesh : pyvista.PolyData or vtk.vtkPolyData
+        Surface to project onto.
+    max_distance : float, optional
+        Ignore intersections further than this from the point, by default None (no limit).
+
+    Returns
+    -------
+    np.ndarray
+        (n, 3) projected points (float64).
+    """
+    # duplicate vertices do not affect ray/triangle intersection, so skip the (slow) clean
+    faces, vertices = get_faces_vertices(
+        mesh, points_dtype=np.float64, faces_dtype=np.int32, clean=False
+    )
+    intersector = pcu.RayMeshIntersector(vertices, faces)
+
+    ray_o = _as_c_contig(points, np.float64)
+    ray_d = np.array(normals, dtype=np.float64)
+    ray_d[~np.isfinite(ray_d).all(axis=1)] = 0.0
+    lengths = np.linalg.norm(ray_d, axis=1)
+    valid = lengths > 0
+    ray_d[valid] /= lengths[valid][:, None]
+    ray_d = np.ascontiguousarray(ray_d)
+
+    t = np.zeros(len(ray_o), dtype=np.float64)
+    if valid.any():
+        fid_fwd, _, t_fwd = intersector.intersect_rays(ray_o[valid], ray_d[valid])
+        fid_bwd, _, t_bwd = intersector.intersect_rays(ray_o[valid], -ray_d[valid])
+        # pcu returns scalars for a single ray; make every result a 1-d array
+        fid_fwd, t_fwd, fid_bwd, t_bwd = (
+            np.asarray(a).reshape(-1) for a in (fid_fwd, t_fwd, fid_bwd, t_bwd)
+        )
+        hit_fwd = (fid_fwd >= 0) & np.isfinite(t_fwd)
+        hit_bwd = (fid_bwd >= 0) & np.isfinite(t_bwd)
+        if max_distance is not None:
+            hit_fwd &= t_fwd <= max_distance
+            hit_bwd &= t_bwd <= max_distance
+        t_signed = np.zeros(int(valid.sum()), dtype=np.float64)
+        use_fwd = hit_fwd & (~hit_bwd | (t_fwd <= t_bwd))
+        use_bwd = hit_bwd & ~use_fwd
+        t_signed[use_fwd] = t_fwd[use_fwd]
+        t_signed[use_bwd] = -t_bwd[use_bwd]
+        t[valid] = t_signed
+
+    return ray_o + ray_d * t[:, None]
+
+
+def resample_surface(mesh, subdivisions=2, clusters=10000, project_to_surface=True):
     """
     Resample a surface mesh using the ACVD algorithm:
     Version used:
@@ -1133,12 +1203,18 @@ def resample_surface(mesh, subdivisions=2, clusters=10000):
     mesh : vtk.vtkPolyData
         Polydata mesh to be re-sampled.
     subdivisions : int, optional
-        Subdivide the mesh to have more points before clustering, by default 2
-        Probably not necessary for very dense meshes.
+        Subdivide the mesh to have more points before clustering, by default 2.
+        Each subdivision multiplies the number of faces by 4; not necessary for
+        dense meshes (input vertices >> `clusters`) and costs time.
     clusters : int, optional
         The number of clusters (points/vertices) to create during resampling
         surafce, by default 10000
         - This is not exact, might have slight differences.
+    project_to_surface : bool, optional
+        Move the new vertices (cluster centroids) onto the original surface along the
+        cluster normals, by default True. This is what pyacvd does in
+        ``create_mesh(moveclus=True)``; it is done here with a fast ray caster instead of
+        pyacvd's k=1000 nearest-neighbour search (which dominated the run time).
 
         Returns
     -------
@@ -1148,13 +1224,43 @@ def resample_surface(mesh, subdivisions=2, clusters=10000):
 
 
     """
-    pv_smooth_mesh = pv.wrap(mesh)
-    clus = pyacvd.Clustering(pv_smooth_mesh)
-    clus.subdivide(subdivisions)
+    original = pv.wrap(mesh)
+    # pyacvd's subdivide() rewrites the mesh handed to Clustering in place (copy_from), so
+    # give it a copy: the caller's mesh must not change, and the projection below needs
+    # the un-subdivided surface.
+    clus = pyacvd.Clustering(original.copy())
+    if subdivisions:
+        clus.subdivide(subdivisions)
     clus.cluster(clusters)
-    mesh = clus.create_mesh()
+    # pyacvd >= 0.3 projects the cluster centroids onto the surface inside create_mesh
+    # (moveclus=True) by ray-tracing against the 1000 faces whose centroids are nearest,
+    # which dominates run time and occasionally misses; pyacvd 0.2.x has no such step
+    # (and no such argument). Skip it in both cases and project below. Keep this even
+    # once pyacvd traces against a BVH (pyvista/pyacvd#84): it would still project onto
+    # the subdivided mesh, single-threaded.
+    create_mesh_params = inspect.signature(clus.create_mesh).parameters
+    create_mesh_kwargs = {}
+    if "moveclus" in create_mesh_params:
+        create_mesh_kwargs["moveclus"] = False
+    if "clean" in create_mesh_params:
+        # pyacvd >= 0.3.3 removes unused points inside create_mesh, which breaks the
+        # one-to-one match between the returned points and clus.cluster_norm that the
+        # projection below relies on. Clean after projecting instead.
+        create_mesh_kwargs["clean"] = False
+    new_mesh = clus.create_mesh(**create_mesh_kwargs)
 
-    return mesh
+    if project_to_surface:
+        # linear subdivision does not change the surface, so project onto the original
+        # mesh, which has 4**subdivisions fewer faces than pyacvd's subdivided copy. Cap
+        # the move at a couple of edge lengths so a poor cluster normal cannot drag a
+        # vertex across the mesh.
+        max_distance = 2.0 * np.mean(get_mesh_edge_lengths(new_mesh))
+        new_mesh.points = project_points_along_normals(
+            new_mesh.points, clus.cluster_norm, original, max_distance=max_distance
+        )
+
+    # drop points that ended up in no face (pyacvd >= 0.3.3 does this itself by default)
+    return new_mesh.clean()
 
 
 def get_largest_connected_component(mesh):
@@ -1442,6 +1548,10 @@ def meshfix_pcu(
 ):
     """
     this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
+
+    With ``project_onto_surface=True`` the remeshed vertices are moved to the nearest point of
+    the original surface (``pcu.closest_points_on_mesh``). ``project_points_along_normals``
+    does the same job for resampled meshes but along each vertex's normal; see the note there.
     """
     # get faces and points
     faces, points = get_faces_vertices(obj, points_dtype=points_dtype, faces_dtype=faces_dtype)
