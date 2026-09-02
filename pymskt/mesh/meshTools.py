@@ -1166,6 +1166,10 @@ def project_points_along_normals(points, normals, mesh, max_distance=None):
     if valid.any():
         fid_fwd, _, t_fwd = intersector.intersect_rays(ray_o[valid], ray_d[valid])
         fid_bwd, _, t_bwd = intersector.intersect_rays(ray_o[valid], -ray_d[valid])
+        # pcu returns scalars for a single ray; make every result a 1-d array
+        fid_fwd, t_fwd, fid_bwd, t_bwd = (
+            np.asarray(a).reshape(-1) for a in (fid_fwd, t_fwd, fid_bwd, t_bwd)
+        )
         hit_fwd = (fid_fwd >= 0) & np.isfinite(t_fwd)
         hit_bwd = (fid_bwd >= 0) & np.isfinite(t_bwd)
         if max_distance is not None:
@@ -1215,27 +1219,33 @@ def resample_surface(mesh, subdivisions=2, clusters=10000, project_to_surface=Tr
 
 
     """
-    pv_smooth_mesh = pv.wrap(mesh)
-    clus = pyacvd.Clustering(pv_smooth_mesh)
+    original = pv.wrap(mesh)
+    # pyacvd's subdivide() rewrites the mesh handed to Clustering in place (copy_from), so
+    # give it a copy: the caller's mesh must not change, and the projection below needs
+    # the un-subdivided surface.
+    clus = pyacvd.Clustering(original.copy())
     if subdivisions:
         clus.subdivide(subdivisions)
     clus.cluster(clusters)
     # pyacvd >= 0.3 projects the cluster centroids onto the surface inside create_mesh
-    # (moveclus=True) with a k=1000 nearest-neighbour search that dominates run time;
-    # pyacvd 0.2.x has no such step (and no such argument). Skip it in both cases and
-    # project below.
+    # (moveclus=True) by ray-tracing against the 1000 faces whose centroids are nearest,
+    # which dominates run time and occasionally misses; pyacvd 0.2.x has no such step
+    # (and no such argument). Skip it in both cases and project below. Keep this even
+    # once pyacvd traces against a BVH (pyvista/pyacvd#84): it would still project onto
+    # the subdivided mesh, single-threaded.
     if "moveclus" in inspect.signature(clus.create_mesh).parameters:
         new_mesh = clus.create_mesh(moveclus=False)
     else:
         new_mesh = clus.create_mesh()
 
     if project_to_surface:
-        # linear subdivision does not change the surface, so project onto the (smaller)
-        # original mesh rather than pyacvd's subdivided copy. Cap the move at a couple of
-        # edge lengths so a poor cluster normal cannot drag a vertex across the mesh.
+        # linear subdivision does not change the surface, so project onto the original
+        # mesh, which has 4**subdivisions fewer faces than pyacvd's subdivided copy. Cap
+        # the move at a couple of edge lengths so a poor cluster normal cannot drag a
+        # vertex across the mesh.
         max_distance = 2.0 * np.mean(get_mesh_edge_lengths(new_mesh))
         new_mesh.points = project_points_along_normals(
-            new_mesh.points, clus.cluster_norm, pv_smooth_mesh, max_distance=max_distance
+            new_mesh.points, clus.cluster_norm, original, max_distance=max_distance
         )
 
     return new_mesh
