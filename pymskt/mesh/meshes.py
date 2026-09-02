@@ -1914,7 +1914,7 @@ class BoneMesh(Mesh):
         superficial_label=200,
         sdf_method="vtk",
         cartilage_fix_method="pcu",
-        resample_subdivisions=2,
+        resample_subdivisions=1,
     ):
         """
         Split the cartilage voxels of this bone into deep / superficial layers.

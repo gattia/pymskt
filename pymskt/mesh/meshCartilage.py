@@ -341,7 +341,7 @@ def break_cartilage_into_superficial_deep(
     superficial_label=200,
     sdf_method="vtk",  # "pcu" or "vtk"
     cartilage_fix_method="pcu",
-    resample_subdivisions=2,
+    resample_subdivisions=1,
 ):
     """
     Break the cartilage into superficial and deep regions based on the relative depth
@@ -371,9 +371,11 @@ def break_cartilage_into_superficial_deep(
         the articular surface extraction; ``bone_mesh.list_cartilage_meshes`` is left at full
         resolution. ``None`` disables resampling (much slower).
     resample_subdivisions : int, optional
-        ``subdivisions`` passed to ``Mesh.resample_surface`` for the cartilage resampling,
-        by default 2. Each subdivision quadruples the faces before clustering; 1 (or 0) is
-        considerably faster for these dense meshes at a small cost in vertex uniformity.
+        ``subdivisions`` passed to ``Mesh.resample_surface`` for the (temporary) cartilage
+        resampling, by default 1. Each subdivision quadruples the faces before clustering;
+        2 gives slightly more uniform triangles at several times the cost, with no measurable
+        effect on the labels, because the resampled mesh is only used to extract the
+        articular surface.
     return_rel_depth : bool, optional
         Whether to also return the relative depth image, by default False. The image is
         float32 with ``d_bone / (d_bone + d_articular)`` at the cartilage voxels (0 at the
