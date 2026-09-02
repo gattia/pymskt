@@ -160,14 +160,13 @@ def remove_isolated_cells(input_mesh):
 
     Returns:
     --------
-    cleaned_mesh : Same type as input_mesh or pyvista.PolyData
-        The cleaned mesh with isolated cells removed.
+    Mesh
+        The cleaned mesh with isolated cells removed (a new object; the input is not modified).
     """
     from pymskt.mesh import Mesh
 
-    return_type = "Mesh" if isinstance(input_mesh, Mesh) else "pyvista"
     # nothing below mutates `mesh`: every step returns a new object
-    mesh = pv.PolyData(as_mesh(input_mesh, "input_mesh"))
+    mesh = as_mesh(input_mesh, "input_mesh")
 
     if mesh.n_cells != mesh.n_faces_strict:
         # vertices / lines / strips are not polygons; keep only the polygon cells
@@ -193,12 +192,7 @@ def remove_isolated_cells(input_mesh):
     logger.debug("remove_isolated_cells: removed %d cells", n_removed_total)
 
     # clean the mesh (removes points orphaned by the cell removal)
-    mesh = mesh.clean()
-
-    # Return the cleaned mesh in the appropriate type
-    if return_type == "Mesh":
-        return Mesh(mesh)
-    return mesh
+    return Mesh(mesh.clean())
 
 
 def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_largest=1):
