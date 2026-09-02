@@ -206,6 +206,7 @@ class Mesh(pv.PolyData):
         min_n_pixels=None,
         set_seg_border_to_zeros=True,
         use_discrete_marching_cubes=None,
+        crop_to_label=True,
     ):
         """
         Create a surface mesh from the classes `_seg_image`. If `_seg_image`
@@ -224,6 +225,10 @@ class Mesh(pv.PolyData):
         min_n_pixels : int, optional
             Minimum number of continuous pixels to include segmentation island
             in the surface mesh creation, by default None
+        crop_to_label : bool, optional
+            Smooth and mesh only the bounding box of the label (plus a margin covering the
+            Gaussian kernel) instead of the whole volume, by default True. The mesh is
+            identical; see `pymskt.mesh.createMesh.create_surface_mesh`.
 
         Raises
         ------
@@ -273,6 +278,7 @@ class Mesh(pv.PolyData):
             mc_threshold=marching_cubes_threshold,
             filter_binary_image=smooth_image,
             set_seg_border_to_zeros=set_seg_border_to_zeros,
+            crop_to_label=crop_to_label,
             # use_discrete_marching_cubes=use_discrete_marching_cubes,
         )
         self.deep_copy(mesh_)
@@ -1610,6 +1616,7 @@ class BoneMesh(Mesh):
         label_idx=None,
         min_n_pixels=None,
         crop_percent=None,
+        crop_to_label=True,
     ):
         """
         This is an extension of `Mesh.create_mesh` that enables cropping of bones.
@@ -1637,6 +1644,9 @@ class BoneMesh(Mesh):
             in the surface mesh creation, by default None
         crop_percent : [type], optional
             [description], by default None
+        crop_to_label : bool, optional
+            Smooth and mesh only the bounding box of the label instead of the whole volume,
+            by default True. Same mesh; see `Mesh.create_mesh`.
 
         Raises
         ------
@@ -1690,6 +1700,7 @@ class BoneMesh(Mesh):
             marching_cubes_threshold=marching_cubes_threshold,
             label_idx=label_idx,
             min_n_pixels=min_n_pixels,
+            crop_to_label=crop_to_label,
         )
 
     def create_cartilage_meshes(
