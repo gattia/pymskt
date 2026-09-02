@@ -340,7 +340,7 @@ def break_cartilage_into_superficial_deep(
     deep_label=100,
     superficial_label=200,
     sdf_method="vtk",  # "pcu" or "vtk"
-    cartilage_fix_method="pcu",
+    cartilage_fix_method="meshfix",
     resample_subdivisions=1,
 ):
     """
@@ -391,8 +391,11 @@ def break_cartilage_into_superficial_deep(
         open meshes and ``pcu.signed_distance_to_mesh`` returns wrong magnitudes for those.
     cartilage_fix_method : str or None, optional
         ``fix_method`` passed to ``BoneMesh.create_cartilage_meshes`` if the cartilage meshes
-        do not exist yet, by default "pcu" (watertight remeshing; slow). Ignored if
-        ``bone_mesh.list_cartilage_meshes`` already exists.
+        do not exist yet, by default "meshfix". "pcu" (watertight remeshing at 50k, the
+        default of ``create_cartilage_meshes`` itself) costs ~7 s per cartilage and changes
+        the labels only within the method's own noise, because the resampled mesh used here
+        is meshfix'd afterwards anyway. Ignored if ``bone_mesh.list_cartilage_meshes``
+        already exists. Note the created meshes stay on ``bone_mesh``.
 
     Returns
     -------

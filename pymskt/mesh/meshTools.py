@@ -1131,6 +1131,11 @@ def project_points_along_normals(points, normals, mesh, max_distance=None):
     but uses a BVH ray caster (point-cloud-utils) instead of a k=1000 nearest-neighbour
     search, which is orders of magnitude faster for large meshes.
 
+    See also ``meshfix_pcu(project_onto_surface=True)``, which projects the remeshed
+    vertices onto the original surface with ``pcu.closest_points_on_mesh`` (nearest point,
+    not along a normal). The two do the same job with different rules; candidates for one
+    shared helper (gattia/pymskt#60).
+
     Parameters
     ----------
     points : np.ndarray
@@ -1543,6 +1548,10 @@ def meshfix_pcu(
 ):
     """
     this is a wrapper for point cloud utils method of getting watertight manifold for shapenet models
+
+    With ``project_onto_surface=True`` the remeshed vertices are moved to the nearest point of
+    the original surface (``pcu.closest_points_on_mesh``). ``project_points_along_normals``
+    does the same job for resampled meshes but along each vertex's normal; see the note there.
     """
     # get faces and points
     faces, points = get_faces_vertices(obj, points_dtype=points_dtype, faces_dtype=faces_dtype)

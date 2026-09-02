@@ -1924,7 +1924,7 @@ class BoneMesh(Mesh):
         deep_label=100,
         superficial_label=200,
         sdf_method="vtk",
-        cartilage_fix_method="pcu",
+        cartilage_fix_method="meshfix",
         resample_subdivisions=1,
     ):
         """
