@@ -1233,10 +1233,16 @@ def resample_surface(mesh, subdivisions=2, clusters=10000, project_to_surface=Tr
     # (and no such argument). Skip it in both cases and project below. Keep this even
     # once pyacvd traces against a BVH (pyvista/pyacvd#84): it would still project onto
     # the subdivided mesh, single-threaded.
-    if "moveclus" in inspect.signature(clus.create_mesh).parameters:
-        new_mesh = clus.create_mesh(moveclus=False)
-    else:
-        new_mesh = clus.create_mesh()
+    create_mesh_params = inspect.signature(clus.create_mesh).parameters
+    create_mesh_kwargs = {}
+    if "moveclus" in create_mesh_params:
+        create_mesh_kwargs["moveclus"] = False
+    if "clean" in create_mesh_params:
+        # pyacvd >= 0.3.3 removes unused points inside create_mesh, which breaks the
+        # one-to-one match between the returned points and clus.cluster_norm that the
+        # projection below relies on. Clean after projecting instead.
+        create_mesh_kwargs["clean"] = False
+    new_mesh = clus.create_mesh(**create_mesh_kwargs)
 
     if project_to_surface:
         # linear subdivision does not change the surface, so project onto the original
@@ -1248,7 +1254,8 @@ def resample_surface(mesh, subdivisions=2, clusters=10000, project_to_surface=Tr
             new_mesh.points, clus.cluster_norm, original, max_distance=max_distance
         )
 
-    return new_mesh
+    # drop points that ended up in no face (pyacvd >= 0.3.3 does this itself by default)
+    return new_mesh.clean()
 
 
 def get_largest_connected_component(mesh):
