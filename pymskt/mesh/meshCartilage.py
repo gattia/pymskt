@@ -6,7 +6,6 @@ import numpy as np
 import pyvista as pv
 import SimpleITK as sitk
 import vtk
-from vtk.util.numpy_support import vtk_to_numpy
 
 logger = logging.getLogger(__name__)
 
@@ -157,64 +156,17 @@ def remove_cart_in_bone(cartilage_mesh, bone_mesh):
     return cart_copy
 
 
-def _polygon_edge_neighbor_counts(mesh):
+def _triangle_edge_neighbor_counts(faces, n_points):
     """
-    Number of distinct edge-neighbouring cells for every polygon in `mesh`.
+    Number of edge-neighbouring triangles for every triangle of an (n, 3) face array.
 
-    Vectorized equivalent of calling ``mesh.cell_neighbors(i, connections="edges")`` for
-    every cell and taking ``len()`` of the result. Handles arbitrary polygons and
-    non-manifold edges (edges shared by more than two cells).
-
-    Parameters
-    ----------
-    mesh : pyvista.PolyData
-        Mesh containing only polygon cells.
-
-    Returns
-    -------
-    np.ndarray
-        (n_cells,) integer array of edge-neighbour counts.
+    Vectorized equivalent of ``len(mesh.cell_neighbors(i, connections="edges"))`` for every
+    cell of a triangle mesh: every other triangle sharing an edge counts once per shared edge.
     """
-    polys = mesh.GetPolys()
-    conn = vtk_to_numpy(polys.GetConnectivityArray()).astype(np.int64)
-    offsets = vtk_to_numpy(polys.GetOffsetsArray()).astype(np.int64)
-    n_cells = len(offsets) - 1
-    if n_cells <= 0:
-        return np.zeros(0, dtype=np.int64)
-
-    # (cell id, edge) for every edge of every polygon; edges stored as sorted vertex pairs
-    cell_of_entry = np.repeat(np.arange(n_cells), np.diff(offsets))
-    idx = np.arange(len(conn))
-    nxt = idx + 1
-    nxt[offsets[1:] - 1] = offsets[:-1]  # wrap last vertex of each cell back to its first
-    edges = np.stack([conn[idx], conn[nxt]], axis=1)
-    edges.sort(axis=1)
-
-    _, edge_id, counts = np.unique(edges, axis=0, return_inverse=True, return_counts=True)
-    edge_id = edge_id.ravel()
-
-    # keep only edges that are shared, grouped by edge
-    shared = counts[edge_id] >= 2
-    cells_s, edge_s = cell_of_entry[shared], edge_id[shared]
-    order = np.argsort(edge_s, kind="stable")
-    cells_s, edge_s = cells_s[order], edge_s[order]
-
-    # neighbour pairs from edges shared by exactly two cells (the common case)...
-    two = counts[edge_s] == 2
-    pairs = [cells_s[two].reshape(-1, 2)]
-    # ...plus all pairs from (rare) non-manifold edges shared by more than two cells
-    multi = counts[edge_s] > 2
-    if multi.any():
-        for e in np.unique(edge_s[multi]):
-            cs = cells_s[edge_s == e]
-            ii, jj = np.triu_indices(len(cs), k=1)
-            pairs.append(np.stack([cs[ii], cs[jj]], axis=1))
-    pairs = np.concatenate(pairs, axis=0)
-    pairs = pairs[pairs[:, 0] != pairs[:, 1]]
-    # count each neighbouring cell once, even if it shares several edges
-    pairs = np.unique(np.sort(pairs, axis=1), axis=0)
-
-    return np.bincount(pairs.ravel(), minlength=n_cells)
+    edges = np.sort(faces[:, [[0, 1], [1, 2], [2, 0]]].reshape(-1, 2), axis=1)
+    keys = edges[:, 0].astype(np.int64) * n_points + edges[:, 1]
+    _, inverse, counts = np.unique(keys, return_inverse=True, return_counts=True)
+    return (counts[inverse] - 1).reshape(-1, 3).sum(axis=1)
 
 
 def remove_isolated_cells(input_mesh):
@@ -222,7 +174,8 @@ def remove_isolated_cells(input_mesh):
     Remove isolated cells from a mesh that have only one edge neighbor.
 
     Cells are removed iteratively until no cell has exactly one edge neighbour
-    (removing a cell can leave its neighbour with a single neighbour).
+    (removing a cell can leave its neighbour with a single neighbour). Non-triangle
+    polygons are triangulated first.
 
     Parameters:
     -----------
@@ -257,10 +210,13 @@ def remove_isolated_cells(input_mesh):
         polys_only = pv.PolyData(mesh.points, faces=mesh.faces)
         polys_only.point_data.update(mesh.point_data)
         mesh = polys_only
+    if not mesh.is_all_triangles:
+        mesh = mesh.triangulate()
 
     n_removed_total = 0
     while True:
-        n_neighbors = _polygon_edge_neighbor_counts(mesh)
+        faces = mesh.faces.reshape(-1, 4)[:, 1:]
+        n_neighbors = _triangle_edge_neighbor_counts(faces, mesh.n_points)
         isolated = np.flatnonzero(n_neighbors == 1)
         if len(isolated) == 0:
             break
@@ -432,9 +388,10 @@ def break_cartilage_into_superficial_deep(
         by default 2. Each subdivision quadruples the faces before clustering; 1 (or 0) is
         considerably faster for these dense meshes at a small cost in vertex uniformity.
     return_rel_depth : bool, optional
-        Whether to also return a depth image, by default False. NOTE: the returned image
-        currently holds the signed distance to the bone surface (mm) for every cartilage
-        voxel, not the 0-1 relative depth (existing behaviour preserved).
+        Whether to also return the relative depth image, by default False. The image is
+        float32 with ``d_bone / (d_bone + d_articular)`` at the cartilage voxels (0 at the
+        bone, 1 at the articular surface; slightly negative where a voxel centre lies inside
+        the bone surface) and 0 elsewhere.
     deep_label : int, optional
         The label to assign to the deep regions, by default 100.
     superficial_label : int, optional
@@ -454,7 +411,7 @@ def break_cartilage_into_superficial_deep(
         Image with ``deep_label`` / ``superficial_label`` at the cartilage voxels and 0
         elsewhere (uint16).
     SimpleITK.Image, optional
-        Depth image (see ``return_rel_depth``).
+        Relative depth image (see ``return_rel_depth``).
     """
     from pymskt.mesh import Mesh
 
@@ -557,11 +514,11 @@ def break_cartilage_into_superficial_deep(
     if not return_rel_depth:
         return new_seg_image
 
-    # NOTE: this image holds the signed distance to the bone (mm), not the relative depth.
-    # Existing behaviour is preserved here; see the docstring.
-    depth_array = np.zeros_like(seg_arr, dtype=np.float32)
-    depth_array[zyx] = bone_distance
-    depth_image = sitk.GetImageFromArray(depth_array)
-    depth_image.CopyInformation(seg_image)
+    # relative depth at the cartilage voxels (0 at the bone surface, 1 at the articular
+    # surface), 0 elsewhere; non-finite values (both distances zero) are written as 0.
+    rel_depth_array = np.zeros_like(seg_arr, dtype=np.float32)
+    rel_depth_array[zyx] = np.where(np.isfinite(rel_depth), rel_depth, 0.0)
+    rel_depth_image = sitk.GetImageFromArray(rel_depth_array)
+    rel_depth_image.CopyInformation(seg_image)
 
-    return new_seg_image, depth_image
+    return new_seg_image, rel_depth_image
