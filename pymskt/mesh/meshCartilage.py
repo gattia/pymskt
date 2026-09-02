@@ -132,17 +132,39 @@ def remove_cart_in_bone(cartilage_mesh, bone_mesh):
     return cart_copy
 
 
-def _triangle_edge_neighbor_counts(faces, n_points):
+def _triangle_edge_neighbor_counts(mesh):
     """
-    Number of edge-neighbouring triangles for every triangle of an (n, 3) face array.
+    Number of edges each triangle of `mesh` shares with other triangles.
 
-    Vectorized equivalent of ``len(mesh.cell_neighbors(i, connections="edges"))`` for every
-    cell of a triangle mesh: every other triangle sharing an edge counts once per shared edge.
+    An edge shared by k triangles contributes k - 1 to each of them. On a manifold mesh this
+    equals ``len(mesh.cell_neighbors(i, connections="edges"))`` for every cell; it differs
+    only for duplicated faces, which pyvista counts as one neighbour and this counts once per
+    shared edge (a duplicated triangle is therefore never "isolated"). Degenerate triangles
+    (a repeated vertex) must be removed first; see `remove_isolated_cells`.
+
+    Parameters
+    ----------
+    mesh : pyvista.PolyData
+        All-triangle mesh.
+
+    Returns
+    -------
+    np.ndarray
+        (n_cells,) integer array.
     """
+    if not mesh.is_all_triangles:
+        raise ValueError("expected an all-triangle mesh")
+    faces = mesh.faces.reshape(-1, 4)[:, 1:].astype(np.int64)
     edges = np.sort(faces[:, [[0, 1], [1, 2], [2, 0]]].reshape(-1, 2), axis=1)
-    keys = edges[:, 0].astype(np.int64) * n_points + edges[:, 1]
+    keys = edges[:, 0] * np.int64(mesh.n_points) + edges[:, 1]
     _, inverse, counts = np.unique(keys, return_inverse=True, return_counts=True)
     return (counts[inverse] - 1).reshape(-1, 3).sum(axis=1)
+
+
+def _degenerate_triangles(mesh):
+    """Boolean mask of triangles with a repeated vertex index."""
+    f = mesh.faces.reshape(-1, 4)[:, 1:]
+    return (f[:, 0] == f[:, 1]) | (f[:, 1] == f[:, 2]) | (f[:, 0] == f[:, 2])
 
 
 def remove_isolated_cells(input_mesh):
@@ -151,7 +173,7 @@ def remove_isolated_cells(input_mesh):
 
     Cells are removed iteratively until no cell has exactly one edge neighbour
     (removing a cell can leave its neighbour with a single neighbour). Non-triangle
-    polygons are triangulated first.
+    polygons are triangulated and degenerate triangles dropped first.
 
     Parameters:
     -----------
@@ -179,11 +201,14 @@ def remove_isolated_cells(input_mesh):
         mesh = polys_only
     if not mesh.is_all_triangles:
         mesh = mesh.triangulate()
+    degenerate = _degenerate_triangles(mesh)
+    if degenerate.any():
+        logger.debug("remove_isolated_cells: dropping %d degenerate triangles", degenerate.sum())
+        mesh = mesh.remove_cells(np.flatnonzero(degenerate), inplace=False)
 
     n_removed_total = 0
     while True:
-        faces = mesh.faces.reshape(-1, 4)[:, 1:]
-        n_neighbors = _triangle_edge_neighbor_counts(faces, mesh.n_points)
+        n_neighbors = _triangle_edge_neighbor_counts(mesh)
         isolated = np.flatnonzero(n_neighbors == 1)
         if len(isolated) == 0:
             break
