@@ -1,38 +1,14 @@
-import contextlib
 import logging
-import time
 
 import numpy as np
 import pyvista as pv
 import SimpleITK as sitk
 import vtk
 
+from pymskt.mesh.utils import as_mesh
+from pymskt.utils import timed_stage
+
 logger = logging.getLogger(__name__)
-
-
-@contextlib.contextmanager
-def _timed_stage(name):
-    """Log the wall time of a processing stage at DEBUG level."""
-    t0 = time.perf_counter()
-    try:
-        yield
-    finally:
-        logger.debug("%s: %.2fs", name, time.perf_counter() - t0)
-
-
-def _as_mesh(mesh, mesh_name):
-    """Return `mesh` as a pymskt Mesh (wrapping pyvista / vtk inputs)."""
-    from pymskt.mesh import Mesh
-
-    if isinstance(mesh, Mesh):
-        return mesh
-    elif isinstance(mesh, pv.PolyData):
-        return Mesh(mesh)
-    elif isinstance(mesh, vtk.vtkPolyData):
-        return Mesh(pv.PolyData(mesh))
-    raise TypeError(
-        f"The {mesh_name} is not of type pymskt.mesh.Mesh, pyvista.PolyData, or vtk.vtkPolyData"
-    )
 
 
 # extract the articular surfaces from the cartilages
@@ -135,8 +111,8 @@ def remove_cart_in_bone(cartilage_mesh, bone_mesh):
     Returns:
     Mesh: The cleaned cartilage mesh
     """
-    cartilage_mesh = _as_mesh(cartilage_mesh, "cartilage mesh")
-    bone_mesh = _as_mesh(bone_mesh, "bone mesh")
+    cartilage_mesh = as_mesh(cartilage_mesh, "cartilage mesh")
+    bone_mesh = as_mesh(bone_mesh, "bone mesh")
 
     # Ensure both meshes have the same dtype (use the higher precision one)
     target_dtype = np.promote_types(cartilage_mesh.point_coords.dtype, bone_mesh.point_coords.dtype)
@@ -189,17 +165,9 @@ def remove_isolated_cells(input_mesh):
     """
     from pymskt.mesh import Mesh
 
-    if isinstance(input_mesh, Mesh):
-        mesh = pv.PolyData(input_mesh)
-        return_type = "Mesh"
-    elif isinstance(input_mesh, pv.PolyData):
-        mesh = input_mesh.copy()
-        return_type = "pyvista"
-    elif isinstance(input_mesh, vtk.vtkPolyData):
-        mesh = pv.PolyData(input_mesh)
-        return_type = "pyvista"
-    else:
-        raise TypeError("Input mesh must be of type Mesh, pyvista.PolyData, or vtk.vtkPolyData")
+    return_type = "Mesh" if isinstance(input_mesh, Mesh) else "pyvista"
+    # nothing below mutates `mesh`: every step returns a new object
+    mesh = pv.PolyData(as_mesh(input_mesh, "input_mesh"))
 
     if mesh.n_cells != mesh.n_faces_strict:
         # vertices / lines / strips are not polygons; keep only the polygon cells
@@ -263,7 +231,7 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
             cart_mesh.n_points,
             bone_mesh.n_points,
         )
-        with _timed_stage("  remove_intersecting_vertices (ray cast)"):
+        with timed_stage("  remove_intersecting_vertices (ray cast)", logger):
             articular_surface = remove_intersecting_vertices(
                 cart_mesh,
                 bone_mesh,
@@ -273,7 +241,7 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
             articular_surface, pv.PolyData
         ), f"articular_surface is not a PolyData object: {type(articular_surface)}"
 
-        with _timed_stage("  get_n_largest"):
+        with timed_stage("  get_n_largest", logger):
             articular_surface = get_n_largest(articular_surface, n=n_largest)
         if not isinstance(articular_surface, pv.PolyData):
             articular_surface = articular_surface.extract_surface()
@@ -282,16 +250,16 @@ def extract_articular_surface(bone_mesh, ray_length=10.0, smooth_iter=100, n_lar
         ), f"articular_surface is not a PolyData object: {type(articular_surface)}"
 
         # remove articular surface points that are inside the bone
-        with _timed_stage("  remove_cart_in_bone"):
+        with timed_stage("  remove_cart_in_bone", logger):
             articular_surface = remove_cart_in_bone(articular_surface, bone_mesh)
         # remove isolated cells at the boundaries
-        with _timed_stage("  remove_isolated_cells"):
+        with timed_stage("  remove_isolated_cells", logger):
             articular_surface = remove_isolated_cells(articular_surface)
 
         # smooth the articular surface...
         #   boundary_smoothing=False will enable smoothing at the boundary - which can fix
         #   some of the issues with errors at the edges (boundaries)
-        with _timed_stage("  smooth"):
+        with timed_stage("  smooth", logger):
             articular_surface = articular_surface.smooth(
                 n_iter=smooth_iter, boundary_smoothing=False
             )
@@ -415,7 +383,7 @@ def break_cartilage_into_superficial_deep(
     """
     from pymskt.mesh import Mesh
 
-    with _timed_stage("bone compute_normals"):
+    with timed_stage("bone compute_normals", logger):
         bone_mesh.compute_normals(auto_orient_normals=True, inplace=True)
 
     # the seg_image might be in the bone_mesh, or provided as input. Check, and raise
@@ -439,7 +407,7 @@ def break_cartilage_into_superficial_deep(
         raise ValueError("list_cartilage_labels is not provided and not in bone_mesh")
 
     # if the cartilage meshes don't exist yet, create them.
-    with _timed_stage("create_cartilage_meshes"):
+    with timed_stage("create_cartilage_meshes", logger):
         if bone_mesh.list_cartilage_meshes is None:
             bone_mesh.create_cartilage_meshes(fix_method=cartilage_fix_method)
 
@@ -449,7 +417,7 @@ def break_cartilage_into_superficial_deep(
     if bone_mesh.list_articular_surfaces is None:
         orig_cart_meshes = [cart_mesh_.copy() for cart_mesh_ in bone_mesh.list_cartilage_meshes]
         try:
-            with _timed_stage("resample cartilage surfaces"):
+            with timed_stage("resample cartilage surfaces", logger):
                 if resample_cartilage_surface is not None:
                     for cartilage_mesh in bone_mesh.list_cartilage_meshes:
                         cartilage_mesh.resample_surface(
@@ -458,19 +426,19 @@ def break_cartilage_into_superficial_deep(
                         )
 
             # fix normals of cartilage mesh & fix mesh
-            with _timed_stage("fix cartilage meshes"):
+            with timed_stage("fix cartilage meshes", logger):
                 for cart_mesh in bone_mesh.list_cartilage_meshes:
                     cart_mesh.fix_mesh()
                     cart_mesh.compute_normals(auto_orient_normals=True, inplace=True)
 
-            with _timed_stage("extract_articular_surfaces"):
+            with timed_stage("extract_articular_surfaces", logger):
                 bone_mesh.extract_articular_surfaces()
         finally:
             # re-assign the full resolution cartilage meshes to the bone_mesh object.
             bone_mesh.list_cartilage_meshes = orig_cart_meshes
 
     # voxel locations (numpy z, y, x order) of the cartilage labels, in world coordinates
-    with _timed_stage("voxel coordinates"):
+    with timed_stage("voxel coordinates", logger):
         seg_arr = sitk.GetArrayFromImage(seg_image)
         voxel_coords = _label_voxel_coords(seg_arr, list_cartilage_labels)
         voxel_coords_world = _voxel_coords_to_world(voxel_coords, seg_image)
@@ -478,7 +446,7 @@ def break_cartilage_into_superficial_deep(
 
     # get the distances for the cartilage coordinates from the bone and articular surfaces.
     # The articular surfaces are open meshes; only the vtk backend is correct for those.
-    with _timed_stage("articular surface distances (vtk)"):
+    with timed_stage("articular surface distances (vtk)", logger):
         articular_cart_distances = np.min(
             [
                 np.abs(Mesh(surface).get_sdf_pts(voxel_coords_world, method="vtk"))
@@ -486,7 +454,7 @@ def break_cartilage_into_superficial_deep(
             ],
             axis=0,
         )
-    with _timed_stage(f"bone distances ({sdf_method})"):
+    with timed_stage(f"bone distances ({sdf_method})", logger):
         bone_distance = bone_mesh.get_sdf_pts(voxel_coords_world, method=sdf_method)
 
     _log_array_stats("Bone distance", bone_distance)
@@ -499,7 +467,7 @@ def break_cartilage_into_superficial_deep(
     # combine the existing seg labels into a single label, then break that into
     # superficial and deep based on the rel_depth threshold. (Voxels with a non-finite
     # relative depth - both distances zero - are left as 0.)
-    with _timed_stage("label assignment"):
+    with timed_stage("label assignment", logger):
         # uint16 to avoid overflow (many segs are int8 causing an issue)
         new_seg_array = np.zeros_like(seg_arr, dtype=np.uint16)
         zyx = tuple(voxel_coords.T)

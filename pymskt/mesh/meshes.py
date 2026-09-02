@@ -54,7 +54,7 @@ from pymskt.mesh.meshTransform import (
     create_transform,
     get_versor_from_transform,
 )
-from pymskt.mesh.utils import vtk_deep_copy
+from pymskt.mesh.utils import as_mesh, vtk_deep_copy
 from pymskt.utils import copy_image_transform_to_mesh, safely_delete_tmp_file
 
 # import pyfocusr     # MAKE THIS AN OPTIONAL IMPORT?
@@ -423,16 +423,7 @@ class Mesh(pv.PolyData):
         return sdfs
 
     def get_assd_mesh(self, other_mesh):
-        if isinstance(other_mesh, Mesh):
-            pass
-        elif isinstance(other_mesh, (vtk.vtkPolyData, pv.PolyData, str)):
-            other_mesh = Mesh(other_mesh)
-        else:
-            raise TypeError(
-                "other_mesh must be of type Mesh, vtk.vtkPolyData, pv.PolyData, or str, and received: {}".format(
-                    type(other_mesh)
-                )
-            )
+        other_mesh = as_mesh(other_mesh, "other_mesh")
 
         distances1 = np.abs(pcu_sdf(self.point_coords, other_mesh))
         distances2 = np.abs(pcu_sdf(other_mesh.point_coords, self))
@@ -1076,17 +1067,7 @@ class Mesh(pv.PolyData):
         -------
         None
         """
-        # get point coordinates for other mesh
-        if isinstance(other_mesh, (vtk.vtkPolyData)):
-            other_mesh = Mesh(other_mesh)
-        elif isinstance(other_mesh, Mesh):
-            pass
-        else:
-            raise TypeError(
-                "other_mesh must be of type vtk.vtkPolyData or pymskt.mesh.Mesh and received: {}".format(
-                    type(other_mesh)
-                )
-            )
+        other_mesh = as_mesh(other_mesh, "other_mesh")
 
         # get sdf for other_pts
         sdf = other_mesh.get_sdf_pts(self.point_coords)
@@ -2204,25 +2185,19 @@ class BoneMesh(Mesh):
 
     @list_articular_surfaces.setter
     def list_articular_surfaces(self, new_list_articular_surfaces):
-        if isinstance(new_list_articular_surfaces, list):
-            for surface in new_list_articular_surfaces:
-                if not isinstance(surface, Mesh):
-                    if isinstance(surface, (pv.PolyData, vtk.vtkPolyData)):
-                        surface = pymskt.mesh.Mesh(mesh=surface)
-                    else:
-                        raise TypeError(
-                            f"Item in `list_articular_surfaces` is not an appropirate mesh type: {type(surface)}"
-                        )
-
-        elif isinstance(
-            new_list_articular_surfaces, (pymskt.mesh.meshes.Mesh, pv.PolyData, vtk.vtkPolyData)
-        ):
-            if isinstance(new_list_articular_surfaces, (pv.PolyData, vtk.vtkPolyData)):
-                new_list_articular_surfaces = pymskt.mesh.Mesh(mesh=new_list_articular_surfaces)
-            new_list_articular_surfaces = [
-                new_list_articular_surfaces,
-            ]
-        self._list_articular_surfaces = new_list_articular_surfaces
+        """
+        Set the articular surfaces: a Mesh / pyvista / vtk polydata, a list of them, or None.
+        Every item is stored as a `Mesh`.
+        """
+        if new_list_articular_surfaces is None:
+            self._list_articular_surfaces = None
+            return
+        if not isinstance(new_list_articular_surfaces, (list, tuple)):
+            new_list_articular_surfaces = [new_list_articular_surfaces]
+        self._list_articular_surfaces = [
+            as_mesh(surface, "Item in `list_articular_surfaces`")
+            for surface in new_list_articular_surfaces
+        ]
 
     @property
     def list_cartilage_labels(self):

@@ -1,4 +1,6 @@
+import contextlib
 import errno
+import logging
 import os
 import time
 
@@ -236,3 +238,30 @@ def gaussian_kernel(X, Y, sigma=1.0):
     # Avoid division by zero
     row_sums[row_sums == 0] = 1
     return kernel / row_sums
+
+
+@contextlib.contextmanager
+def timed_stage(name, logger=None, level=logging.DEBUG):
+    """
+    Context manager that logs the wall time of a processing stage.
+
+    Parameters
+    ----------
+    name : str
+        Label written to the log, e.g. ``"resample cartilage surfaces"``.
+    logger : logging.Logger, optional
+        Logger to write to, by default ``logging.getLogger("pymskt")``.
+    level : int, optional
+        Log level, by default ``logging.DEBUG``.
+
+    Examples
+    --------
+    >>> with timed_stage("marching cubes", logger):
+    ...     mesh = create_surface_mesh(...)
+    """
+    logger = logger if logger is not None else logging.getLogger("pymskt")
+    t0 = time.perf_counter()
+    try:
+        yield
+    finally:
+        logger.log(level, "%s: %.2fs", name, time.perf_counter() - t0)
